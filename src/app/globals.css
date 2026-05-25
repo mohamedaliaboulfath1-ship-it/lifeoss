@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #080810;
+  --color-bg2: #0d0d18;
+  --color-surface: #111120;
+  --color-surface2: #16162a;
+  --color-surface3: #1c1c35;
+  --color-border: #22223a;
+  --color-border2: #2d2d50;
+  --color-text: #e8e8f5;
+  --color-text2: #9090b0;
+  --color-text3: #50507a;
+  --color-gold: #c8963c;
+  --color-gold2: #e8b86d;
+  --color-gold3: #ffd085;
+  --color-emerald: #2ab574;
+  --color-emerald2: #3dd68c;
+  --color-rose: #d94f6a;
+  --color-rose2: #f0708a;
+  --color-sky: #3a8fd4;
+  --color-sky2: #5aaaf0;
+  --color-purple: #7c5cbf;
+  --color-purple2: #a07de8;
+  --color-amber: #d4842a;
+  --color-amber2: #f0a850;
+  --color-teal: #1a9b8a;
+  --color-teal2: #2cc4b0;
+  --font-sans: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex), ui-monospace, monospace;
+  --font-display: var(--font-playfair), Georgia, serif;
+  --radius-default: 10px;
+  --radius-sm: 6px;
+  --width-sidebar: 250px;
+}
+
+:root {
+  --bg: #080810;
+  --bg2: #0d0d18;
+  --surface: #111120;
+  --surface2: #16162a;
+  --border: #22223a;
+  --border2: #2d2d50;
+  --text: #e8e8f5;
+  --text2: #9090b0;
+  --text3: #50507a;
+  --gold: #c8963c;
+  --gold2: #e8b86d;
+  --gold3: #ffd085;
+  --emerald: #2ab574;
+  --emerald2: #3dd68c;
+  --rose: #d94f6a;
+  --rose2: #f0708a;
+  --sky: #3a8fd4;
+  --sky2: #5aaaf0;
+  --purple: #7c5cbf;
+  --purple2: #a07de8;
+  --amber2: #f0a850;
+  --teal2: #2cc4b0;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans text-sm leading-relaxed antialiased;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.2s ease;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.save-dot {
+  animation: pulse-dot 2s infinite;
+}
