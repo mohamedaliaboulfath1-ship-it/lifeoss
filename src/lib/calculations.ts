@@ -2,12 +2,52 @@ import type { Goal, Skill, YearPayload } from "@/types/lifeos";
 import { getWeekDates, isThisWeek } from "@/lib/utils";
 
 export function calcGoalPct(g: Goal) {
-  if (!g.target || g.current === undefined) return 0;
+  if (!g.target || g.current === undefined) return g.done ? 100 : 0;
   const s = parseFloat(g.startVal ?? g.current ?? "0");
   const c = parseFloat(g.current);
   const t = parseFloat(g.target);
-  if (t === s) return 0;
+  if (t === s) return g.done ? 100 : 0;
   return Math.max(0, Math.min(100, Math.round(((c - s) / (t - s)) * 100)));
+}
+
+/** Consecutive days with habit done (ending today or most recent log) */
+export function calcStreak(
+  habitId: string,
+  logs: Record<string, Record<string, boolean>>
+): number {
+  const dates = Object.keys(logs[habitId] ?? {})
+    .filter((d) => logs[habitId][d])
+    .sort()
+    .reverse();
+  if (!dates.length) return 0;
+
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < 365; i++) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (logs[habitId]?.[key]) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if (i === 0) {
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+/** Bulk phase: weeks to target weight at ~0.35 kg/week */
+export function estimateWeeksToTarget(
+  current: number,
+  target: number,
+  weeklyGain = 0.35
+): number | null {
+  if (weeklyGain <= 0 || current >= target) return null;
+  return Math.ceil((target - current) / weeklyGain);
 }
 
 export function calcOverallHabitPct(

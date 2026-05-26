@@ -131,6 +131,14 @@ export const NAV_PAGES: NavPage[] = [
     sub: "حفظ البيانات ومقارنة السنوات",
     section: "الإنتاجية",
   },
+  {
+    id: "settings",
+    href: "/settings",
+    icon: "⚙️",
+    title: "الإعدادات",
+    sub: "المظهر · النسخ الاحتياطي · الحساب",
+    section: "الإنتاجية",
+  },
 ];
 
 export function getPageMeta(pathname: string) {

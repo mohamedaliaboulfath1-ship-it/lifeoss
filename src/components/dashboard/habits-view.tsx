@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
-import { calcOverallHabitPct } from "@/lib/calculations";
+import { calcOverallHabitPct, calcStreak } from "@/lib/calculations";
 import { getWeekDates, today } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
 
@@ -64,6 +64,9 @@ export function HabitsView({
   }
 
   const todayDone = habits.filter((h) => logs[h.id]?.[today()]).length;
+  const maxStreak = habits.length
+    ? Math.max(...habits.map((h) => calcStreak(h.id, logs)), 0)
+    : 0;
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -83,8 +86,8 @@ export function HabitsView({
           <div className="text-[11px] text-text3">عادات نشطة</div>
         </Card>
         <Card className="p-4">
-          <div className="text-2xl font-black text-purple2">—</div>
-          <div className="text-[11px] text-text3">أطول سلسلة</div>
+          <div className="text-2xl font-black text-purple2">{maxStreak}</div>
+          <div className="text-[11px] text-text3">أطول سلسلة (يوم)</div>
         </Card>
       </div>
 

@@ -131,6 +131,30 @@ export async function POST(req: Request) {
           }))
         );
       }
+
+      const workoutLogs = (data.workoutLogs ?? []) as {
+        id?: string;
+        date?: string;
+        type?: string;
+        duration?: number;
+        energy?: number;
+        notes?: string;
+        sets?: unknown;
+      }[];
+      if (workoutLogs.length) {
+        await authResult.supabase.from("workouts").upsert(
+          workoutLogs.map((w) => ({
+            id: w.id ?? `w-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            user_id: authResult.userId,
+            workout_date: w.date ?? new Date().toISOString().slice(0, 10),
+            workout_type: w.type ?? null,
+            duration_min: w.duration ?? null,
+            energy: w.energy ?? null,
+            notes: w.notes ?? null,
+            sets: w.sets ?? [],
+          }))
+        );
+      }
     }
   }
 

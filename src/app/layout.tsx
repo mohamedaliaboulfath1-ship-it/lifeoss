@@ -23,6 +23,8 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "LifeOS Premium — مركز التحكم",
   description: "نظام تشغيل الحياة — تتبع الأهداف والعادات والصحة والمال",
+  applicationName: "LifeOS",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

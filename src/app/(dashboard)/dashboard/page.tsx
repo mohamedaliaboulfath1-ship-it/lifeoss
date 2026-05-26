@@ -2,12 +2,12 @@
 
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { Topbar } from "@/components/layout/topbar";
-import { useLifeOSData } from "@/hooks/use-lifeos-data";
+import { useLifeOS } from "@/contexts/lifeos-context";
 import { useState } from "react";
 import { ImportDialog } from "@/components/dashboard/import-dialog";
 
 export default function DashboardPage() {
-  const { data } = useLifeOSData();
+  const { data, refresh } = useLifeOS();
   const [importOpen, setImportOpen] = useState(false);
 
   if (!data) return null;
@@ -21,7 +21,11 @@ export default function DashboardPage() {
           yearData={data.yearData}
         />
       </div>
-      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={refresh}
+      />
     </>
   );
 }

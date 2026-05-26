@@ -1,16 +1,14 @@
 "use client";
 
-import { useLifeOSData } from "@/hooks/use-lifeos-data";
+import { useLifeOS } from "@/contexts/lifeos-context";
 import { Sidebar } from "@/components/layout/sidebar";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { data, loading, error, setCurrentYear } = useLifeOSData();
+  const { data, loading, error, setCurrentYear } = useLifeOS();
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-bg text-text3 font-mono text-sm">
-        جاري التحميل...
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !data?.profile) {

@@ -34,6 +34,7 @@ export interface GoalRow {
   start_date: string | null;
   due_date: string | null;
   current_val: string | null;
+  start_val: string | null;
   target_val: string | null;
   unit: string | null;
   done: boolean;

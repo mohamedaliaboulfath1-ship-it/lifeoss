@@ -1,0 +1,11 @@
+{
+  "name": "LifeOS Premium",
+  "short_name": "LifeOS",
+  "description": "نظام تشغيل الحياة الشخصي",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#080810",
+  "theme_color": "#c8963c",
+  "lang": "ar",
+  "dir": "rtl"
+}

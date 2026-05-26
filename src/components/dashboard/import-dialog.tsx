@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 interface ImportDialogProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ImportDialog({ open, onClose }: ImportDialogProps) {
+export function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
   const [json, setJson] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
@@ -28,8 +29,9 @@ export function ImportDialog({ open, onClose }: ImportDialogProps) {
         }),
       });
       if (!res.ok) throw new Error();
-      setStatus("✅ تم الاستيراد بنجاح — أعد تحميل الصفحة");
-      setTimeout(() => window.location.reload(), 1500);
+      setStatus("✅ تم الاستيراد بنجاح");
+      onSuccess?.();
+      setTimeout(onClose, 1200);
     } catch {
       setStatus("❌ JSON غير صالح أو فشل الاستيراد");
     }

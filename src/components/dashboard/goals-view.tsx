@@ -103,7 +103,12 @@ export function GoalsView({
               </Button>
             </div>
             {aGoals.map((g) => (
-              <GoalCard key={g.id} goal={g} onDelete={() => deleteGoal(g.id)} />
+              <GoalCard
+                key={g.id}
+                goal={g}
+                onDelete={() => deleteGoal(g.id)}
+                onUpdate={onRefresh}
+              />
             ))}
             {!aGoals.length && (
               <p className="text-text3 text-xs py-2">لا أهداف في هذا القسم</p>
@@ -178,13 +183,49 @@ export function GoalsView({
   );
 }
 
-function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: () => void }) {
+function GoalCard({
+  goal,
+  onDelete,
+  onUpdate,
+}: {
+  goal: Goal;
+  onDelete: () => void;
+  onUpdate: () => void;
+}) {
   const pct = calcGoalPct(goal);
   const prColors = { high: "var(--rose)", med: "var(--amber2)", low: "var(--emerald)" };
+
+  async function bumpProgress() {
+    const cur = parseFloat(goal.current ?? goal.startVal ?? "0");
+    const step = goal.unit === "%" ? 5 : 1;
+    await fetch("/api/goals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: goal.id, current: String(cur + step) }),
+    });
+    onUpdate();
+  }
+
+  async function toggleDone() {
+    await fetch("/api/goals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: goal.id, done: !goal.done }),
+    });
+    onUpdate();
+  }
 
   return (
     <Card className="mb-2 p-4">
       <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={toggleDone}
+          className={`w-5 h-5 rounded border-2 shrink-0 mt-0.5 cursor-pointer ${
+            goal.done ? "bg-emerald border-emerald" : "border-border2"
+          }`}
+          title="تم الإنجاز"
+        />
         <div
           className="w-2 h-2 rounded-full mt-1.5 shrink-0"
           style={{ background: prColors[goal.priority] ?? "var(--text3)" }}
@@ -192,7 +233,18 @@ function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: () => void }) {
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm mb-1">{goal.title}</div>
           <ProgressBar value={pct} color={areaColor(goal.area)} className="mb-1" />
-          <div className="text-[10px] text-text3 font-mono">{pct}%</div>
+          <div className="text-[10px] text-text3 font-mono flex gap-2 items-center">
+            <span>{pct}%</span>
+            {goal.target && (
+              <button
+                type="button"
+                className="text-gold2 hover:underline"
+                onClick={bumpProgress}
+              >
+                + تحديث
+              </button>
+            )}
+          </div>
         </div>
         <Button variant="danger" size="sm" onClick={onDelete}>
           🗑

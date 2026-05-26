@@ -52,6 +52,7 @@ export async function POST(req: Request) {
     unit: body.unit || null,
     tasks: body.tasks ?? [],
     habits: body.habits || null,
+    start_val: body.current ?? null,
   };
 
   const { error } = await authResult.supabase.from("goals").upsert(row);
@@ -74,6 +75,51 @@ export async function POST(req: Request) {
   };
 
   return NextResponse.json({ goal });
+}
+
+const patchSchema = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  area: z.string().optional(),
+  priority: z.enum(["high", "med", "low"]).optional(),
+  current: z.string().optional(),
+  target: z.string().optional(),
+  unit: z.string().optional(),
+  done: z.boolean().optional(),
+  tasks: z
+    .array(z.object({ id: z.string(), text: z.string(), done: z.boolean() }))
+    .optional(),
+  due: z.string().optional(),
+});
+
+export async function PATCH(req: Request) {
+  const authResult = await requireSession();
+  if ("error" in authResult) return authResult.error;
+
+  const body = patchSchema.parse(await req.json());
+  const updates: Record<string, unknown> = {};
+
+  if (body.title !== undefined) updates.title = body.title;
+  if (body.area !== undefined) updates.area = body.area;
+  if (body.priority !== undefined) updates.priority = body.priority;
+  if (body.current !== undefined) updates.current_val = body.current;
+  if (body.target !== undefined) updates.target_val = body.target;
+  if (body.unit !== undefined) updates.unit = body.unit;
+  if (body.done !== undefined) updates.done = body.done;
+  if (body.tasks !== undefined) updates.tasks = body.tasks;
+  if (body.due !== undefined) updates.due_date = body.due || null;
+
+  const { error } = await authResult.supabase
+    .from("goals")
+    .update(updates)
+    .eq("id", body.id)
+    .eq("user_id", authResult.userId);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request) {

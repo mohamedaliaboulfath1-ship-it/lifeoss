@@ -2,11 +2,11 @@
 
 import { GoalsView } from "@/components/dashboard/goals-view";
 import { Topbar } from "@/components/layout/topbar";
-import { useLifeOSData } from "@/hooks/use-lifeos-data";
+import { useLifeOS } from "@/contexts/lifeos-context";
 import { useState } from "react";
 
 export default function GoalsPage() {
-  const { data, refresh } = useLifeOSData();
+  const { data, refresh } = useLifeOS();
   const [openAdd, setOpenAdd] = useState(false);
 
   if (!data) return null;

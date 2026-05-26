@@ -38,6 +38,7 @@ function mapGoal(row: GoalRow): Goal {
     start: row.start_date ?? undefined,
     due: row.due_date ?? undefined,
     current: row.current_val ?? undefined,
+    startVal: row.start_val ?? row.current_val ?? undefined,
     target: row.target_val ?? undefined,
     unit: row.unit ?? undefined,
     done: row.done,
