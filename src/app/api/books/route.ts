@@ -114,7 +114,34 @@ export async function POST(req: Request) {
   if (entity === "book") {
     const parsed = bookSchema.parse(body.payload);
     const id = parsed.id ?? uid();
-    const { error } = await authResult.supabase.from("books").upsert({
+
+    if (parsed.id) {
+      const updates: Record<string, unknown> = {
+        title: parsed.title,
+        author: parsed.author ?? null,
+        pages_total: parsed.pages ?? null,
+        status: parsed.status ?? "planned",
+        priority: parsed.priority ?? "med",
+        notes: parsed.notes ?? null,
+        book_type: parsed.bookType ?? "physical",
+        category: parsed.category ?? null,
+        tags: parsed.tags ?? [],
+        rating: parsed.rating ?? null,
+        highlights: parsed.highlights ?? [],
+      };
+      if (parsed.curPage !== undefined) updates.pages_read = parsed.curPage;
+      if (parsed.coverPath) updates.cover_path = parsed.coverPath;
+
+      const { error } = await authResult.supabase
+        .from("books")
+        .update(updates)
+        .eq("id", parsed.id)
+        .eq("user_id", authResult.userId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: true, id: parsed.id });
+    }
+
+    const { error } = await authResult.supabase.from("books").insert({
       id,
       user_id: authResult.userId,
       title: parsed.title,

@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { commas, today, uid } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
 import { useToast } from "@/contexts/toast-context";
+import { BookCover } from "@/components/dashboard/book-cover";
 import type { Book, YearPayload } from "@/types/lifeos";
 
 interface BooksViewProps {
@@ -210,6 +211,18 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       coverPath: path,
       coverPreviewUrl: previewUrl,
     }));
+
+    const existing = books.find((b) => b.id === bookId);
+    if (existing) {
+      await fetch("/api/books", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: bookId, coverPath: path }),
+      });
+      await loadBooks();
+      toast("تم حفظ الغلاف في المكتبة", "success");
+    }
+
     return path;
   }
 
@@ -233,11 +246,30 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         .filter(Boolean)
         .map((excerpt, i) => ({ id: `hl_${i}`, excerpt })),
     };
-    const res = await fetch("/api/books", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entity: "book", payload }),
-    });
+    const isEdit = Boolean(form.id);
+    const res = isEdit
+      ? await fetch("/api/books", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: form.id,
+            title: payload.title,
+            author: payload.author,
+            pages: payload.pages,
+            bookType: payload.bookType,
+            category: payload.category,
+            notes: payload.notes,
+            coverPath: payload.coverPath,
+            highlights: payload.highlights,
+            curPage: payload.curPage,
+            status: payload.status,
+          }),
+        })
+      : await fetch("/api/books", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entity: "book", payload }),
+        });
     if (!res.ok) {
       toast("فشل حفظ الكتاب", "error");
       return;
@@ -302,10 +334,6 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     await fetch(`/api/books?id=${id}`, { method: "DELETE" });
     await loadBooks();
     onRefresh();
-  }
-
-  function bookCoverUrl(b: BookExt) {
-    return b.coverUrl ?? null;
   }
 
   return (
@@ -420,13 +448,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             const ext = b as BookExt;
             return (
               <MotionCard key={b.id} className="border border-border rounded-[10px] overflow-hidden bg-surface">
-                <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center text-4xl">
-                  {bookCoverUrl(ext) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={bookCoverUrl(ext)!} alt={b.title} className="w-full h-full object-cover" />
-                  ) : (
-                    "📖"
-                  )}
+                <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center overflow-hidden">
+                  <BookCover
+                    title={b.title}
+                    coverUrl={ext.coverUrl}
+                    coverPath={ext.coverPath}
+                  />
                 </div>
                 <div className="p-3 space-y-1">
                   <div className="font-bold text-sm truncate">{b.title}</div>
@@ -451,12 +478,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             return (
               <Card key={b.id} className="p-3 flex items-center gap-4">
                 <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0 overflow-hidden">
-                  {bookCoverUrl(b as BookExt) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={bookCoverUrl(b as BookExt)!} alt={b.title} className="w-full h-full object-cover" />
-                  ) : (
-                    "📖"
-                  )}
+                  <BookCover
+                    title={b.title}
+                    coverUrl={(b as BookExt).coverUrl}
+                    coverPath={(b as BookExt).coverPath}
+                    fallbackClass="text-lg"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm truncate">{b.title}</div>
