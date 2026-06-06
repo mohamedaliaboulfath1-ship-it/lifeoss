@@ -11,6 +11,13 @@ export interface ProfileRow {
   start_date: string | null;
   current_year: string;
   onboarded: boolean;
+  avatar_url: string | null;
+  timezone: string;
+  language: string;
+  bio: string | null;
+  role: "user" | "admin";
+  suspended: boolean;
+  last_active_at: string | null;
   created_at: string;
   updated_at: string;
 }

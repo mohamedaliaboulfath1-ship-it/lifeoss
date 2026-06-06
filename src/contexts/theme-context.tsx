@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -31,28 +32,54 @@ function resolveTheme(mode: ThemeMode): "dark" | "light" {
   return mode === "light" ? "light" : "dark";
 }
 
+function applyTheme(mode: ThemeMode) {
+  const next = resolveTheme(mode);
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem(STORAGE_KEY, mode);
+  return next;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("dark");
   const [resolved, setResolved] = useState<"dark" | "light">("dark");
+  const hydrated = useRef(false);
+  const userChanged = useRef(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    if (stored && ["dark", "light", "system"].includes(stored)) {
-      setThemeState(stored);
-    }
+    const initial =
+      stored && ["dark", "light", "system"].includes(stored) ? stored : "dark";
+    setThemeState(initial);
+    setResolved(applyTheme(initial));
+    hydrated.current = true;
+
+    fetch("/api/preferences")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (
+          !userChanged.current &&
+          json?.theme &&
+          ["dark", "light", "system"].includes(json.theme)
+        ) {
+          setThemeState(json.theme);
+          setResolved(applyTheme(json.theme));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
-    const next = resolveTheme(theme);
+    if (!hydrated.current) return;
+    const next = applyTheme(theme);
     setResolved(next);
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem(STORAGE_KEY, theme);
 
-    fetch("/api/preferences", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ theme }),
-    }).catch(() => {});
+    if (userChanged.current) {
+      fetch("/api/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme }),
+      }).catch(() => {});
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -63,18 +90,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  useEffect(() => {
-    fetch("/api/preferences")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        if (json?.theme && ["dark", "light", "system"].includes(json.theme)) {
-          setThemeState(json.theme);
-        }
-      })
-      .catch(() => {});
+  const setTheme = useCallback((t: ThemeMode) => {
+    userChanged.current = true;
+    setThemeState(t);
   }, []);
-
-  const setTheme = useCallback((t: ThemeMode) => setThemeState(t), []);
 
   const value = useMemo(
     () => ({ theme, resolved, setTheme }),

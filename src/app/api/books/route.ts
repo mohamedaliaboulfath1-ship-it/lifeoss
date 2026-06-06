@@ -12,6 +12,13 @@ const bookSchema = z.object({
   status: z.enum(["planned", "reading", "done"]).optional(),
   priority: z.enum(["high", "med", "low"]).optional(),
   notes: z.string().optional(),
+  bookType: z
+    .enum(["physical", "ebook", "pdf", "epub", "audiobook", "reference", "novel", "course"])
+    .optional(),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  rating: z.number().int().min(1).max(5).optional(),
+  coverPath: z.string().optional(),
 });
 
 const sessionSchema = z.object({
@@ -46,8 +53,16 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({
-    books: (booksRes.data ?? []).map((b) => ({
+  const books = await Promise.all(
+    (booksRes.data ?? []).map(async (b) => {
+      let coverUrl: string | undefined;
+      if (b.cover_path) {
+        const { data: signed } = await authResult.supabase.storage
+          .from("book-covers")
+          .createSignedUrl(b.cover_path, 3600);
+        coverUrl = signed?.signedUrl;
+      }
+      return {
       id: b.id,
       title: b.title,
       author: b.author ?? undefined,
@@ -56,7 +71,19 @@ export async function GET() {
       status: b.status,
       priority: b.priority,
       notes: b.notes ?? undefined,
-    })),
+      bookType: b.book_type ?? "physical",
+      category: b.category ?? undefined,
+      tags: b.tags ?? [],
+      rating: b.rating ?? undefined,
+      coverPath: b.cover_path ?? undefined,
+      coverUrl,
+      highlights: b.highlights ?? [],
+    };
+    })
+  );
+
+  return NextResponse.json({
+    books,
     sessions: (sessionsRes.data ?? []).map((s) => ({
       id: s.id,
       bookId: s.book_id,
@@ -87,6 +114,11 @@ export async function POST(req: Request) {
       status: parsed.status ?? "planned",
       priority: parsed.priority ?? "med",
       notes: parsed.notes ?? null,
+      book_type: parsed.bookType ?? "physical",
+      category: parsed.category ?? null,
+      tags: parsed.tags ?? [],
+      rating: parsed.rating ?? null,
+      cover_path: parsed.coverPath ?? null,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, id });
@@ -130,15 +162,46 @@ export async function PATCH(req: Request) {
   if ("error" in authResult) return authResult.error;
 
   const body = await req.json();
-  const { id, curPage, status } = body as {
+  const {
+    id,
+    curPage,
+    status,
+    title,
+    author,
+    pages,
+    bookType,
+    category,
+    notes,
+    rating,
+    coverPath,
+    highlights,
+  } = body as {
     id: string;
     curPage?: number;
     status?: string;
+    title?: string;
+    author?: string;
+    pages?: number;
+    bookType?: string;
+    category?: string;
+    notes?: string;
+    rating?: number;
+    coverPath?: string;
+    highlights?: unknown[];
   };
 
   const updates: Record<string, unknown> = {};
   if (curPage !== undefined) updates.pages_read = curPage;
   if (status !== undefined) updates.status = status;
+  if (title !== undefined) updates.title = title;
+  if (author !== undefined) updates.author = author;
+  if (pages !== undefined) updates.pages_total = pages;
+  if (bookType !== undefined) updates.book_type = bookType;
+  if (category !== undefined) updates.category = category;
+  if (notes !== undefined) updates.notes = notes;
+  if (rating !== undefined) updates.rating = rating;
+  if (coverPath !== undefined) updates.cover_path = coverPath;
+  if (highlights !== undefined) updates.highlights = highlights;
 
   const { error } = await authResult.supabase
     .from("books")

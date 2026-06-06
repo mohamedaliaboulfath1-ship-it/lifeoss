@@ -5,6 +5,7 @@ import { getPageMeta } from "@/lib/constants";
 import { usePathname } from "next/navigation";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
+import { ProfileMenu } from "@/components/layout/profile-menu";
 
 interface TopbarProps {
   onImport?: () => void;
@@ -28,6 +29,7 @@ export function Topbar({ onImport, onAdd, addLabel = "+ إضافة" }: TopbarPro
       <div className="flex items-center gap-2">
         <GlobalSearch />
         <NotificationsPanel />
+        <ProfileMenu />
         {onImport && (
           <Button variant="ghost" onClick={onImport}>
             📥 استيراد

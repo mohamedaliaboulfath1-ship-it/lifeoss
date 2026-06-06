@@ -43,6 +43,8 @@ export async function POST(req: Request) {
     name: body.name,
     cat: body.cat,
     freq: body.freq,
+    frequency: body.freq,
+    active: true,
     time: body.time || null,
     dur: body.dur ?? null,
     goal_link: goalId,

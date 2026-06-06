@@ -25,5 +25,51 @@ export async function requireSession() {
     return { error: NextResponse.json({ error: "غير مصرح" }, { status: 401 }) };
   }
 
+  // Fire-and-forget activity ping (non-blocking)
+  void supabase
+    .from("profiles")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", user.id);
+
   return { user, userId: user.id, supabase };
+}
+
+export async function requireAdmin() {
+  const session = await requireSession();
+  if ("error" in session) return session;
+
+  const { data: profile } = await session.supabase
+    .from("profiles")
+    .select("role, suspended")
+    .eq("id", session.userId)
+    .single();
+
+  if (profile?.suspended) {
+    return {
+      error: NextResponse.json({ error: "الحساب معلّق" }, { status: 403 }),
+    };
+  }
+
+  if (profile?.role !== "admin") {
+    return {
+      error: NextResponse.json({ error: "صلاحيات المسؤول مطلوبة" }, { status: 403 }),
+    };
+  }
+
+  return session;
+}
+
+export async function logActivity(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  action: string,
+  meta?: { entityType?: string; entityId?: string; metadata?: Record<string, unknown> }
+) {
+  await supabase.from("activity_log").insert({
+    user_id: userId,
+    action,
+    entity_type: meta?.entityType ?? null,
+    entity_id: meta?.entityId ?? null,
+    metadata: meta?.metadata ?? {},
+  });
 }

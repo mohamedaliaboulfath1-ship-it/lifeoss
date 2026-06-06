@@ -14,7 +14,30 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  async function handleResendConfirmation() {
+    if (!pendingEmail || !isSupabaseConfigured()) return;
+    setResendLoading(true);
+    setResendMessage(null);
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    setResendLoading(false);
+    if (resendError) {
+      setResendMessage("تعذّر إرسال الرابط. جرّب لاحقاً أو عطّل تأكيد البريد من Supabase.");
+      return;
+    }
+    setResendMessage("تم إرسال رابط التأكيد مرة أخرى — راجع البريد ومجلد السبام.");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,6 +47,8 @@ export default function RegisterPage() {
     }
     setLoading(true);
     setError(null);
+    setPendingEmail(null);
+    setResendMessage(null);
 
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -59,9 +84,7 @@ export default function RegisterPage() {
     });
 
     if (signInError) {
-      setError(
-        "تم إنشاء الحساب — راجع بريدك لتأكيد الحساب ثم سجّل الدخول."
-      );
+      setPendingEmail(email.trim().toLowerCase());
       return;
     }
 
@@ -108,6 +131,26 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {pendingEmail && (
+            <div className="p-3 rounded-sm border border-amber/30 bg-amber/10 text-amber2 text-xs leading-relaxed space-y-2">
+              <p className="font-medium">تم إنشاء الحساب — يحتاج تأكيد البريد</p>
+              <p>
+                أرسلنا رابطاً إلى <span dir="ltr">{pendingEmail}</span>. إن لم يصل،
+                راجع السبام أو عطّل &quot;Confirm email&quot; من Supabase → Authentication →
+                Providers → Email.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full !py-2 text-xs"
+                disabled={resendLoading}
+                onClick={handleResendConfirmation}
+              >
+                {resendLoading ? "جاري الإرسال..." : "إعادة إرسال رابط التأكيد"}
+              </Button>
+              {resendMessage && <p>{resendMessage}</p>}
+            </div>
+          )}
           {error && <p className="text-rose2 text-sm">{error}</p>}
           <Button
             type="submit"

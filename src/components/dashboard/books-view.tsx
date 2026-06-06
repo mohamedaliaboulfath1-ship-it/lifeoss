@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MotionCard, MotionModal } from "@/components/motion/motion";
+import { BOOK_TYPE_LABELS } from "@/lib/icons";
+import { Tabs } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
@@ -9,6 +12,8 @@ import { Input, Label } from "@/components/ui/input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { commas, today, uid } from "@/lib/utils";
+import { createClient } from "@/lib/supabase";
+import { useToast } from "@/contexts/toast-context";
 import type { Book, YearPayload } from "@/types/lifeos";
 
 interface BooksViewProps {
@@ -24,11 +29,32 @@ type ReadingSession = {
   durationMin: number;
 };
 
+type BookExt = Book & {
+  bookType?: string;
+  category?: string;
+  coverUrl?: string;
+  rating?: number;
+};
+
 export function BooksView({ yearData, onRefresh }: BooksViewProps) {
-  const books = yearData.books ?? [];
+  const { toast } = useToast();
+  const books = (yearData.books ?? []) as BookExt[];
   const sessions = (yearData.pomSessions as ReadingSession[] | undefined) ?? [];
+  const [view, setView] = useState("gallery");
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<null | "book" | "session">(null);
-  const [form, setForm] = useState({ id: "", title: "", author: "", pages: "200" });
+  const [form, setForm] = useState({
+    id: "",
+    title: "",
+    author: "",
+    pages: "200",
+    bookType: "physical",
+    category: "",
+    notes: "",
+    coverPath: "",
+  });
   const [sessionForm, setSessionForm] = useState({
     bookId: "",
     pages: "20",
@@ -40,6 +66,17 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   const reading = books.filter((b) => b.status === "reading").length;
   const goalProgress = Math.round((done / 12) * 100);
   const goal = 12;
+
+  const filteredBooks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return books.filter((b) => {
+      if (typeFilter !== "all" && (b as BookExt).bookType !== typeFilter) return false;
+      if (statusFilter !== "all" && b.status !== statusFilter) return false;
+      if (!q) return true;
+      const hay = `${b.title} ${b.author ?? ""} ${(b as BookExt).category ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [books, query, typeFilter, statusFilter]);
 
   const analytics = useMemo(() => {
     const monthKey = new Date().toISOString().slice(0, 7);
@@ -76,28 +113,56 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     return streak;
   }, [sessions]);
 
+  async function uploadCover(bookId: string, file: File) {
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return "";
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${uid}/${bookId}.${ext}`;
+    const { error } = await supabase.storage
+      .from("book-covers")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) {
+      toast("فشل رفع الغلاف", "error");
+      return "";
+    }
+    return path;
+  }
+
   async function addOrUpdateBook() {
     if (!form.title.trim()) return;
     const id = form.id || uid();
-    const book: Book = {
+    const payload = {
       id,
       title: form.title.trim(),
       author: form.author || undefined,
       pages: parseInt(form.pages, 10) || 200,
       curPage: form.id ? books.find((b) => b.id === form.id)?.curPage ?? 0 : 0,
       status: form.id ? books.find((b) => b.id === form.id)?.status ?? "planned" : "planned",
+      bookType: form.bookType,
+      category: form.category || undefined,
+      notes: form.notes || undefined,
+      coverPath: form.coverPath || undefined,
     };
-    const nextBooks = books.some((b) => b.id === id)
-      ? books.map((b) => (b.id === id ? book : b))
-      : [...books, book];
     await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entity: "book", payload: book }),
+      body: JSON.stringify({ entity: "book", payload }),
     });
-    setForm({ id: "", title: "", author: "", pages: "200" });
+    setForm({
+      id: "",
+      title: "",
+      author: "",
+      pages: "200",
+      bookType: "physical",
+      category: "",
+      notes: "",
+      coverPath: "",
+    });
     setModal(null);
     onRefresh();
+    toast("تم حفظ الكتاب", "success");
   }
 
   async function updateProgress(id: string, delta: number) {
@@ -192,11 +257,96 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         </div>
       </Card>
 
-      {books.length === 0 ? (
+      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+        <Input
+          placeholder="بحث في المكتبة..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="max-w-xs"
+        />
+        <select
+          className="bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">كل الأنواع</option>
+          {Object.entries(BOOK_TYPE_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+        <select
+          className="bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">كل الحالات</option>
+          <option value="planned">مخطط</option>
+          <option value="reading">قيد القراءة</option>
+          <option value="done">مكتمل</option>
+        </select>
+      </div>
+
+      <Tabs
+        tabs={[
+          { id: "gallery", label: "🖼️ معرض" },
+          { id: "list", label: "📋 قائمة" },
+          { id: "progress", label: "📈 التقدم" },
+        ]}
+        active={view}
+        onChange={setView}
+      />
+
+      {filteredBooks.length === 0 ? (
         <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => setModal("book")} />
+      ) : view === "gallery" ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredBooks.map((b) => {
+            const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
+            const ext = b as BookExt;
+            return (
+              <MotionCard key={b.id} className="border border-border rounded-[10px] overflow-hidden bg-surface">
+                <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center text-4xl">
+                  {ext.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={ext.coverUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    "📖"
+                  )}
+                </div>
+                <div className="p-3 space-y-1">
+                  <div className="font-bold text-sm truncate">{b.title}</div>
+                  <div className="text-[10px] text-text3">
+                    {BOOK_TYPE_LABELS[ext.bookType ?? "physical"] ?? "كتاب"} · {b.status}
+                  </div>
+                  <ProgressBar value={pct} color="var(--sky)" />
+                  <div className="flex gap-1 pt-1">
+                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
+                    <Button variant="danger" size="sm" onClick={() => removeBook(b.id)}>🗑</Button>
+                  </div>
+                </div>
+              </MotionCard>
+            );
+          })}
+        </div>
+      ) : view === "list" ? (
+        <div className="space-y-2">
+          {filteredBooks.map((b) => {
+            const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
+            return (
+              <Card key={b.id} className="p-3 flex items-center gap-4">
+                <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0">📖</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm truncate">{b.title}</div>
+                  <div className="text-xs text-text3">{b.author} · {pct}%</div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
+              </Card>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {books.map((b) => {
+          {filteredBooks.map((b) => {
             const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
             return (
               <Card key={b.id} className="p-4">
@@ -204,22 +354,10 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                 {b.author && <div className="text-xs text-text3 mb-2">{b.author}</div>}
                 <ProgressBar value={pct} color="var(--sky)" className="mb-2" />
                 <div className="flex justify-between items-center text-xs text-text3">
-                  <span>
-                    {b.curPage ?? 0}/{b.pages} صفحة
-                  </span>
-                  <div className="flex gap-1 items-center">
-                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>
-                      +10
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 20)}>
-                      +20
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setForm({ id: b.id, title: b.title, author: b.author ?? "", pages: String(b.pages ?? 200) }); setModal("book"); }}>
-                      تعديل
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => removeBook(b.id)}>
-                      حذف
-                    </Button>
+                  <span>{b.curPage ?? 0}/{b.pages} صفحة</span>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
+                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 20)}>+20</Button>
                   </div>
                 </div>
               </Card>
@@ -228,8 +366,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         </div>
       )}
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+      <MotionModal open={!!modal} onClose={() => setModal(null)}>
           <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
             {modal === "book" && (
               <>
@@ -242,9 +379,53 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                   <Label>المؤلف</Label>
                   <Input value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>عدد الصفحات</Label>
+                    <Input value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>نوع الكتاب</Label>
+                    <select
+                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                      value={form.bookType}
+                      onChange={(e) => setForm({ ...form, bookType: e.target.value })}
+                    >
+                      {Object.entries(BOOK_TYPE_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <div>
-                  <Label>عدد الصفحات</Label>
-                  <Input value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+                  <Label>التصنيف</Label>
+                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                </div>
+                <div>
+                  <Label>ملاحظات</Label>
+                  <textarea
+                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>صورة الغلاف</Label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="text-xs text-text3"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      const bookId = form.id || uid();
+                      if (!f) return;
+                      const path = await uploadCover(bookId, f);
+                      if (path) {
+                        setForm((prev) => ({ ...prev, id: bookId, coverPath: path }));
+                        toast("تم رفع الغلاف", "success");
+                      }
+                    }}
+                  />
                 </div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="ghost" onClick={() => setModal(null)}>
@@ -292,8 +473,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
               </>
             )}
           </div>
-        </div>
-      )}
+      </MotionModal>
     </div>
   );
 }

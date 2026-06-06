@@ -45,8 +45,22 @@ export async function PATCH(req: Request) {
   const row = {
     user_id: authResult.userId,
     theme: body.theme ?? existing?.theme ?? "dark",
-    notifications: body.notifications ?? existing?.notifications ?? {},
-    settings: body.settings ?? existing?.settings ?? {},
+    notifications: {
+      ...((existing?.notifications as Record<string, unknown>) ?? {}),
+      ...(body.notifications ?? {}),
+    },
+    settings: {
+      ...((existing?.settings as Record<string, unknown>) ?? {}),
+      ...(body.settings ?? {}),
+      ...(body.settings?.privacy
+        ? {
+            privacy: {
+              ...((existing?.settings as { privacy?: Record<string, unknown> })?.privacy ?? {}),
+              ...(body.settings.privacy as Record<string, unknown>),
+            },
+          }
+        : {}),
+    },
   };
 
   const { error } = await authResult.supabase

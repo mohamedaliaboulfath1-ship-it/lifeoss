@@ -6,7 +6,7 @@ import { useLifeOS } from "@/contexts/lifeos-context";
 import { useState } from "react";
 
 export default function HabitsPage() {
-  const { data, refresh } = useLifeOS();
+  const { data } = useLifeOS();
   const [showAdd, setShowAdd] = useState(false);
 
   if (!data) return null;
@@ -17,7 +17,6 @@ export default function HabitsPage() {
       <div className="flex-1 overflow-y-auto p-7">
         <HabitsView
           yearData={data.yearData}
-          onRefresh={refresh}
           forceAddModal={showAdd}
           onAddModalClose={() => setShowAdd(false)}
         />

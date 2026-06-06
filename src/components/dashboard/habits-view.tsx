@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLifeOS } from "@/contexts/lifeos-context";
+import { useToast } from "@/contexts/toast-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
@@ -12,26 +14,51 @@ import type { YearPayload } from "@/types/lifeos";
 
 interface HabitsViewProps {
   yearData: YearPayload;
-  onRefresh: () => void;
+  /** @deprecated use internal silent refresh */
+  onRefresh?: () => void;
   forceAddModal?: boolean;
   onAddModalClose?: () => void;
 }
 
 export function HabitsView({
   yearData,
-  onRefresh,
   forceAddModal,
   onAddModalClose,
 }: HabitsViewProps) {
+  const { refreshSilent, patchYearData } = useLifeOS();
+  const { toast } = useToast();
   const [tab, setTab] = useState("tracker");
   const [weekOffset, setWeekOffset] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [catFilter, setCatFilter] = useState("all");
   const showModal = modalOpen || !!forceAddModal;
   const [name, setName] = useState("");
+  const [habits, setHabits] = useState(yearData.habits ?? []);
+  const [logs, setLogs] = useState(yearData.habitLogs ?? {});
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
-  const habits = yearData.habits ?? [];
-  const logs = yearData.habitLogs ?? {};
+  useEffect(() => {
+    setHabits(yearData.habits ?? []);
+    setLogs(yearData.habitLogs ?? {});
+  }, [yearData.habits, yearData.habitLogs]);
+
+  function toggleKey(habitId: string, date: string) {
+    return `${habitId}:${date}`;
+  }
+
+  async function syncHabits() {
+    const res = await fetch("/api/habits");
+    if (!res.ok) return;
+    const json = await res.json();
+    setHabits(json.habits ?? []);
+    setLogs(json.habitLogs ?? {});
+    patchYearData((y) => ({
+      ...y,
+      habits: json.habits ?? [],
+      habitLogs: json.habitLogs ?? {},
+    }));
+    void refreshSilent();
+  }
   const week = getWeekDates(weekOffset);
   const pct = calcOverallHabitPct(yearData, weekOffset);
 
@@ -112,31 +139,85 @@ export function HabitsView({
   );
 
   async function toggle(habitId: string, date: string) {
-    await fetch("/api/habits", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ habitId, date }),
-    });
-    onRefresh();
+    const key = toggleKey(habitId, date);
+    const prev = logs[habitId]?.[date] ?? false;
+    const next = !prev;
+
+    setLogs((l) => ({
+      ...l,
+      [habitId]: { ...(l[habitId] ?? {}), [date]: next },
+    }));
+    setPending((s) => new Set(s).add(key));
+    patchYearData((y) => ({
+      ...y,
+      habitLogs: {
+        ...(y.habitLogs ?? {}),
+        [habitId]: { ...(y.habitLogs?.[habitId] ?? {}), [date]: next },
+      },
+    }));
+
+    try {
+      const res = await fetch("/api/habits", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ habitId, date }),
+      });
+      if (!res.ok) throw new Error("failed");
+      const json = await res.json();
+      setLogs((l) => ({
+        ...l,
+        [habitId]: { ...(l[habitId] ?? {}), [date]: json.done },
+      }));
+      void refreshSilent();
+    } catch {
+      setLogs((l) => ({
+        ...l,
+        [habitId]: { ...(l[habitId] ?? {}), [date]: prev },
+      }));
+      patchYearData((y) => ({
+        ...y,
+        habitLogs: {
+          ...(y.habitLogs ?? {}),
+          [habitId]: { ...(y.habitLogs?.[habitId] ?? {}), [date]: prev },
+        },
+      }));
+      toast("تعذّر تحديث العادة", "error");
+    } finally {
+      setPending((s) => {
+        const n = new Set(s);
+        n.delete(key);
+        return n;
+      });
+    }
   }
 
   async function addHabit() {
     if (!name.trim()) return;
-    await fetch("/api/habits", {
+    const res = await fetch("/api/habits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, cat: "prod", freq: "daily" }),
     });
+    if (!res.ok) {
+      toast("فشل إضافة العادة", "error");
+      return;
+    }
     setName("");
     setModalOpen(false);
     onAddModalClose?.();
-    onRefresh();
+    await syncHabits();
   }
 
   async function removeHabit(id: string) {
     if (!confirm("حذف العادة؟")) return;
-    await fetch(`/api/habits?id=${id}`, { method: "DELETE" });
-    onRefresh();
+    setHabits((h) => h.filter((x) => x.id !== id));
+    const res = await fetch(`/api/habits?id=${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      toast("فشل الحذف", "error");
+      await syncHabits();
+      return;
+    }
+    await syncHabits();
   }
 
   const todayDone = habits.filter((h) => logs[h.id]?.[today()]).length;
@@ -231,6 +312,7 @@ export function HabitsView({
                     <td className="p-3 font-medium">{h.name}</td>
                     {week.map((d) => {
                       const done = logs[h.id]?.[d];
+                      const isPending = pending.has(toggleKey(h.id, d));
                       return (
                         <td key={d} className="p-2 text-center">
                           <button
@@ -240,7 +322,7 @@ export function HabitsView({
                               done
                                 ? "bg-sky border-sky text-white"
                                 : "border-border2 hover:border-gold/50"
-                            }`}
+                            } ${isPending ? "opacity-70 animate-pulse" : ""}`}
                           >
                             {done ? "✓" : ""}
                           </button>

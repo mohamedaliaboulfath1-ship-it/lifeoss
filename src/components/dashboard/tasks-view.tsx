@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLifeOS } from "@/contexts/lifeos-context";
+import { useToast } from "@/contexts/toast-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs } from "@/components/ui/tabs";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -32,7 +34,10 @@ const VIEW_TABS = [
 ];
 
 export function TasksView({ yearData, onRefresh }: TasksViewProps) {
+  const { patchYearData, refreshSilent } = useLifeOS();
+  const { toast } = useToast();
   const [filter, setFilter] = useState("today");
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState("list");
   const [focusMode, setFocusMode] = useState(false);
   const [modal, setModal] = useState(false);
@@ -51,10 +56,16 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
     setTasks(yearData.tasks ?? []);
   }, [yearData.tasks]);
 
+  function applyTasks(next: LifeTask[]) {
+    setTasks(next);
+    patchYearData((y) => ({ ...y, tasks: next }));
+  }
+
   async function refreshTasks() {
     const res = await fetch("/api/tasks");
+    if (!res.ok) return;
     const json = await res.json();
-    setTasks((json.tasks as LifeTask[]) ?? []);
+    applyTasks((json.tasks as LifeTask[]) ?? []);
   }
 
   const filtered = useMemo(() => {
@@ -140,26 +151,81 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
     });
     setModal(false);
     await refreshTasks();
-    await onRefresh?.();
+    void refreshSilent();
   }
 
   async function toggleDone(id: string) {
     const found = tasks.find((x) => x.id === id);
     if (!found) return;
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        status: found.status === "done" ? "active" : "done",
-      }),
-    });
-    await refreshTasks();
+    const nextStatus = found.status === "done" ? "active" : "done";
+    const nextCompleted = nextStatus === "done" ? today() : undefined;
+    const snapshot = tasks;
+
+    applyTasks(
+      tasks.map((t) =>
+        t.id === id
+          ? { ...t, status: nextStatus, completedDate: nextCompleted }
+          : t
+      )
+    );
+    setPendingIds((s) => new Set(s).add(id));
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      if (!res.ok) throw new Error("failed");
+      void refreshSilent();
+    } catch {
+      applyTasks(snapshot);
+      toast("تعذّر تحديث المهمة", "error");
+    } finally {
+      setPendingIds((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
+  }
+
+  async function updateTaskStatus(id: string, status: LifeTask["status"]) {
+    const found = tasks.find((x) => x.id === id);
+    if (!found || found.status === status) return;
+    const snapshot = tasks;
+    applyTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
+    setPendingIds((s) => new Set(s).add(id));
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error("failed");
+      void refreshSilent();
+    } catch {
+      applyTasks(snapshot);
+      toast("تعذّر تحديث المهمة", "error");
+    } finally {
+      setPendingIds((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
   }
 
   async function removeTask(id: string) {
-    await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
-    await refreshTasks();
+    const snapshot = tasks;
+    applyTasks(tasks.filter((t) => t.id !== id));
+    const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      applyTasks(snapshot);
+      toast("فشل الحذف", "error");
+      return;
+    }
+    void refreshSilent();
   }
 
   return (
@@ -214,8 +280,9 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
                   <input
                     type="checkbox"
                     checked={task.status === "done"}
+                    disabled={pendingIds.has(task.id)}
                     onChange={() => toggleDone(task.id)}
-                    className="w-5 h-5 accent-emerald cursor-pointer"
+                    className={`w-5 h-5 accent-emerald cursor-pointer ${pendingIds.has(task.id) ? "opacity-60" : ""}`}
                   />
                   <div className="flex-1 min-w-0">
                     <div
@@ -252,14 +319,16 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
                   <button
                     key={task.id}
                     className={`w-full text-right p-2 rounded bg-surface2 border border-border text-sm ${focusMode && task.priority !== "p1" ? "opacity-45" : ""}`}
-                    onClick={async () => {
-                      const next = status === "inbox" ? "active" : status === "active" ? "done" : status === "done" ? "archive" : "inbox";
-                      await fetch("/api/tasks", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ id: task.id, status: next }),
-                      });
-                      await refreshTasks();
+                    onClick={() => {
+                      const next =
+                        status === "inbox"
+                          ? "active"
+                          : status === "active"
+                            ? "done"
+                            : status === "done"
+                              ? "archive"
+                              : "inbox";
+                      void updateTaskStatus(task.id, next);
                     }}
                   >
                     <div className="font-semibold">{task.title}</div>
@@ -307,48 +376,6 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
           <div className="text-xs text-text3">
             نسبة المهام المكتملة: {stats.doneRate}% • المهام ذات هدف مرتبط: {tasks.filter((t) => t.goalId).length}
           </div>
-        </Card>
-      )}
-
-      {false && (
-        <Card className="p-4">
-          {filtered.length === 0 ? (
-          <EmptyState
-            icon="📋"
-            title="لا توجد مهام هنا"
-            actionLabel="+ مهمة جديدة"
-            onAction={() => setModal(true)}
-          />
-        ) : (
-          <ul className="space-y-2">
-            {filtered.map((task) => (
-              <li
-                key={task.id}
-                className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0"
-              >
-                <input
-                  type="checkbox"
-                  checked={task.status === "done"}
-                  onChange={() => toggleDone(task.id)}
-                  className="w-5 h-5 accent-emerald cursor-pointer"
-                />
-                <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-sm font-medium ${task.status === "done" ? "line-through text-text3" : ""}`}
-                  >
-                    {task.title}
-                  </div>
-                  {task.dueDate && (
-                    <div className="text-[10px] text-text3 font-mono">{task.dueDate}</div>
-                  )}
-                </div>
-                <Button variant="danger" size="sm" onClick={() => removeTask(task.id)}>
-                  🗑
-                </Button>
-              </li>
-            ))}
-          </ul>
-          )}
         </Card>
       )}
 

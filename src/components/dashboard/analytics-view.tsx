@@ -1,21 +1,34 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { runAnalyticsEngine } from "@/lib/analytics/engine";
+import { PageTransition } from "@/components/motion/motion";
+import type { FullAnalyticsPayload } from "@/lib/analytics/score-engine";
 import type { YearPayload } from "@/types/lifeos";
 
 interface AnalyticsViewProps {
   yearData: YearPayload;
 }
 
-export function AnalyticsView({ yearData }: AnalyticsViewProps) {
-  const analytics = useMemo(() => runAnalyticsEngine(yearData), [yearData]);
+export function AnalyticsView({ yearData: _yearData }: AnalyticsViewProps) {
+  const [analytics, setAnalytics] = useState<FullAnalyticsPayload | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/analytics")
+      .then((r) => r.json())
+      .then(setAnalytics)
+      .catch(() => setAnalytics(null));
+  }, []);
+
+  if (!analytics) {
+    return <p className="text-text3 text-sm p-7">جاري تحميل التحليلات...</p>;
+  }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <PageTransition>
+    <div className="space-y-6">
       <PageHeader
         title="📊 التحليلات الذكية"
         subtitle="رؤى مستخرجة من بياناتك الحقيقية"
@@ -145,5 +158,6 @@ export function AnalyticsView({ yearData }: AnalyticsViewProps) {
         </div>
       </Card>
     </div>
+    </PageTransition>
   );
 }

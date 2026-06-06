@@ -42,7 +42,14 @@ function LoginFormInner() {
     setLoading(false);
 
     if (authError) {
-      setError("البريد أو كلمة المرور غير صحيحة");
+      const msg = authError.message.toLowerCase();
+      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+        setError(
+          "البريد غير مؤكّد بعد. راجع بريدك (والسبام) أو عطّل تأكيد البريد من Supabase → Authentication → Providers → Email."
+        );
+      } else {
+        setError("البريد أو كلمة المرور غير صحيحة");
+      }
       return;
     }
 
@@ -96,7 +103,12 @@ function LoginFormInner() {
           {loading ? "جاري الدخول..." : "دخول"}
         </Button>
       </form>
-      <p className="text-center text-text3 text-xs mt-6">
+      <p className="text-center text-text3 text-xs mt-4">
+        <Link href="/forgot-password" className="text-gold2 hover:underline">
+          نسيت كلمة المرور؟
+        </Link>
+      </p>
+      <p className="text-center text-text3 text-xs mt-2">
         ليس لديك حساب؟{" "}
         <Link href="/register" className="text-gold2 hover:underline">
           إنشاء حساب

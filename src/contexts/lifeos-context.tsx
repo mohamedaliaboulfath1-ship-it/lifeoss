@@ -38,6 +38,10 @@ interface LifeOSContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  /** Reload data without skeleton flash */
+  refreshSilent: () => Promise<void>;
+  /** Patch in-memory year data (optimistic UI) */
+  patchYearData: (updater: (year: YearPayload) => YearPayload) => void;
   /** @deprecated Phase 0.5 — use entity APIs + refresh() */
   saveYear: (yearData: YearPayload, year?: string) => Promise<void>;
   setCurrentYear: (year: string) => Promise<void>;
@@ -50,9 +54,11 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchData = useCallback(async (withLoading: boolean) => {
+    if (withLoading) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await fetch("/api/data");
       const json = await res.json().catch(() => ({}));
@@ -63,11 +69,26 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
       }
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "تعذّر الاتصال بالخادم");
+      if (withLoading) {
+        setError(e instanceof Error ? e.message : "تعذّر الاتصال بالخادم");
+      }
     } finally {
-      setLoading(false);
+      if (withLoading) setLoading(false);
     }
   }, []);
+
+  const refresh = useCallback(() => fetchData(true), [fetchData]);
+  const refreshSilent = useCallback(() => fetchData(false), [fetchData]);
+
+  const patchYearData = useCallback(
+    (updater: (year: YearPayload) => YearPayload) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return { ...prev, yearData: updater(prev.yearData) };
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     refresh();
@@ -84,14 +105,23 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentYear: year }),
       });
-      await refresh();
+      await refreshSilent();
     },
-    [refresh]
+    [refreshSilent]
   );
 
   const value = useMemo(
-    () => ({ data, loading, error, refresh, saveYear, setCurrentYear }),
-    [data, loading, error, refresh, saveYear, setCurrentYear]
+    () => ({
+      data,
+      loading,
+      error,
+      refresh,
+      refreshSilent,
+      patchYearData,
+      saveYear,
+      setCurrentYear,
+    }),
+    [data, loading, error, refresh, refreshSilent, patchYearData, saveYear, setCurrentYear]
   );
 
   return (

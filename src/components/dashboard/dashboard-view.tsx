@@ -47,6 +47,16 @@ export function DashboardView({
         <div>
           <h2 className="font-display text-[26px] font-black mb-1">{dashboard.greeting}</h2>
           <p className="text-text3 text-[13px]">{dashboard.subtitle}</p>
+          <div className="mt-2 flex items-center gap-2 text-[11px]">
+            <span className="text-text3">تقدّم السنة</span>
+            <div className="flex-1 max-w-[140px] h-1.5 bg-surface2 rounded overflow-hidden">
+              <div
+                className="h-full bg-gold rounded"
+                style={{ width: `${dashboard.yearProgress ?? 0}%` }}
+              />
+            </div>
+            <span className="font-mono text-gold2">{dashboard.yearProgress ?? 0}%</span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <LifeScoreRing score={lifeScore} />
@@ -90,7 +100,7 @@ export function DashboardView({
 
       {/* ── Habits + Tasks ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <HabitsToday habits={dashboard.todayHabits} onToggle={() => onRefresh?.()} />
+        <HabitsToday habits={dashboard.todayHabits} />
 
         <Card className="h-full">
           <CardHeader className="flex flex-row items-center justify-between">

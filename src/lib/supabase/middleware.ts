@@ -11,6 +11,8 @@ export async function updateSession(request: NextRequest) {
     if (
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/reset-password") ||
       pathname.startsWith("/auth") ||
       pathname === "/"
     ) {
@@ -54,6 +56,8 @@ export async function updateSession(request: NextRequest) {
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
     pathname.startsWith("/auth");
 
   const isApi = pathname.startsWith("/api/");
