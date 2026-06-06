@@ -19,6 +19,16 @@ const bookSchema = z.object({
   tags: z.array(z.string()).optional(),
   rating: z.number().int().min(1).max(5).optional(),
   coverPath: z.string().optional(),
+  highlights: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        excerpt: z.string().optional(),
+        note: z.string().optional(),
+        page: z.number().int().optional(),
+      })
+    )
+    .optional(),
 });
 
 const sessionSchema = z.object({
@@ -119,6 +129,7 @@ export async function POST(req: Request) {
       tags: parsed.tags ?? [],
       rating: parsed.rating ?? null,
       cover_path: parsed.coverPath ?? null,
+      highlights: parsed.highlights ?? [],
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, id });

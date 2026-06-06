@@ -29,6 +29,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         userName={data.profile.displayName}
+        avatarUrl={data.profile.avatarUrl}
+        isAdmin={data.profile.role === "admin"}
         currentYear={data.currentYear}
         years={data.years}
         habitCount={data.yearData.habits?.length ?? 0}

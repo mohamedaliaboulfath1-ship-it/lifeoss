@@ -10,14 +10,40 @@ import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   userName: string;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
   currentYear: string;
   years: string[];
   habitCount?: number;
   onYearChange: (year: string) => void;
 }
 
+function UserAvatar({ name, avatarUrl, size = 34 }: { name: string; avatarUrl?: string | null; size?: number }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        className="rounded-full shrink-0 object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-full shrink-0 bg-gradient-to-br from-gold to-purple flex items-center justify-center font-bold text-white"
+      style={{ width: size, height: size, fontSize: size * 0.44 }}
+    >
+      {name.charAt(0)}
+    </div>
+  );
+}
+
 export function Sidebar({
   userName,
+  avatarUrl,
+  isAdmin = false,
   currentYear,
   years,
   habitCount = 0,
@@ -57,15 +83,16 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="px-[18px] py-3.5 border-b border-border flex items-center gap-2.5">
-        <div className="w-[34px] h-[34px] rounded-full shrink-0 bg-gradient-to-br from-gold to-purple flex items-center justify-center text-[15px] font-bold text-white">
-          {userName.charAt(0)}
-        </div>
-        <div>
-          <div className="text-[13px] font-bold">{userName}</div>
+      <Link
+        href="/account/profile"
+        className="px-[18px] py-3.5 border-b border-border flex items-center gap-2.5 hover:bg-surface2/50 transition-colors"
+      >
+        <UserAvatar name={userName} avatarUrl={avatarUrl} />
+        <div className="min-w-0">
+          <div className="text-[13px] font-bold truncate">{userName}</div>
           <div className="text-[10px] text-text3 font-mono">{dateStr}</div>
         </div>
-      </div>
+      </Link>
 
       <div className="px-[18px] py-2.5 border-b border-border flex gap-1.5 flex-wrap">
         {yearOptions.slice(0, 4).map((y) => (
@@ -118,8 +145,22 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="mt-auto px-[18px] py-3.5 border-t border-border space-y-2">
-        <div className="text-[10px] text-emerald font-mono flex items-center gap-1.5">
+      <div className="mt-auto px-[18px] py-3.5 border-t border-border space-y-1">
+        <Link
+          href="/account/profile"
+          className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-[12px] text-text2 hover:bg-surface2 hover:text-text transition-colors"
+        >
+          <span>👤</span> مركز الحساب
+        </Link>
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-[12px] text-gold2 hover:bg-gold/10 transition-colors"
+          >
+            <span>🛡️</span> لوحة الأدمن
+          </Link>
+        )}
+        <div className="text-[10px] text-emerald font-mono flex items-center gap-1.5 pt-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald save-dot" />
           متزامن مع Supabase
         </div>

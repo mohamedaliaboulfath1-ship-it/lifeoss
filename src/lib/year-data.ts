@@ -26,6 +26,11 @@ export function mapProfile(row: ProfileRow) {
     startDate: row.start_date,
     currentYear: row.current_year,
     onboarded: row.onboarded,
+    avatarUrl: row.avatar_url ?? null,
+    role: row.role ?? "user",
+    timezone: row.timezone ?? "Asia/Riyadh",
+    language: row.language ?? "ar",
+    bio: row.bio ?? null,
   };
 }
 

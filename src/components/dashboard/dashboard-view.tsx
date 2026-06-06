@@ -69,10 +69,32 @@ export function DashboardView({
         </div>
       </div>
 
+      {/* ── Alerts badge ── */}
+      {(dashboard.counts?.unreadNotifications ?? 0) > 0 && (
+        <Card className="p-3 border-amber2/30 bg-amber2/5 flex items-center justify-between gap-3">
+          <div className="text-sm">
+            <span className="font-bold text-amber2">🔔 {dashboard.counts.unreadNotifications} تنبيه</span>
+            <span className="text-text3 mr-2">— تحقق من الإشعارات غير المقروءة</span>
+          </div>
+          <Link href="/account/notifications" className="text-xs text-gold2 hover:underline shrink-0">
+            عرض →
+          </Link>
+        </Card>
+      )}
+
       {/* ── TOP 5 PRIORITIES — 30 second answer ── */}
-      {dashboard.priorities.length > 0 && (
-        <Card className="p-4 border-gold/40 bg-gradient-to-br from-gold/[0.06] to-transparent">
+      <Card className="p-4 border-gold/40 bg-gradient-to-br from-gold/[0.06] to-transparent">
           <h3 className="text-sm font-bold text-gold2 mb-3">⚡ ماذا تفعل الآن؟</h3>
+          {dashboard.priorities.length === 0 ? (
+            <div className="text-sm text-text3 space-y-2 py-2">
+              <p>لا أولويات عاجلة — رائع! ابدأ بـ:</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/habits" className="text-xs px-2 py-1 rounded-sm bg-surface2 border border-border hover:border-gold/40">✅ العادات</Link>
+                <Link href="/tasks" className="text-xs px-2 py-1 rounded-sm bg-surface2 border border-border hover:border-gold/40">📋 المهام</Link>
+                <Link href="/goals" className="text-xs px-2 py-1 rounded-sm bg-surface2 border border-border hover:border-gold/40">🎯 الأهداف</Link>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-2">
             {dashboard.priorities.map((p) => (
               <Link
@@ -95,8 +117,8 @@ export function DashboardView({
               </Link>
             ))}
           </div>
+          )}
         </Card>
-      )}
 
       {/* ── Habits + Tasks ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -142,13 +164,14 @@ export function DashboardView({
       </div>
 
       {/* ── At-risk goals ── */}
-      {dashboard.atRiskGoals.length > 0 && (
         <Card className="border-coral/20">
           <CardHeader>
             <CardTitle>🚨 أهداف تحتاج اهتماماً</CardTitle>
           </CardHeader>
           <CardBody className="!py-3 space-y-2">
-            {dashboard.atRiskGoals.map((g) => (
+            {dashboard.atRiskGoals.length === 0 ? (
+              <p className="text-text3 text-sm text-center py-2">✨ لا أهداف متأخرة حالياً</p>
+            ) : dashboard.atRiskGoals.map((g) => (
               <Link
                 key={g.id}
                 href="/goals"
@@ -168,7 +191,6 @@ export function DashboardView({
             ))}
           </CardBody>
         </Card>
-      )}
 
       {/* ── Body · Nutrition · Workouts · Finance KPIs ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -224,7 +246,9 @@ export function DashboardView({
           <CardTitle>💡 رؤى ذكية — قابلة للتنفيذ</CardTitle>
         </CardHeader>
         <CardBody className="!py-3 space-y-2">
-          {dashboard.insights.map((ins) => (
+          {dashboard.insights.length === 0 ? (
+            <p className="text-text3 text-sm text-center py-2">أضف عادات ومهام لتحصل على رؤى مخصّصة</p>
+          ) : dashboard.insights.map((ins) => (
             <Link
               key={ins.id}
               href={ins.actionUrl}

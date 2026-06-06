@@ -167,17 +167,40 @@ export async function loadRelationalYearData(db: Db, userId: string) {
     note: t.notes ?? undefined,
   }));
 
-  const mappedBooks: Book[] = (books ?? []).map((b) => ({
-    id: b.id,
-    title: b.title,
-    author: b.author ?? undefined,
-    field: b.category ?? undefined,
-    pages: b.pages_total ?? undefined,
-    curPage: b.pages_read ?? 0,
-    priority: b.priority,
-    status: b.status,
-    notes: b.notes ?? undefined,
-  }));
+  const mappedBooks: Book[] = await Promise.all(
+    (books ?? []).map(async (b) => {
+      const row = b as Record<string, unknown>;
+      let coverUrl: string | undefined;
+      const coverPath = (row.cover_path as string | null) ?? undefined;
+      if (coverPath) {
+        const { data: signed } = await db.storage
+          .from("book-covers")
+          .createSignedUrl(coverPath, 3600);
+        coverUrl = signed?.signedUrl;
+      }
+      const rawHighlights = row.highlights;
+      const highlights = Array.isArray(rawHighlights)
+        ? (rawHighlights as Book["highlights"])
+        : [];
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author ?? undefined,
+        field: (row.category as string) ?? undefined,
+        category: (row.category as string) ?? undefined,
+        pages: b.pages_total ?? undefined,
+        curPage: b.pages_read ?? 0,
+        priority: b.priority,
+        status: b.status,
+        notes: b.notes ?? undefined,
+        bookType: (row.book_type as string) ?? "physical",
+        coverPath,
+        coverUrl,
+        highlights,
+        rating: (row.rating as number) ?? undefined,
+      };
+    })
+  );
 
   const mappedReadingSessions = (readingLogs ?? []).map((r) => ({
     id: r.id,

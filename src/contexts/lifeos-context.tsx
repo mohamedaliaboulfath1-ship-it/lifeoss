@@ -23,6 +23,11 @@ interface Profile {
   targetSalary?: number | null;
   currentYear: string;
   onboarded: boolean;
+  avatarUrl?: string | null;
+  role?: "user" | "admin";
+  timezone?: string;
+  language?: string;
+  bio?: string | null;
 }
 
 interface LifeOSData {

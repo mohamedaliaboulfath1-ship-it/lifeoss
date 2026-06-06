@@ -44,6 +44,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [modal, setModal] = useState<null | "book" | "session">(null);
   const [form, setForm] = useState({
     id: "",
@@ -54,7 +55,17 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     category: "",
     notes: "",
     coverPath: "",
+    highlightsText: "",
   });
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of books) {
+      const cat = (b as BookExt).category ?? b.field;
+      if (cat) set.add(cat);
+    }
+    return [...set].sort();
+  }, [books]);
   const [sessionForm, setSessionForm] = useState({
     bookId: "",
     pages: "20",
@@ -72,11 +83,45 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     return books.filter((b) => {
       if (typeFilter !== "all" && (b as BookExt).bookType !== typeFilter) return false;
       if (statusFilter !== "all" && b.status !== statusFilter) return false;
+      if (categoryFilter !== "all") {
+        const cat = (b as BookExt).category ?? b.field ?? "";
+        if (cat !== categoryFilter) return false;
+      }
       if (!q) return true;
       const hay = `${b.title} ${b.author ?? ""} ${(b as BookExt).category ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [books, query, typeFilter, statusFilter]);
+  }, [books, query, typeFilter, statusFilter, categoryFilter]);
+
+  function openBookModal(book?: BookExt) {
+    if (book) {
+      const hl = book.highlights ?? [];
+      setForm({
+        id: book.id,
+        title: book.title,
+        author: book.author ?? "",
+        pages: String(book.pages ?? 200),
+        bookType: book.bookType ?? "physical",
+        category: book.category ?? book.field ?? "",
+        notes: book.notes ?? "",
+        coverPath: book.coverPath ?? "",
+        highlightsText: hl.map((h) => h.excerpt ?? h.note ?? "").filter(Boolean).join("\n"),
+      });
+    } else {
+      setForm({
+        id: "",
+        title: "",
+        author: "",
+        pages: "200",
+        bookType: "physical",
+        category: "",
+        notes: "",
+        coverPath: "",
+        highlightsText: "",
+      });
+    }
+    setModal("book");
+  }
 
   const analytics = useMemo(() => {
     const monthKey = new Date().toISOString().slice(0, 7);
@@ -144,6 +189,11 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       category: form.category || undefined,
       notes: form.notes || undefined,
       coverPath: form.coverPath || undefined,
+      highlights: form.highlightsText
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((excerpt, i) => ({ id: `hl_${i}`, excerpt })),
     };
     await fetch("/api/books", {
       method: "POST",
@@ -159,6 +209,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       category: "",
       notes: "",
       coverPath: "",
+      highlightsText: "",
     });
     setModal(null);
     onRefresh();
@@ -211,7 +262,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         title="📚 المكتبة"
         subtitle={`هدف السنة: ${goal} كتاب · ${done} مكتمل · سلسلة ${readingStreak} يوم`}
         actionLabel="+ كتاب"
-        onAction={() => setModal("book")}
+        onAction={() => openBookModal()}
       />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -284,6 +335,18 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
           <option value="reading">قيد القراءة</option>
           <option value="done">مكتمل</option>
         </select>
+        {categories.length > 0 && (
+          <select
+            className="bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">كل التصنيفات</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <Tabs
@@ -297,7 +360,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       />
 
       {filteredBooks.length === 0 ? (
-        <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => setModal("book")} />
+        <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => openBookModal()} />
       ) : view === "gallery" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredBooks.map((b) => {
@@ -319,7 +382,8 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                     {BOOK_TYPE_LABELS[ext.bookType ?? "physical"] ?? "كتاب"} · {b.status}
                   </div>
                   <ProgressBar value={pct} color="var(--sky)" />
-                  <div className="flex gap-1 pt-1">
+                  <div className="flex gap-1 pt-1 flex-wrap">
+                    <Button variant="ghost" size="sm" onClick={() => openBookModal(ext)}>✏️</Button>
                     <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
                     <Button variant="danger" size="sm" onClick={() => removeBook(b.id)}>🗑</Button>
                   </div>
@@ -334,11 +398,19 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
             return (
               <Card key={b.id} className="p-3 flex items-center gap-4">
-                <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0">📖</div>
+                <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0 overflow-hidden">
+                  {(b as BookExt).coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={(b as BookExt).coverUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    "📖"
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm truncate">{b.title}</div>
                   <div className="text-xs text-text3">{b.author} · {pct}%</div>
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => openBookModal(b as BookExt)}>✏️</Button>
                 <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
               </Card>
             );
@@ -407,6 +479,15 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                     className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>اقتباسات / Highlights (سطر لكل اقتباس)</Label>
+                  <textarea
+                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
+                    value={form.highlightsText}
+                    onChange={(e) => setForm({ ...form, highlightsText: e.target.value })}
+                    placeholder="كل سطر = اقتباس واحد"
                   />
                 </div>
                 <div>

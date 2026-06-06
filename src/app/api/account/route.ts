@@ -17,7 +17,7 @@ export async function GET() {
 
   const { data: profile, error: profileError } = await authResult.supabase
     .from("profiles")
-    .select("display_name, avatar_url, timezone, language, bio, city, current_year, created_at, updated_at")
+    .select("display_name, avatar_url, timezone, language, bio, city, current_year, created_at, updated_at, role")
     .eq("id", authResult.userId)
     .single();
 
@@ -38,6 +38,7 @@ export async function GET() {
       currentYear: profile.current_year,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
+      role: profile.role ?? "user",
     },
     email: authUser.user?.email ?? null,
     lastSignIn: authUser.user?.last_sign_in_at ?? null,

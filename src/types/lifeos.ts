@@ -72,17 +72,30 @@ export interface WeightLog {
   note?: string;
 }
 
+export interface BookHighlight {
+  id?: string;
+  excerpt?: string;
+  note?: string;
+  page?: number;
+}
+
 export interface Book {
   id: string;
   title: string;
   author?: string;
   field?: string;
+  category?: string;
   pages?: number;
   curPage?: number;
   month?: number;
   priority?: Priority;
   status?: "planned" | "reading" | "done";
   notes?: string;
+  bookType?: string;
+  coverPath?: string;
+  coverUrl?: string;
+  highlights?: BookHighlight[];
+  rating?: number;
 }
 
 export interface Transaction {

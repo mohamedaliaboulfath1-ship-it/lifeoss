@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Tajawal, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
+import { RootShell } from "@/components/pwa/root-shell";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -38,7 +39,9 @@ export default function RootLayout({
       dir="rtl"
       className={`${tajawal.variable} ${ibmPlex.variable} ${playfair.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <RootShell>{children}</RootShell>
+      </body>
     </html>
   );
 }
