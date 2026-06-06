@@ -24,7 +24,10 @@ supabase/migrations/      # SQL schema + RLS
 | الجدول | الوصف |
 |--------|--------|
 | `profiles` | ملف المستخدم (مرتبط بـ `auth.users`) |
-| `life_years` | بيانات JSON سنوية (كتب، مالية، هوية…) |
+| `life_years` | سجل السنة (بدون payload — البيانات في جداول علائقية) |
+| `life_domains` | 8 مناطق حياة (seed نظامي) |
+| `life_tasks` | المهام |
+| `books`, `transactions`, `debts` | قراءة، مالية، وغيرها |
 | `goals` | الأهداف |
 | `habits` + `habit_logs` | العادات وسجل الإنجاز |
 | `weight_logs` | تتبع الوزن |
@@ -36,7 +39,7 @@ supabase/migrations/      # SQL schema + RLS
 ### 1. Supabase
 
 1. افتح [Supabase Dashboard](https://supabase.com/dashboard) → مشروعك.
-2. **SQL Editor** → الصق محتوى `supabase/migrations/001_initial_schema.sql` → **Run**.
+2. **SQL Editor** → شغّل migrations بالترتيب: `001` → `007` من `supabase/migrations/`.
 3. **Authentication** → **Providers** → فعّل **Email**.
 4. (موصى به للتطوير) **Authentication** → **Email** → عطّل **Confirm email** لتسجيل فوري.
 5. **Project Settings** → **API** → انسخ `URL` و `anon public` key.
@@ -89,21 +92,37 @@ git push -u origin main
 
 ### 3. Supabase بعد النشر
 
-1. **Authentication** → **URL Configuration**:
-   - **Site URL**: `https://your-app.vercel.app`
-   - **Redirect URLs**: `https://your-app.vercel.app/auth/callback`
-2. تأكد أن migration SQL مُنفَّذ على مشروع الإنتاج.
+1. **Authentication** → [URL Configuration](https://supabase.com/dashboard/project/zxwsbjrqggjpqhtwjvby/auth/url-configuration):
+   - **Site URL**: `https://lifeoss-nine.vercel.app`
+   - **Redirect URLs** (أضف الكل):
+     - `http://localhost:3000/auth/callback`
+     - `http://localhost:3000/**`
+     - `https://lifeoss-nine.vercel.app/auth/callback`
+     - `https://lifeoss-nine.vercel.app/**`
+2. تأكد أن migrations `001`–`007` مُنفَّذة على مشروع Supabase.
+
+**الإنتاج:** https://lifeoss-nine.vercel.app
 
 ## API
 
 | المسار | الوصف |
 |--------|--------|
-| `GET /api/data` | الملف + بيانات السنة |
-| `GET/PUT /api/year` | بيانات سنة |
-| `GET/POST/DELETE /api/goals` | الأهداف |
+| `GET /api/data` | الملف + تجميع بيانات السنة (علائقي) |
+| `GET /api/v1/dashboard` | لقطة Dashboard |
+| `GET/POST/PATCH/DELETE /api/goals` | الأهداف |
 | `GET/POST/PATCH/DELETE /api/habits` | العادات |
-| `POST /api/import` | استيراد JSON من HTML |
+| `GET/POST/PATCH/DELETE /api/tasks` | المهام |
+| `GET/POST/PATCH/DELETE /api/body` | الوزن والقياسات |
+| `GET/POST/PATCH/DELETE /api/workouts` | التمارين |
+| `GET/POST/PATCH/DELETE /api/nutrition` | التغذية |
+| `GET/POST/PATCH/DELETE /api/finance` | المالية |
+| `GET/POST/PATCH/DELETE /api/books` | القراءة |
+| `GET/POST/PATCH/DELETE /api/career` | المهنة |
+| `GET/POST/PATCH/DELETE /api/learning` | التعلم |
+| `POST /api/v1/import/lifeos-v1` | استيراد نسخة احتياطية v1 |
 
-## استيراد من HTML
+`PUT /api/year` و `POST /api/import` **مهملان** — استخدم entity APIs أعلاه.
 
-DevTools → Application → Local Storage → `lifeos_v3` → الصق في **استيراد** من لوحة التحكم.
+## استيراد البيانات
+
+من `/settings/import` — ارفع ملف JSON (مثل `scripts/test-backup.json`).
