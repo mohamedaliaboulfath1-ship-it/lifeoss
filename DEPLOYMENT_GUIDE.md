@@ -21,7 +21,7 @@ Deploy LifeOS Pro to **Vercel** with **Supabase** as the backend. Production ins
 
 ### Run migrations
 
-Apply SQL migrations **001 through 009** in order:
+Apply SQL migrations **001 through 011** in order:
 
 **Option A — SQL Editor (recommended for first deploy)**
 
@@ -43,7 +43,9 @@ Connection string: Project Settings → Database → Connection string (URI, poo
    - **Site URL:** `https://lifeoss-nine.vercel.app`
    - **Redirect URLs:** add:
      - `https://lifeoss-nine.vercel.app/auth/callback`
+     - `https://lifeoss-nine.vercel.app/reset-password`
      - `http://localhost:3000/auth/callback` (local dev)
+     - `http://localhost:3000/reset-password` (local dev)
 2. Enable Email provider (and OAuth if desired).
 3. Email templates: customize password reset / confirm if needed.
 

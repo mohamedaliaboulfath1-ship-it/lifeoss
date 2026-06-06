@@ -232,11 +232,15 @@ export async function saveLifeYear(
 async function ensureProfile(userId: string) {
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
     .maybeSingle();
+
+  if (selectError) {
+    console.error("ensureProfile select:", selectError);
+  }
 
   if (existing) return existing as ProfileRow;
 
@@ -250,22 +254,33 @@ async function ensureProfile(userId: string) {
     user?.email?.split("@")[0] ??
     "مستخدم";
 
-  const { data: created, error } = await supabase
+  const payload = {
+    id: userId,
+    display_name: displayName,
+    current_year: String(new Date().getFullYear()),
+  };
+
+  // upsert handles legacy accounts where the row exists but was not readable yet
+  const { data: upserted, error: upsertError } = await supabase
     .from("profiles")
-    .insert({
-      id: userId,
-      display_name: displayName,
-      current_year: String(new Date().getFullYear()),
-    })
+    .upsert(payload, { onConflict: "id" })
     .select("*")
     .single();
 
-  if (error) {
-    console.error("ensureProfile:", error);
-    throw new Error("PROFILE_NOT_FOUND");
+  if (!upsertError && upserted) {
+    return upserted as ProfileRow;
   }
 
-  return created as ProfileRow;
+  const { data: retry, error: retryError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (retry) return retry as ProfileRow;
+
+  console.error("ensureProfile:", upsertError ?? retryError);
+  throw new Error("PROFILE_NOT_FOUND");
 }
 
 export async function getUserContext(userId: string) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Run Supabase SQL migrations (001–007).
+ * Run Supabase SQL migrations (001–011).
  * Requires SUPABASE_DB_URL in environment, e.g.:
  * postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
  */

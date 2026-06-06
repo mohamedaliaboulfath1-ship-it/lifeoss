@@ -28,6 +28,7 @@ const requiredFiles = [
   "src/lib/analytics/score-engine.ts",
   "src/lib/ai/provider.ts",
   "supabase/migrations/009_v1_completion.sql",
+  "supabase/migrations/011_fix_profiles_rls.sql",
   "public/manifest.json",
   "public/sw.js",
 ];
@@ -37,9 +38,13 @@ for (const f of requiredFiles) {
   else fail(f, "missing");
 }
 
-const migrations = readFileSync(join(root, "supabase/migrations/009_v1_completion.sql"), "utf8");
-if (migrations.includes("role") && migrations.includes("book_highlights")) ok("migration 009 content");
+const m009 = readFileSync(join(root, "supabase/migrations/009_v1_completion.sql"), "utf8");
+if (m009.includes("role") && m009.includes("book_highlights")) ok("migration 009 content");
 else fail("migration 009 content");
+
+const m011 = readFileSync(join(root, "supabase/migrations/011_fix_profiles_rls.sql"), "utf8");
+if (m011.includes("is_admin")) ok("migration 011 content");
+else fail("migration 011 content");
 
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 if (pkg.dependencies["framer-motion"] && pkg.dependencies["lucide-react"]) ok("motion + icons deps");

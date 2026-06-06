@@ -13,10 +13,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   if (error || !data?.profile) {
+    const message =
+      error === "PROFILE_NOT_FOUND"
+        ? "لم يُعثر على الملف الشخصي — شغّل استعلام إصلاح profiles في Supabase SQL Editor (راجع الدليل) ثم أعد تسجيل الدخول."
+        : (error ??
+          "خطأ في تحميل الملف الشخصي — تأكد من تسجيل الدخول وإعداد Supabase في .env.local");
     return (
       <div className="h-screen flex items-center justify-center bg-bg text-rose2 px-6 text-center text-sm max-w-md">
-        {error ??
-          "خطأ في تحميل الملف الشخصي — تأكد من تسجيل الدخول وإعداد Supabase في .env.local"}
+        {message}
       </div>
     );
   }

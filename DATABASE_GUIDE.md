@@ -32,6 +32,7 @@
 | 008 | `008_account_profile.sql` | Avatar, timezone, language, avatars bucket |
 | 009 | `009_v1_completion.sql` | RBAC, book highlights, activity log, AI config, book-media |
 | 010 | `010_performance_hardening.sql` | Query indexes, privacy settings comment |
+| 011 | `011_fix_profiles_rls.sql` | Fix admin RLS recursion (`is_admin()` function) |
 
 **Apply migrations:**
 
