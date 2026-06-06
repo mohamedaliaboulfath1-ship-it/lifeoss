@@ -19,6 +19,8 @@ export default function DashboardPage() {
         <DashboardView
           profile={data.profile!}
           yearData={data.yearData}
+          dashboard={data.dashboard}
+          onRefresh={refresh}
         />
       </div>
       <ImportDialog

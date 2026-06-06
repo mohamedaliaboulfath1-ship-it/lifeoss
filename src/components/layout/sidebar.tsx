@@ -50,10 +50,10 @@ export function Sidebar({
 
       <div className="px-[18px] pt-[22px] pb-4 border-b border-border">
         <div className="font-display text-xl font-black bg-gradient-to-br from-gold to-gold3 bg-clip-text text-transparent">
-          LifeOS ✦
+          🏛️ Life OS
         </div>
-        <div className="text-[10px] text-text3 tracking-[3px] uppercase mt-0.5 font-mono">
-          {currentYear} · PREMIUM
+        <div className="text-[10px] text-text3 tracking-[1px] mt-0.5 font-mono">
+          نظام تشغيل الحياة · {currentYear}
         </div>
       </div>
 

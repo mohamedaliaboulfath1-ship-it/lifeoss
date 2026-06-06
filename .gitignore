@@ -47,3 +47,7 @@ next-env.d.ts
 /prisma/
 *.db
 *.db-journal
+
+# personal / local artifacts
+*.xlsx
+life_os_notion_complete.md

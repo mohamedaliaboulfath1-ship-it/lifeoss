@@ -35,10 +35,12 @@ create index if not exists idx_yearly_snapshots_user on public.yearly_snapshots 
 create index if not exists idx_yearly_summaries_user on public.yearly_summaries (user_id);
 create index if not exists idx_habit_logs_user on public.habit_logs (user_id);
 
+drop trigger if exists yearly_summaries_updated_at on public.yearly_summaries;
 create trigger yearly_summaries_updated_at
   before update on public.yearly_summaries
   for each row execute function public.set_updated_at();
 
+drop trigger if exists user_preferences_updated_at on public.user_preferences;
 create trigger user_preferences_updated_at
   before update on public.user_preferences
   for each row execute function public.set_updated_at();

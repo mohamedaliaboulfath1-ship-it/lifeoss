@@ -3,6 +3,7 @@
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { CommandPalette } from "@/components/layout/command-palette";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { data, loading, error, setCurrentYear } = useLifeOS();
@@ -32,6 +33,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}
       </main>
+      <CommandPalette />
     </div>
   );
 }

@@ -37,6 +37,36 @@ export default function SettingsPage() {
     }
   }
 
+  async function exportFromApi(format: "pdf" | "xlsx" | "json") {
+    try {
+      const res = await fetch(`/api/v1/export?format=${format}`);
+      if (!res.ok) throw new Error("failed");
+      if (format === "json") {
+        const json = await res.json();
+        const blob = new Blob([JSON.stringify(json, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `lifeos-export-${data?.currentYear ?? "data"}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `lifeos-export-${data?.currentYear ?? "data"}.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      toast(`تم تصدير ${format.toUpperCase()}`, "success");
+    } catch {
+      toast("فشل التصدير", "error");
+    }
+  }
+
   return (
     <>
       <Topbar />
@@ -58,13 +88,27 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="p-5 space-y-4">
-          <h2 className="font-bold text-gold2">النسخ الاحتياطي</h2>
+          <h2 className="font-bold text-gold2">النسخ الاحتياطي والاستيراد</h2>
           <p className="text-text3 text-sm">
-            صدّر كل بياناتك كملف JSON — احفظه بأمان خارج التطبيق.
+            صدّر كل بياناتك كملف JSON — أو استورد من LifeOS_1.html (IndexedDB).
           </p>
-          <Button variant="gold" onClick={exportJson}>
-            تصدير JSON
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="gold" onClick={exportJson}>
+              تصدير JSON
+            </Button>
+            <Button variant="ghost" onClick={() => exportFromApi("pdf")}>
+              تصدير PDF
+            </Button>
+            <Button variant="ghost" onClick={() => exportFromApi("xlsx")}>
+              تصدير Excel
+            </Button>
+            <Button variant="ghost" onClick={() => exportFromApi("json")}>
+              تصدير JSON v1
+            </Button>
+            <Button variant="ghost" onClick={() => (window.location.href = "/settings/import")}>
+              استيراد LifeOS v1
+            </Button>
+          </div>
         </Card>
 
         <Card className="p-5 space-y-2">

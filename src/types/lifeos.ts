@@ -15,6 +15,9 @@ export interface GoalTask {
   done: boolean;
 }
 
+export type GoalStatus = "active" | "done" | "paused" | "cancelled";
+export type GoalLevel = "vision" | "goal" | "project";
+
 export interface Goal {
   id: string;
   title: string;
@@ -29,7 +32,25 @@ export interface Goal {
   done?: boolean;
   tasks?: GoalTask[];
   habits?: string;
+  /** LifeOS Pro fields */
+  status?: GoalStatus;
+  progress?: number;
+  category?: string;
+  description?: string;
+  why?: string;
+  successCriteria?: string;
+  level?: GoalLevel;
+  parentId?: string;
+  targetDate?: string;
+  domainId?: string;
+  createdAt?: string;
 }
+
+/** Goal with required Pro fields for Kanban / probability */
+export type ProGoal = Goal & {
+  status: GoalStatus;
+  progress: number;
+};
 
 export interface Habit {
   id: string;
@@ -95,23 +116,221 @@ export interface IdentityData {
   rules: string[];
 }
 
+export interface LifeTask {
+  id: string;
+  title: string;
+  goalId?: string;
+  status: "inbox" | "active" | "done" | "archive";
+  priority?: "p1" | "p2" | "p3" | "p4";
+  dueDate?: string;
+  estimatedTime?: number;
+  completedDate?: string;
+  note?: string;
+}
+
+export interface Measurement {
+  id: string;
+  date: string;
+  chest?: number;
+  waist?: number;
+  arm?: number;
+  thigh?: number;
+  note?: string;
+}
+
+export interface Food {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  serving?: string;
+}
+
+export interface MealLog {
+  id: string;
+  date: string;
+  mealName?: string;
+  foodName?: string;
+  time?: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  muscleGroup?: string;
+  equipment?: string;
+}
+
+export interface WorkoutSetLog {
+  id: string;
+  date: string;
+  exerciseId?: string;
+  exerciseName?: string;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+  rpe?: number;
+  notes?: string;
+}
+
+export interface Debt {
+  id: string;
+  name: string;
+  total: number;
+  paid: number;
+  monthlyPayment?: number;
+  dueDate?: string;
+}
+
+export interface DailyJournal {
+  id: string;
+  date: string;
+  mood?: number;
+  energy?: number;
+  note?: string;
+}
+
+export interface PeriodReview {
+  id: string;
+  period: string;
+  type: "weekly" | "monthly" | "quarterly" | "annual";
+  wins?: string;
+  challenges?: string;
+  lessons?: string;
+  nextFocus?: string;
+}
+
+export interface CareerRoadmapStage {
+  id: string;
+  title: string;
+  from?: string;
+  to?: string;
+  focus: string[];
+}
+
+export interface CareerSkillMatrixItem {
+  id: string;
+  name: string;
+  current: number;
+  target: number;
+  category: "technical" | "analytical" | "leadership" | "communication";
+}
+
+export interface CareerCertification {
+  id: string;
+  name: string;
+  provider: string;
+  status: "planned" | "active" | "done";
+  dueDate?: string;
+}
+
+export interface CareerCourse {
+  id: string;
+  title: string;
+  platform?: string;
+  progress: number;
+  hours: number;
+  status: "planned" | "active" | "done";
+}
+
+export interface JobApplication {
+  id: string;
+  company: string;
+  role: string;
+  status:
+    | "wishlist"
+    | "applied"
+    | "screening"
+    | "interview"
+    | "offer"
+    | "rejected"
+    | "accepted";
+  appliedAt?: string;
+}
+
+export interface InterviewEntry {
+  id: string;
+  company: string;
+  stage: string;
+  date: string;
+  result?: "pending" | "passed" | "failed";
+}
+
+export interface MentorEntry {
+  id: string;
+  name: string;
+  area: string;
+  cadence: string;
+  lastTouch?: string;
+}
+
+export interface NetworkContact {
+  id: string;
+  name: string;
+  company?: string;
+  role?: string;
+  channel: "linkedin" | "email" | "phone" | "event";
+  lastContact?: string;
+  nextFollowUp?: string;
+}
+
+export interface StudySession {
+  id: string;
+  topic: string;
+  date: string;
+  durationMin: number;
+  focus: number;
+}
+
+export interface KnowledgeArea {
+  id: string;
+  name: string;
+  progress: number;
+  target: number;
+}
+
 export interface YearPayload {
   goals: Goal[];
   habits: Habit[];
   habitLogs: Record<string, Record<string, boolean>>;
   weightLogs: WeightLog[];
-  measureLogs: unknown[];
-  workoutLogs: unknown[];
+  measureLogs: Measurement[];
+  workoutLogs: WorkoutSetLog[];
   books: Book[];
   transactions: Transaction[];
   skills: Skill[];
   portfolio: unknown[];
-  reviews: unknown[];
+  reviews: PeriodReview[];
   pomSessions: unknown[];
   milestones: Milestone[];
   timeslots: Record<string, unknown>;
   identity: IdentityData;
   energy: unknown[];
+  tasks: LifeTask[];
+  foods: Food[];
+  mealLogs: MealLog[];
+  exercises: Exercise[];
+  debts: Debt[];
+  dailyJournals: DailyJournal[];
+  careerRoadmap?: CareerRoadmapStage[];
+  careerSkillMatrix?: CareerSkillMatrixItem[];
+  careerCertifications?: CareerCertification[];
+  careerCourses?: CareerCourse[];
+  jobApplications?: JobApplication[];
+  interviews?: InterviewEntry[];
+  mentors?: MentorEntry[];
+  networkContacts?: NetworkContact[];
+  learningPaths?: { id: string; title: string; progress: number; targetDate?: string }[];
+  learningCourses?: CareerCourse[];
+  learningCertifications?: CareerCertification[];
+  studySessions?: StudySession[];
+  knowledgeAreas?: KnowledgeArea[];
 }
 
 export interface UserProfile {

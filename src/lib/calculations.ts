@@ -169,5 +169,11 @@ export function createDefaultYearPayload(): YearPayload {
     timeslots: {},
     identity: { traits: [], rules: [] },
     energy: [],
+    tasks: [],
+    foods: [],
+    mealLogs: [],
+    exercises: [],
+    debts: [],
+    dailyJournals: [],
   };
 }

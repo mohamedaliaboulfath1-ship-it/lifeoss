@@ -1,0 +1,209 @@
+{
+  "version": "1.0",
+  "exported_at": "2026-06-06T10:00:00.000Z",
+  "settings": [
+    {
+      "id": 1,
+      "name": "محمد",
+      "age": 25,
+      "height": 182,
+      "startWeight": 62,
+      "targetWeight": 75,
+      "salary": 5000,
+      "targetSalary": 9000,
+      "startDate": "2026-01-01",
+      "dailyCalories": 3000,
+      "proteinTarget": 130,
+      "carbsTarget": 350,
+      "fatsTarget": 90
+    }
+  ],
+  "goals": [
+    {
+      "id": 1,
+      "title": "الوصول إلى 75 كجم",
+      "category": "health",
+      "description": "بناء جسم قوي",
+      "target_date": "2027-05-23",
+      "status": "active",
+      "priority": "high",
+      "progress": 15,
+      "why": "صحة أفضل",
+      "success_criteria": "75 كجم بـ 13% دهون"
+    },
+    {
+      "id": 2,
+      "title": "Financial Analyst براتب 9000+",
+      "category": "career",
+      "target_date": "2027-11-23",
+      "status": "active",
+      "priority": "high",
+      "progress": 5
+    }
+  ],
+  "habits": [
+    {
+      "id": 1,
+      "name": "تمرين PPLUL",
+      "category": "health",
+      "frequency": "weekly",
+      "target_count": 5,
+      "time_of_day": "evening",
+      "goal_id": 1,
+      "active": true,
+      "streak": 3,
+      "best_streak": 7
+    },
+    {
+      "id": 2,
+      "name": "30 دقيقة Excel",
+      "category": "career",
+      "frequency": "daily",
+      "time_of_day": "morning",
+      "goal_id": 2,
+      "active": true,
+      "streak": 5,
+      "best_streak": 5
+    }
+  ],
+  "habit_logs": [
+    { "id": 1, "habit_id": 1, "date": "2026-06-05", "completed": true },
+    { "id": 2, "habit_id": 2, "date": "2026-06-06", "completed": true }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "إنهاء Module 1 Financial Modeling",
+      "priority": "p1",
+      "status": "active",
+      "due_date": "2026-06-06",
+      "estimated_time": 60,
+      "goal_id": 2,
+      "notes": "أولوية اليوم"
+    }
+  ],
+  "weight_logs": [
+    { "id": 1, "date": "2026-06-01", "weight": 63.5, "sleep": 7 },
+    { "id": 2, "date": "2026-06-06", "weight": 64.2, "sleep": 7.5 }
+  ],
+  "measurements": [
+    {
+      "id": 1,
+      "date": "2026-06-01",
+      "chest": 90,
+      "arm": 32,
+      "waist": 72,
+      "thigh": 52,
+      "calf": 36,
+      "body_fat": 14
+    }
+  ],
+  "progress_photos": [],
+  "exercises": [
+    { "id": 1, "name": "Bench Press", "muscle_group": "chest", "equipment": "barbell" },
+    { "id": 2, "name": "Squat", "muscle_group": "legs", "equipment": "barbell" }
+  ],
+  "workout_logs": [
+    {
+      "id": 1,
+      "date": "2026-06-05",
+      "exercise_id": 1,
+      "weight": 60,
+      "reps": 8,
+      "sets": 3,
+      "rpe": 8,
+      "workout_type": "push"
+    }
+  ],
+  "foods": [
+    {
+      "id": 1,
+      "name": "صدور دجاج",
+      "portion": "100جم",
+      "calories": 165,
+      "protein": 31,
+      "carbs": 0,
+      "fats": 3.6,
+      "category": "protein"
+    }
+  ],
+  "meals": [],
+  "meal_logs": [
+    {
+      "id": 1,
+      "date": "2026-06-06",
+      "time": "12:30",
+      "meal_name": "غداء",
+      "food_id": 1,
+      "food_name": "صدور دجاج",
+      "multiplier": 2,
+      "calories": 330,
+      "protein": 62,
+      "carbs": 0,
+      "fats": 7.2
+    }
+  ],
+  "books": [
+    {
+      "id": 1,
+      "title": "Financial Modeling",
+      "author": "Simon Benninga",
+      "category": "career",
+      "status": "reading",
+      "priority": "high",
+      "pages_total": 400,
+      "pages_read": 80,
+      "goal_id": 2
+    }
+  ],
+  "reading_logs": [
+    { "id": 1, "book_id": 1, "date": "2026-06-05", "pages": 20, "duration": 30 }
+  ],
+  "transactions": [
+    { "id": 1, "type": "income", "amount": 5000, "date": "2026-06-01", "category": "راتب", "description": "راتب يونيو" },
+    { "id": 2, "type": "expense", "amount": 1200, "date": "2026-06-02", "category": "معيشة", "description": "مصاريف" },
+    { "id": 3, "type": "savings", "amount": 500, "date": "2026-06-01", "category": "ادخار", "description": "صندوق طوارئ" }
+  ],
+  "budgets": [],
+  "debts": [
+    {
+      "id": 1,
+      "name": "قسط سيارة",
+      "type": "installment",
+      "amount": 30000,
+      "remaining_amount": 15000,
+      "monthly_payment": 1500,
+      "status": "active"
+    }
+  ],
+  "daily_journals": [
+    {
+      "id": 1,
+      "date": "2026-06-05",
+      "mood_score": 4,
+      "gratitudes": "صحة، عمل، عائلة",
+      "wins": "تمرين + قراءة",
+      "lesson": "الاستمرارية أهم من الكمال"
+    }
+  ],
+  "weekly_reviews": [
+    {
+      "id": 1,
+      "date": "2026-06-01",
+      "wins": "5 تمارين",
+      "failures": "نوم متأخر يومين",
+      "biggest_lesson": "النوم أولاً",
+      "next_week_focus": "3 أولويات فقط"
+    }
+  ],
+  "monthly_reviews": [
+    {
+      "id": 1,
+      "date": "2026-06-01",
+      "month_name": "يونيو 2026",
+      "top_wins": "بدء النظام",
+      "next_focus": "الالتزام بالعادات"
+    }
+  ],
+  "archive": []
+}

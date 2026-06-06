@@ -1,13 +1,10 @@
 import { cn } from "@/lib/utils";
-import { HTMLAttributes } from "react";
+import { forwardRef, HTMLAttributes } from "react";
 
-export function Card({
-  className,
-  children,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return (
+export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, children, ...props }, ref) => (
     <div
+      ref={ref}
       className={cn(
         "bg-surface border border-border rounded-[10px] overflow-hidden",
         className
@@ -16,8 +13,9 @@ export function Card({
     >
       {children}
     </div>
-  );
-}
+  )
+);
+Card.displayName = "Card";
 
 export function CardHeader({
   className,

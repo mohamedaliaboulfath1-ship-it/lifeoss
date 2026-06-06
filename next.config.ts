@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+  async redirects() {
+    return [
+      { source: "/weight", destination: "/body", permanent: true },
+      { source: "/training", destination: "/workouts", permanent: true },
+      { source: "/analysis", destination: "/analytics", permanent: true },
+      { source: "/review", destination: "/reviews", permanent: true },
+      { source: "/identity", destination: "/dashboard", permanent: false },
+      { source: "/timeblock", destination: "/tasks", permanent: false },
+      { source: "/pomodoro", destination: "/tasks", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -18,18 +18,15 @@ export function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
   async function handleImport() {
     setStatus(null);
     try {
-      const parsed = JSON.parse(json);
-      const res = await fetch("/api/import", {
+      const backup = JSON.parse(json);
+      const res = await fetch("/api/v1/import/lifeos-v1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile: parsed.profile,
-          currentYear: parsed.currentYear,
-          years: parsed.years,
-        }),
+        body: JSON.stringify({ backup }),
       });
-      if (!res.ok) throw new Error();
-      setStatus("✅ تم الاستيراد بنجاح");
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "import failed");
+      setStatus(`✅ تم الاستيراد — ${result.totals?.inserted ?? 0} جديد، ${result.totals?.updated ?? 0} محدّث`);
       onSuccess?.();
       setTimeout(onClose, 1200);
     } catch {

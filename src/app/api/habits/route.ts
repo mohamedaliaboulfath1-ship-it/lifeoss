@@ -35,6 +35,7 @@ export async function POST(req: Request) {
   const { year } = await getYearForUser(authResult.userId);
   const id = body.id ?? uid();
 
+  const goalId = body.goalLink || null;
   const { error } = await authResult.supabase.from("habits").upsert({
     id,
     user_id: authResult.userId,
@@ -44,7 +45,8 @@ export async function POST(req: Request) {
     freq: body.freq,
     time: body.time || null,
     dur: body.dur ?? null,
-    goal_link: body.goalLink || null,
+    goal_link: goalId,
+    goal_id: goalId,
     note: body.note || null,
   });
 

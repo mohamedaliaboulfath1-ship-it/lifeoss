@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { YearPayload } from "@/types/lifeos";
+import type { DashboardSnapshot } from "@/types/lifeos-pro";
 
 interface Profile {
   displayName: string;
@@ -29,6 +30,7 @@ interface LifeOSData {
   years: string[];
   currentYear: string;
   yearData: YearPayload;
+  dashboard?: DashboardSnapshot | null;
 }
 
 interface LifeOSContextValue {
@@ -36,6 +38,7 @@ interface LifeOSContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  /** @deprecated Phase 0.5 — use entity APIs + refresh() */
   saveYear: (yearData: YearPayload, year?: string) => Promise<void>;
   setCurrentYear: (year: string) => Promise<void>;
 }
@@ -70,20 +73,9 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const saveYear = useCallback(
-    async (yearData: YearPayload, year?: string) => {
-      const y = year ?? data?.currentYear;
-      if (!y) return;
-      const res = await fetch("/api/year", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: y, data: yearData }),
-      });
-      if (!res.ok) throw new Error("فشل الحفظ");
-      await refresh();
-    },
-    [data?.currentYear, refresh]
-  );
+  const saveYear = useCallback(async () => {
+    throw new Error("saveYear deprecated — use entity APIs (/api/tasks, /api/body, etc.) then refresh()");
+  }, []);
 
   const setCurrentYear = useCallback(
     async (year: string) => {

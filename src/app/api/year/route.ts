@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
-import { getOrCreateLifeYear, saveLifeYearPayload } from "@/lib/year-data";
-import type { YearPayload } from "@/types/lifeos";
+import { getOrCreateLifeYear } from "@/lib/year-data";
 
 export async function GET(req: Request) {
   const authResult = await requireSession();
@@ -21,33 +19,17 @@ export async function GET(req: Request) {
   }
 
   const safeYear = year ?? String(new Date().getFullYear());
-  const { data, record } = await getOrCreateLifeYear(
-    authResult.userId,
-    safeYear
-  );
+  const { data, record } = await getOrCreateLifeYear(authResult.userId, safeYear);
   return NextResponse.json({ year: safeYear, data, updatedAt: record.updated_at });
 }
 
-const putSchema = z.object({
-  year: z.string(),
-  data: z.record(z.unknown()).optional(),
-  merge: z.boolean().optional(),
-});
-
-export async function PUT(req: Request) {
-  const authResult = await requireSession();
-  if ("error" in authResult) return authResult.error;
-
-  const body = putSchema.parse(await req.json());
-  const { data: existing } = await getOrCreateLifeYear(
-    authResult.userId,
-    body.year
+/** Payload writes removed in Phase 0.5 — use entity APIs. */
+export async function PUT() {
+  return NextResponse.json(
+    {
+      error: "PAYLOAD_WRITE_DEPRECATED",
+      message: "استخدم APIs الكيانات: /api/tasks, /api/body, /api/nutrition, /api/books, /api/career, /api/learning, /api/finance, /api/reviews",
+    },
+    { status: 410 }
   );
-
-  const next: YearPayload = body.merge
-    ? { ...existing, ...(body.data as Partial<YearPayload>) }
-    : ({ ...existing, ...body.data } as YearPayload);
-
-  await saveLifeYearPayload(authResult.userId, body.year, next);
-  return NextResponse.json({ ok: true, year: body.year, data: next });
 }

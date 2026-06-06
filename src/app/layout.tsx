@@ -21,8 +21,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "LifeOS Premium — مركز التحكم",
-  description: "نظام تشغيل الحياة — تتبع الأهداف والعادات والصحة والمال",
+  title: "🏛️ Life OS — نظام تشغيل الحياة",
+  description: "نظام تشغيل الحياة الشامل — أهداف · عادات · تمارين · تغذية · مال · تحليلات",
   applicationName: "LifeOS",
   manifest: "/manifest.json",
 };
