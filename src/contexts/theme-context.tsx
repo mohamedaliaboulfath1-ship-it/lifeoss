@@ -70,7 +70,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated.current) return;
-    const next = applyTheme(theme);
+    const next = resolveTheme(theme);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(STORAGE_KEY, theme);
     setResolved(next);
 
     if (userChanged.current) {

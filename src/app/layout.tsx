@@ -37,8 +37,17 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
+      data-theme="dark"
+      suppressHydrationWarning
       className={`${tajawal.variable} ${ibmPlex.variable} ${playfair.variable}`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('lifeos-theme');if(t==='light'||t==='system'){var r=t==='system'&&window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(t==='light')r='light';document.documentElement.setAttribute('data-theme',r);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <RootShell>{children}</RootShell>
       </body>

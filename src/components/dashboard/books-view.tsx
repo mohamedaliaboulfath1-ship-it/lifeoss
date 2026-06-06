@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MotionCard, MotionModal } from "@/components/motion/motion";
 import { BOOK_TYPE_LABELS } from "@/lib/icons";
 import { Tabs } from "@/components/ui/tabs";
@@ -38,8 +38,8 @@ type BookExt = Book & {
 
 export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   const { toast } = useToast();
-  const books = (yearData.books ?? []) as BookExt[];
-  const sessions = (yearData.pomSessions as ReadingSession[] | undefined) ?? [];
+  const [books, setBooks] = useState<BookExt[]>([]);
+  const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [view, setView] = useState("gallery");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -55,8 +55,27 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     category: "",
     notes: "",
     coverPath: "",
+    coverPreviewUrl: "",
     highlightsText: "",
   });
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  const loadBooks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/books");
+      if (!res.ok) throw new Error("fetch failed");
+      const json = await res.json();
+      setBooks((json.books ?? []) as BookExt[]);
+      setSessions((json.sessions ?? []) as ReadingSession[]);
+    } catch {
+      setBooks((yearData.books ?? []) as BookExt[]);
+      setSessions((yearData.pomSessions as ReadingSession[] | undefined) ?? []);
+    }
+  }, [yearData.books, yearData.pomSessions]);
+
+  useEffect(() => {
+    void loadBooks();
+  }, [loadBooks]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -105,8 +124,10 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         category: book.category ?? book.field ?? "",
         notes: book.notes ?? "",
         coverPath: book.coverPath ?? "",
+        coverPreviewUrl: book.coverUrl ?? "",
         highlightsText: hl.map((h) => h.excerpt ?? h.note ?? "").filter(Boolean).join("\n"),
       });
+      setCoverPreview(book.coverUrl ?? null);
     } else {
       setForm({
         id: "",
@@ -117,8 +138,10 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         category: "",
         notes: "",
         coverPath: "",
+        coverPreviewUrl: "",
         highlightsText: "",
       });
+      setCoverPreview(null);
     }
     setModal("book");
   }
@@ -161,17 +184,32 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   async function uploadCover(bookId: string, file: File) {
     const supabase = createClient();
     const { data: userData } = await supabase.auth.getUser();
-    const uid = userData.user?.id;
-    if (!uid) return "";
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${uid}/${bookId}.${ext}`;
+    const userId = userData.user?.id;
+    if (!userId) {
+      toast("يجب تسجيل الدخول لرفع الغلاف", "error");
+      return "";
+    }
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const path = `${userId}/${bookId}.${ext}`;
     const { error } = await supabase.storage
       .from("book-covers")
       .upload(path, file, { upsert: true, contentType: file.type });
     if (error) {
-      toast("فشل رفع الغلاف", "error");
+      toast(`فشل رفع الغلاف: ${error.message}`, "error");
       return "";
     }
+    const localPreview = URL.createObjectURL(file);
+    setCoverPreview(localPreview);
+    const { data: signed } = await supabase.storage
+      .from("book-covers")
+      .createSignedUrl(path, 3600);
+    const previewUrl = signed?.signedUrl ?? localPreview;
+    setForm((prev) => ({
+      ...prev,
+      id: bookId,
+      coverPath: path,
+      coverPreviewUrl: previewUrl,
+    }));
     return path;
   }
 
@@ -195,11 +233,15 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         .filter(Boolean)
         .map((excerpt, i) => ({ id: `hl_${i}`, excerpt })),
     };
-    await fetch("/api/books", {
+    const res = await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entity: "book", payload }),
     });
+    if (!res.ok) {
+      toast("فشل حفظ الكتاب", "error");
+      return;
+    }
     setForm({
       id: "",
       title: "",
@@ -209,9 +251,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       category: "",
       notes: "",
       coverPath: "",
+      coverPreviewUrl: "",
       highlightsText: "",
     });
+    setCoverPreview(null);
     setModal(null);
+    await loadBooks();
     onRefresh();
     toast("تم حفظ الكتاب", "success");
   }
@@ -226,6 +271,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, curPage: cur, status }),
     });
+    await loadBooks();
     onRefresh();
   }
 
@@ -247,13 +293,19 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     });
     setSessionForm({ bookId: "", pages: "20", durationMin: "30", date: today() });
     setModal(null);
+    await loadBooks();
     onRefresh();
   }
 
   async function removeBook(id: string) {
     if (!confirm("حذف الكتاب؟")) return;
     await fetch(`/api/books?id=${id}`, { method: "DELETE" });
+    await loadBooks();
     onRefresh();
+  }
+
+  function bookCoverUrl(b: BookExt) {
+    return b.coverUrl ?? null;
   }
 
   return (
@@ -369,9 +421,9 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             return (
               <MotionCard key={b.id} className="border border-border rounded-[10px] overflow-hidden bg-surface">
                 <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center text-4xl">
-                  {ext.coverUrl ? (
+                  {bookCoverUrl(ext) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ext.coverUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={bookCoverUrl(ext)!} alt={b.title} className="w-full h-full object-cover" />
                   ) : (
                     "📖"
                   )}
@@ -399,9 +451,9 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             return (
               <Card key={b.id} className="p-3 flex items-center gap-4">
                 <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0 overflow-hidden">
-                  {(b as BookExt).coverUrl ? (
+                  {bookCoverUrl(b as BookExt) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={(b as BookExt).coverUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={bookCoverUrl(b as BookExt)!} alt={b.title} className="w-full h-full object-cover" />
                   ) : (
                     "📖"
                   )}
@@ -492,19 +544,26 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                 </div>
                 <div>
                   <Label>صورة الغلاف</Label>
+                  {(coverPreview || form.coverPreviewUrl) && (
+                    <div className="mb-2 aspect-[3/4] max-w-[120px] rounded overflow-hidden border border-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverPreview ?? form.coverPreviewUrl}
+                        alt="معاينة الغلاف"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     className="text-xs text-text3"
                     onChange={async (e) => {
                       const f = e.target.files?.[0];
                       const bookId = form.id || uid();
                       if (!f) return;
                       const path = await uploadCover(bookId, f);
-                      if (path) {
-                        setForm((prev) => ({ ...prev, id: bookId, coverPath: path }));
-                        toast("تم رفع الغلاف", "success");
-                      }
+                      if (path) toast("تم رفع الغلاف — اضغط حفظ", "success");
                     }}
                   />
                 </div>

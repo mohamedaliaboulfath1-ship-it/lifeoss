@@ -237,6 +237,46 @@ export function DashboardView({
         </div>
       </Card>
 
+      {/* ── Life domains gallery ── */}
+      {(dashboard.domains?.length ?? 0) > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🗺️ المناطق الحياتية</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {dashboard.domains.map((d) => (
+                <Link
+                  key={d.domainId}
+                  href={
+                    d.slug === "body"
+                      ? "/body"
+                      : d.slug === "finance"
+                        ? "/finance"
+                        : d.slug === "career"
+                          ? "/career"
+                          : d.slug === "learning"
+                            ? "/learning"
+                            : "/goals"
+                  }
+                  className="p-4 rounded-sm border border-border bg-surface2/50 hover:border-gold/40 transition-all text-center"
+                >
+                  <div className="text-3xl mb-2">{d.icon ?? "🎯"}</div>
+                  <div className="text-sm font-bold">{d.nameAr}</div>
+                  <div className="text-[11px] text-text3 mt-1 truncate">{d.headline}</div>
+                  {typeof d.score === "number" && (
+                    <div className="mt-2">
+                      <ProgressBar value={d.score} color="var(--gold)" />
+                      <div className="text-[10px] font-mono text-gold2 mt-1">{d.score}%</div>
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* ── Career & Learning ── */}
       <CareerPanel career={dashboard.career} />
 
