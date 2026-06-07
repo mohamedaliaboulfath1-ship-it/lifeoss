@@ -17,7 +17,7 @@ export async function seedDailyNotifications(
 
   if ((count ?? 0) > 0) return;
 
-  const [habitsRes, tasksRes, goalsRes] = await Promise.all([
+  const [habitsRes, tasksRes, goalsRes, subsRes] = await Promise.all([
     db.from("habits").select("id, name").eq("user_id", userId).eq("active", true).limit(20),
     db
       .from("life_tasks")
@@ -32,6 +32,13 @@ export async function seedDailyNotifications(
       .eq("user_id", userId)
       .in("status", ["active", "paused"])
       .limit(10),
+    db
+      .from("subscriptions")
+      .select("id, name, renewal_date, price, billing_cycle")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .not("renewal_date", "is", null)
+      .limit(20),
   ]);
 
   const rows: Array<{
@@ -102,6 +109,24 @@ export async function seedDailyNotifications(
         entity_id: g.id,
       });
       if (rows.length >= 7) break;
+    }
+  }
+
+  for (const sub of subsRes.data ?? []) {
+    if (!sub.renewal_date) continue;
+    const days = Math.round((new Date(sub.renewal_date).getTime() - Date.now()) / 86400000);
+    if (days >= 0 && days <= 7) {
+      rows.push({
+        user_id: userId,
+        type: "reminder",
+        priority: days <= 2 ? "high" : "normal",
+        title: `تجديد اشتراك: ${sub.name}`,
+        body: days === 0 ? "اليوم" : `خلال ${days} يوم`,
+        action_url: "/finance",
+        entity_type: "subscription",
+        entity_id: sub.id,
+      });
+      if (rows.length >= 8) break;
     }
   }
 

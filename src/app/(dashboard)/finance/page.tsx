@@ -1,6 +1,6 @@
 "use client";
 
-import { FinanceView } from "@/components/dashboard/finance-view";
+import { WealthFinanceView } from "@/components/finance/wealth-finance-view";
 import { Topbar } from "@/components/layout/topbar";
 import { useLifeOS } from "@/contexts/lifeos-context";
 
@@ -12,7 +12,7 @@ export default function FinancePage() {
     <>
       <Topbar />
       <div className="flex-1 overflow-y-auto p-7">
-        <FinanceView
+        <WealthFinanceView
           yearData={data.yearData}
           salary={data.profile.salary}
         />

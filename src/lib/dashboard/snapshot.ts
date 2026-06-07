@@ -5,6 +5,9 @@ import { calcOverallHabitPct } from "@/lib/calculations";
 import { isThisWeek, today } from "@/lib/utils";
 import { loadCareerSummary } from "@/lib/dashboard/career";
 import { buildActionableInsights } from "@/lib/dashboard/insights";
+import { buildWealthCoachInsights, wealthCoachToDashboardInsights } from "@/lib/wealth/coach-insights";
+import { subscriptionMonthlyEquivalent } from "@/lib/wealth/categories";
+import { budgetAlertLevel } from "@/lib/wealth/snapshot";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
 
 function greeting(): string {
@@ -60,6 +63,9 @@ export async function buildDashboardSnapshot(
     txMonthRes,
     profileRes,
     career,
+    subsRes,
+    catRes,
+    photosRes,
   ] = await Promise.all([
     db
       .from("life_tasks")
@@ -110,15 +116,18 @@ export async function buildDashboardSnapshot(
     db.from("debts").select("remaining_amount, status").eq("user_id", userId),
     db
       .from("transactions")
-      .select("type, amount, tx_date")
+      .select("type, amount, tx_date, category")
       .eq("user_id", userId)
       .gte("tx_date", monthStartStr),
     db
       .from("profiles")
-      .select("start_weight, target_weight, daily_calories, protein_target, carbs_target, fats_target, life_start_date, start_date")
+      .select("start_weight, target_weight, daily_calories, protein_target, carbs_target, fats_target, life_start_date, start_date, salary, cash_balance")
       .eq("id", userId)
       .maybeSingle(),
     loadCareerSummary(db, userId),
+    db.from("subscriptions").select("name, price, billing_cycle, renewal_date").eq("user_id", userId).eq("active", true),
+    db.from("expense_categories").select("name, monthly_budget").eq("user_id", userId),
+    db.from("progress_photos").select("id").eq("user_id", userId).limit(1),
   ]);
 
   const profile = profileRes.data;
@@ -317,7 +326,47 @@ export async function buildDashboardSnapshot(
       Math.min(100, (totalSavings / 12000) * 100) * 0.15
   );
 
-  const insights = buildActionableInsights({
+  const profileSalary = profile?.salary ?? 0;
+  const incomeBase = monthIncome || profileSalary;
+  const savingsRate = incomeBase > 0 ? Math.round((monthSavings / incomeBase) * 100) : 0;
+  const subscriptionMonthly = (subsRes.data ?? []).reduce(
+    (s, sub) => s + subscriptionMonthlyEquivalent(sub.price, sub.billing_cycle),
+    0
+  );
+  const spendByCat: Record<string, number> = {};
+  for (const t of txs.filter((t) => t.type === "expense")) {
+    const cat = t.category ?? "أخرى";
+    spendByCat[cat] = (spendByCat[cat] ?? 0) + t.amount;
+  }
+  const dayOfMonth = new Date().getDate();
+  const budgetAlerts = (catRes.data ?? [])
+    .filter((c) => c.monthly_budget && c.monthly_budget > 0)
+    .map((c) => {
+      const spent = spendByCat[c.name] ?? 0;
+      const budget = c.monthly_budget!;
+      const pct = Math.round((spent / budget) * 100);
+      return {
+        category: c.name,
+        spent,
+        budget,
+        pct,
+        level: budgetAlertLevel(pct, dayOfMonth),
+      };
+    });
+  let nearestRenewal: { name: string; date: string; daysLeft: number } | undefined;
+  for (const sub of subsRes.data ?? []) {
+    if (!sub.renewal_date) continue;
+    const days = Math.round((new Date(sub.renewal_date).getTime() - Date.now()) / 86400000);
+    if (!nearestRenewal || days < nearestRenewal.daysLeft) {
+      nearestRenewal = { name: sub.name, date: sub.renewal_date, daysLeft: days };
+    }
+  }
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const weightMonthAgo = wLogs.find((w) => w.date >= monthAgo)?.weight;
+  const weightChangeMonth =
+    weightMonthAgo && currentWeight ? currentWeight - weightMonthAgo : null;
+
+  const baseInsights = buildActionableInsights({
     habitsPending: habitsPending.length,
     habitsTotal: todayHabits.length,
     tasksDue: tasksDueToday.length,
@@ -334,7 +383,23 @@ export async function buildDashboardSnapshot(
     targetWeight,
     learningHoursWeek: career.learningHoursWeek,
     careerTargetRole: career.targetRole,
+    weightChangeMonth,
+    bodyPhotosCount: photosRes.data?.length ?? 0,
   });
+  const wealthInsights = wealthCoachToDashboardInsights(
+    buildWealthCoachInsights({
+      savingsRate,
+      subscriptionMonthly,
+      monthlyIncome: incomeBase,
+      debts: debtRemaining,
+      savings: totalSavings,
+      budgetAlerts,
+      nearestRenewal,
+    })
+  );
+  const insights = [...wealthInsights, ...baseInsights]
+    .filter((v, i, arr) => arr.findIndex((x) => x.id === v.id) === i)
+    .slice(0, 8);
 
   const lifeStart = profile?.life_start_date ?? profile?.start_date;
   const daysFromStart = lifeStart

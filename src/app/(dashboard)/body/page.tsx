@@ -16,6 +16,7 @@ export default function BodyPage() {
           yearData={data.yearData}
           startWeight={data.profile.startWeight}
           targetWeight={data.profile.targetWeight}
+          heightCm={data.profile.height}
           onRefresh={refresh}
         />
       </div>

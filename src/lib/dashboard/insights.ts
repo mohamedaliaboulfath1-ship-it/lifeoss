@@ -17,6 +17,8 @@ interface InsightContext {
   targetWeight: number | null;
   learningHoursWeek: number;
   careerTargetRole?: string;
+  weightChangeMonth?: number | null;
+  bodyPhotosCount?: number;
 }
 
 export function buildActionableInsights(ctx: InsightContext): DashboardInsight[] {
@@ -113,6 +115,28 @@ export function buildActionableInsights(ctx: InsightContext): DashboardInsight[]
       icon: "⚖️",
       message: `باقي ${gap} كجم للوصول إلى ${ctx.targetWeight} كجم — استمر بالاستمرارية`,
       action: "سجّل الوزن",
+      actionUrl: "/body",
+      priority: "normal",
+    });
+  }
+
+  if (ctx.weightChangeMonth != null && ctx.weightChangeMonth > 0.5) {
+    insights.push({
+      id: "weight-gain-progress",
+      icon: "📈",
+      message: `زاد وزنك ${ctx.weightChangeMonth.toFixed(1)} كجم هذا الشهر — استمر بالخطة`,
+      action: "قارن الصور",
+      actionUrl: "/body",
+      priority: "normal",
+    });
+  }
+
+  if (ctx.bodyPhotosCount === 0) {
+    insights.push({
+      id: "photos-missing",
+      icon: "📷",
+      message: "ارفع صور تقدم (أمام/جانب/خلف) لمتابعة تحول جسمك",
+      action: "رفع صور",
       actionUrl: "/body",
       priority: "normal",
     });

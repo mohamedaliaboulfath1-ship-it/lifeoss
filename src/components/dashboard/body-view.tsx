@@ -8,11 +8,13 @@ import { Input, Label } from "@/components/ui/input";
 import { uid, today } from "@/lib/utils";
 import type { Measurement, YearPayload } from "@/types/lifeos";
 import { MiniChart } from "@/components/ui/mini-chart";
+import { ProgressPhotosPanel } from "@/components/body/progress-photos-panel";
 
 interface BodyViewProps {
   yearData: YearPayload;
   startWeight?: number | null;
   targetWeight?: number | null;
+  heightCm?: number | null;
   onRefresh: () => void;
 }
 
@@ -20,6 +22,7 @@ export function BodyView({
   yearData,
   startWeight,
   targetWeight,
+  heightCm,
   onRefresh,
 }: BodyViewProps) {
   const [tab, setTab] = useState("weight");
@@ -27,8 +30,9 @@ export function BodyView({
   const weightLogs = [...(yearData.weightLogs ?? [])].sort((a, b) => a.date.localeCompare(b.date));
   const [form, setForm] = useState({ chest: "", waist: "", arm: "" });
 
-  const currentWeight = weightLogs[weightLogs.length - 1]?.weight ?? startWeight ?? 60.9;
-  const heightM = 1.74;
+  const start = startWeight ?? weightLogs[0]?.weight ?? 70;
+  const currentWeight = weightLogs[weightLogs.length - 1]?.weight ?? start;
+  const heightM = (heightCm ?? 174) / 100;
   const bmi = currentWeight / (heightM * heightM);
   const bmiLabel = bmi < 18.5 ? "نقص وزن" : bmi < 25 ? "طبيعي" : "فوق الطبيعي";
   const avgWeeklyTrend =
@@ -151,26 +155,7 @@ export function BodyView({
         </Card>
       )}
 
-      {tab === "photos" && (
-        <Card className="p-4">
-          <div className="text-sm font-bold mb-3">Progress Photos</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {["أمام", "جانب", "خلف"].map((slot) => (
-              <div
-                key={slot}
-                className="aspect-[3/4] rounded-sm border border-dashed border-border2 bg-surface2/50 flex flex-col items-center justify-center text-center text-xs text-text3 p-2"
-              >
-                <div className="text-lg mb-1">📷</div>
-                <div>{slot}</div>
-                <div>Placeholder</div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-text3 mt-3">
-            واجهة مؤقتة لمرحلة MVP، ويمكن ربطها لاحقاً برفع الملفات إلى التخزين.
-          </p>
-        </Card>
-      )}
+      {tab === "photos" && <ProgressPhotosPanel />}
 
       {tab === "analytics" && (
         <div className="grid xl:grid-cols-2 gap-4">
@@ -201,13 +186,13 @@ export function BodyView({
               <div
                 className="h-full bg-gradient-to-l from-gold2 to-emerald2"
                 style={{
-                  width: `${Math.max(0, Math.min(100, ((currentWeight - 60.9) / (75 - 60.9)) * 100))}%`,
+                  width: `${Math.max(0, Math.min(100, target !== start ? ((currentWeight - start) / (target - start)) * 100 : 0))}%`,
                 }}
               />
             </div>
             <div className="flex justify-between text-xs text-text3 mt-1">
-              <span>60.9 كجم</span>
-              <span>75 كجم</span>
+              <span>{start} كجم</span>
+              <span>{target} كجم</span>
             </div>
           </Card>
         </div>
