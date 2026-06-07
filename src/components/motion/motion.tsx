@@ -1,15 +1,17 @@
 "use client";
 
 import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
-import { motion as motionTokens } from "@/lib/design-system/tokens";
+import { modalBackdrop, modalPanel } from "@/lib/motion/modal";
+import { cardEnter, cardHover } from "@/lib/motion/card";
+import { MOTION } from "@/lib/motion";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: MOTION.distance.sm }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      transition={{ duration: motionTokens.normal, ease: motionTokens.ease }}
+      exit={{ opacity: 0, y: -MOTION.distance.sm / 2 }}
+      transition={{ duration: MOTION.duration.normal, ease: MOTION.ease.out }}
     >
       {children}
     </motion.div>
@@ -19,14 +21,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
 export function MotionCard({
   children,
   className = "",
+  hover = true,
   ...props
-}: HTMLMotionProps<"div"> & { children: React.ReactNode }) {
+}: HTMLMotionProps<"div"> & { children: React.ReactNode; hover?: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2, transition: { duration: motionTokens.fast } }}
-      transition={{ duration: motionTokens.normal }}
+      initial={cardEnter.initial}
+      animate={cardEnter.animate}
+      transition={cardEnter.transition}
+      whileHover={hover ? cardHover : undefined}
       className={className}
       {...props}
     >
@@ -48,17 +51,12 @@ export function MotionModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-md bg-black/55"
+          {...modalBackdrop}
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
-            transition={motionTokens.spring}
+            {...modalPanel}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg"
           >
@@ -81,9 +79,9 @@ export function FadeIn({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: motionTokens.normal, delay }}
+      initial={{ opacity: 0, y: MOTION.distance.sm / 2 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: MOTION.duration.normal, delay, ease: MOTION.ease.out }}
       className={className}
     >
       {children}

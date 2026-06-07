@@ -11,6 +11,7 @@ import { HabitsToday } from "@/components/dashboard/command-center/habits-today"
 import { CareerPanel } from "@/components/dashboard/command-center/career-panel";
 import Link from "next/link";
 import { MiniChart } from "@/components/ui/mini-chart";
+import { StaggerGrid, StaggerItem } from "@/components/motion/stagger";
 
 interface Profile {
   displayName: string;
@@ -49,8 +50,9 @@ export function DashboardView({
   const lifeScore = scores.lifeScore ?? 0;
 
   return (
-    <div className="space-y-5 animate-page-in">
+    <StaggerGrid className="space-y-5">
       {/* ── Header + Life Score ── */}
+      <StaggerItem>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-[26px] font-black mb-1">{dashboard.greeting}</h2>
@@ -76,9 +78,11 @@ export function DashboardView({
           </div>
         </div>
       </div>
+      </StaggerItem>
 
       {/* ── Alerts badge ── */}
       {(dashboard.counts?.unreadNotifications ?? 0) > 0 && (
+      <StaggerItem>
         <Card className="p-3 border-amber2/30 bg-amber2/5 flex items-center justify-between gap-3">
           <div className="text-sm">
             <span className="font-bold text-amber2">🔔 {dashboard.counts.unreadNotifications} تنبيه</span>
@@ -88,9 +92,11 @@ export function DashboardView({
             عرض →
           </Link>
         </Card>
+      </StaggerItem>
       )}
 
       {/* ── TOP 5 PRIORITIES — 30 second answer ── */}
+      <StaggerItem>
       <Card className="p-4 border-gold/40 bg-gradient-to-br from-gold/[0.06] to-transparent">
           <h3 className="text-sm font-bold text-gold2 mb-3">⚡ ماذا تفعل الآن؟</h3>
           {dashboard.priorities.length === 0 ? (
@@ -127,8 +133,10 @@ export function DashboardView({
           </div>
           )}
         </Card>
+      </StaggerItem>
 
       {/* ── هذا الأسبوع + قريباً ── */}
+      <StaggerItem>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-emerald/20">
           <CardHeader>
@@ -196,8 +204,10 @@ export function DashboardView({
           </CardBody>
         </Card>
       </div>
+      </StaggerItem>
 
       {/* ── Habits + Tasks ── */}
+      <StaggerItem>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <HabitsToday habits={dashboard.todayHabits} />
 
@@ -239,8 +249,10 @@ export function DashboardView({
           </CardBody>
         </Card>
       </div>
+      </StaggerItem>
 
       {/* ── At-risk goals ── */}
+      <StaggerItem>
         <Card className="border-coral/20">
           <CardHeader>
             <CardTitle>🚨 أهداف تحتاج اهتماماً</CardTitle>
@@ -268,8 +280,10 @@ export function DashboardView({
             ))}
           </CardBody>
         </Card>
+      </StaggerItem>
 
       {/* ── Body · Nutrition · Workouts · Finance KPIs ── */}
+      <StaggerItem>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label="⚖️ الوزن"
@@ -305,8 +319,10 @@ export function DashboardView({
           color="var(--emerald)"
         />
       </div>
+      </StaggerItem>
 
       {/* Macro progress */}
+      <StaggerItem>
       <Card className="p-4">
         <div className="text-xs font-bold text-text3 mb-3">🍽️ ماكروز اليوم مقابل الهدف</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -316,6 +332,7 @@ export function DashboardView({
           <MacroBar label="دهون" current={nutrition.fats} target={nutrition.fatsTarget} color="var(--amber2)" unit="جم" />
         </div>
       </Card>
+      </StaggerItem>
 
       {/* ── Life domains gallery ── */}
       {(dashboard.domains?.length ?? 0) > 0 && (
@@ -403,7 +420,7 @@ export function DashboardView({
           </CardBody>
         </Card>
       )}
-    </div>
+    </StaggerGrid>
   );
 }
 

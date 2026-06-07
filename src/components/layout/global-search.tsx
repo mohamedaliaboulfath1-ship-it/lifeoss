@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
+import { dropdownPanel } from "@/lib/motion/modal";
 import { getRecentSearches, trackSearchQuery } from "@/lib/navigation-store";
 
 interface SearchResult {
@@ -127,9 +128,7 @@ export function GlobalSearch() {
       <AnimatePresence>
         {showDropdown && (
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            {...dropdownPanel}
             className="absolute top-10 inset-x-0 bg-surface border border-border rounded-sm z-[205] overflow-hidden shadow-premium-lg"
             role="listbox"
           >

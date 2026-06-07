@@ -10,6 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AnimatePresence } from "framer-motion";
+import { TaskRow } from "@/components/motion/task-row";
+import { MotionModal } from "@/components/motion/motion";
 import { today, uid } from "@/lib/utils";
 import type { LifeTask, YearPayload } from "@/types/lifeos";
 
@@ -238,14 +241,14 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
       />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard label="اليوم" value={String(stats.today)} sub="" color="var(--gold)" />
-        <KpiCard label="متأخرة" value={String(stats.overdue)} sub="" color="var(--rose)" />
-        <KpiCard label="صندوق الوارد" value={String(stats.inbox)} sub="" color="var(--purple)" />
-        <KpiCard label="منجزة اليوم" value={String(stats.doneToday)} sub="" color="var(--emerald)" />
+        <KpiCard label="اليوم" value={String(stats.today)} numericValue={stats.today} sub="" color="var(--gold)" />
+        <KpiCard label="متأخرة" value={String(stats.overdue)} numericValue={stats.overdue} sub="" color="var(--rose)" />
+        <KpiCard label="صندوق الوارد" value={String(stats.inbox)} numericValue={stats.inbox} sub="" color="var(--purple)" />
+        <KpiCard label="منجزة اليوم" value={String(stats.doneToday)} numericValue={stats.doneToday} sub="" color="var(--emerald)" />
       </div>
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
         <KpiCard label="P1 مفتوحة" value={String(stats.p1Open)} sub="" color="var(--coral)" />
-        <KpiCard label="نسبة الإنجاز" value={`${stats.doneRate}%`} sub="" color="var(--teal)" />
+        <KpiCard label="نسبة الإنجاز" value={`${stats.doneRate}%`} numericValue={stats.doneRate} suffix="%" sub="" color="var(--teal)" />
         <KpiCard label="متوسط الوقت" value={`${stats.avgEstimate} د`} sub="" color="var(--sky)" />
       </div>
 
@@ -271,36 +274,19 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
               onAction={() => setModal(true)}
             />
           ) : (
-            <ul className="space-y-2">
-              {filtered.map((task) => (
-                <li
-                  key={task.id}
-                  className={`flex items-center gap-3 py-2 border-b border-border/50 last:border-0 ${focusMode && task.priority !== "p1" ? "opacity-45" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={task.status === "done"}
-                    disabled={pendingIds.has(task.id)}
-                    onChange={() => toggleDone(task.id)}
-                    className={`w-5 h-5 accent-emerald cursor-pointer ${pendingIds.has(task.id) ? "opacity-60" : ""}`}
+            <ul className="space-y-0">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {filtered.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    pending={pendingIds.has(task.id)}
+                    dimmed={focusMode && task.priority !== "p1"}
+                    onToggle={() => toggleDone(task.id)}
+                    onRemove={() => removeTask(task.id)}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`text-sm font-medium ${task.status === "done" ? "line-through text-text3" : ""}`}
-                    >
-                      {task.title}
-                    </div>
-                    <div className="flex gap-2 text-[10px] text-text3 font-mono">
-                      {task.dueDate && <span>{task.dueDate}</span>}
-                      <span>{(task.priority ?? "p3").toUpperCase()}</span>
-                      {task.estimatedTime ? <span>{task.estimatedTime}د</span> : null}
-                    </div>
-                  </div>
-                  <Button variant="danger" size="sm" onClick={() => removeTask(task.id)}>
-                    🗑
-                  </Button>
-                </li>
-              ))}
+                ))}
+              </AnimatePresence>
             </ul>
           )}
         </Card>
@@ -379,9 +365,8 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
         </Card>
       )}
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4">
+      <MotionModal open={modal} onClose={() => setModal(false)}>
+          <div className="bg-surface border border-border2 rounded-[10px] w-full p-6 space-y-4 shadow-premium-lg">
             <h3 className="font-bold text-gold2">مهمة جديدة</h3>
             <div>
               <Label>العنوان</Label>
@@ -457,8 +442,7 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </MotionModal>
     </div>
   );
 }

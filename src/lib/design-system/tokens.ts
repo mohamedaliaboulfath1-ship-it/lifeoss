@@ -25,13 +25,8 @@ export const elevation = {
   modal: "border border-border2 rounded-[10px] shadow-2xl bg-surface",
 } as const;
 
-export const motion = {
-  fast: 0.15,
-  normal: 0.25,
-  slow: 0.4,
-  spring: { type: "spring" as const, stiffness: 400, damping: 30 },
-  ease: [0.25, 0.1, 0.25, 1] as const,
-} as const;
+/** @deprecated Use `@/lib/motion` — kept for backward compatibility */
+export { MOTION as motion } from "@/lib/motion/transitions";
 
 export const domainColors: Record<string, string> = {
   body: "var(--teal)",

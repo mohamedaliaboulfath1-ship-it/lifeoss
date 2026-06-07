@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnimatedProgress } from "@/components/motion/animated-progress";
+import { HabitCheck } from "@/components/motion/habit-check";
+import { CountUp } from "@/components/ui/count-up";
 import { today } from "@/lib/utils";
 import type { DashboardHabitToday } from "@/types/lifeos-pro";
 import Link from "next/link";
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { useToast } from "@/contexts/toast-context";
+import { motion } from "framer-motion";
+import { MOTION } from "@/lib/motion";
 
 interface HabitsTodayProps {
   habits: DashboardHabitToday[];
@@ -53,11 +58,18 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
     <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>🔄 عادات اليوم</CardTitle>
-        <span className="text-xs font-mono text-gold2">
-          {done}/{local.length} · {pct}%
-        </span>
+        <motion.span
+          key={pct}
+          initial={{ opacity: 0.6, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: MOTION.duration.normal, ease: MOTION.ease.out }}
+          className="text-xs font-mono text-gold2"
+        >
+          <CountUp value={done} />/{local.length} · <CountUp value={pct} suffix="%" />
+        </motion.span>
       </CardHeader>
-      <CardBody className="!py-2 space-y-1 max-h-64 overflow-y-auto">
+      <CardBody className="!py-2 space-y-2 max-h-64 overflow-y-auto">
+        <AnimatedProgress value={pct} color="var(--emerald)" height="h-1" />
         {local.length === 0 ? (
           <p className="text-text3 text-sm py-4 text-center">
             لا عادات يومية —{" "}
@@ -67,30 +79,14 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
           </p>
         ) : (
           local.map((h) => (
-            <label
+            <HabitCheck
               key={h.id}
-              className={`flex items-center gap-3 p-2.5 rounded-sm cursor-pointer transition-colors ${
-                h.done
-                  ? "bg-emerald/10 border border-emerald/20"
-                  : "bg-surface2/50 border border-transparent hover:border-border"
-              } ${busy === h.id ? "opacity-70" : ""}`}
-            >
-              <input
-                type="checkbox"
-                checked={h.done}
-                disabled={busy === h.id}
-                onChange={() => toggle(h.id)}
-                className="w-4 h-4 accent-[var(--gold)]"
-              />
-              <span
-                className={`text-sm flex-1 ${h.done ? "line-through text-text3" : ""}`}
-              >
-                {h.name}
-              </span>
-              {h.timeOfDay && (
-                <span className="text-[10px] text-text3">{h.timeOfDay}</span>
-              )}
-            </label>
+              checked={h.done}
+              disabled={busy === h.id}
+              onChange={() => toggle(h.id)}
+              label={h.name}
+              meta={h.timeOfDay}
+            />
           ))
         )}
       </CardBody>

@@ -1,5 +1,9 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { MOTION } from "@/lib/motion";
+import { chartBarGrow, chartPointPop } from "@/lib/motion/chart";
+
 interface MiniChartPoint {
   label: string;
   value: number;
@@ -71,21 +75,40 @@ export function MiniChart({
             />
           ))}
           <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="var(--border)" strokeWidth="1" />
-          <polygon points={areaPoints} fill="url(#chartFill)" />
-          <polyline
+          <motion.polygon
+            points={areaPoints}
+            fill="url(#chartFill)"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: MOTION.duration.chart, ease: MOTION.ease.out }}
+          />
+          <motion.polyline
             points={points}
             fill="none"
             stroke={color}
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: MOTION.duration.chart, ease: MOTION.ease.out }}
           />
           {data.map((d, i) => {
             const x = (i / Math.max(1, data.length - 1)) * (w - pad * 2) + pad;
             const y = h - pad - (d.value / max) * (h - pad * 2 - 16);
             return (
               <g key={`${d.label}-${i}`}>
-                <circle cx={x} cy={y} r="4" fill="var(--surface)" stroke={color} strokeWidth="2" />
+                <motion.circle
+                  cx={x}
+                  cy={y}
+                  r="4"
+                  fill="var(--surface)"
+                  stroke={color}
+                  strokeWidth="2"
+                  initial={chartPointPop.initial}
+                  animate={chartPointPop.animate}
+                  transition={{ ...chartPointPop.transition, delay: i * 0.06 }}
+                />
                 <text x={x} y={h - 4} fontSize="10" textAnchor="middle" fill="var(--text3)">
                   {d.label}
                 </text>
@@ -107,12 +130,17 @@ export function MiniChart({
               <span className="text-[9px] font-mono text-text3 opacity-0 group-hover:opacity-100 transition-opacity">
                 {d.value}
               </span>
-              <div
-                className="w-full rounded-t-md transition-all duration-500 ease-out"
+              <motion.div
+                className="w-full rounded-t-md origin-bottom transform-gpu"
                 style={{
                   height: `${barHeight}%`,
                   background: `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 40%, transparent))`,
-                  animationDelay: `${i * 80}ms`,
+                }}
+                initial={chartBarGrow.initial}
+                animate={chartBarGrow.animate}
+                transition={{
+                  ...chartBarGrow.transition,
+                  delay: i * MOTION.stagger.tight,
                 }}
                 title={`${d.label}: ${d.value}`}
               />

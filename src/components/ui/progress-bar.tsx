@@ -1,3 +1,7 @@
+"use client";
+
+import { AnimatedProgress } from "@/components/motion/animated-progress";
+
 interface ProgressBarProps {
   value: number;
   color?: string;
@@ -10,13 +14,6 @@ export function ProgressBar({
   className = "",
 }: ProgressBarProps) {
   return (
-    <div
-      className={`h-1.5 bg-surface3 rounded-full overflow-hidden ${className}`}
-    >
-      <div
-        className="h-full rounded-full transition-all duration-300"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: color }}
-      />
-    </div>
+    <AnimatedProgress value={value} color={color} className={className} />
   );
 }

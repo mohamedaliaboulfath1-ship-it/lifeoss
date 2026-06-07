@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 export function CountUp({
   value,
-  duration = 600,
+  duration = 500,
   suffix = "",
   className = "",
 }: {

@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { getFavorites } from "@/lib/navigation-store";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MOTION } from "@/lib/motion";
+import { modalBackdrop } from "@/lib/motion/modal";
 
 interface SidebarProps {
   userName: string;
@@ -177,19 +180,26 @@ export function Sidebar({
                   href={page.href}
                   onClick={onMobileClose}
                   className={cn(
-                    "flex items-center gap-2 px-[18px] py-2 text-[13px] border-r-[3px] transition-all min-h-[40px]",
-                    active
-                      ? "bg-gold/7 text-gold2 border-r-gold"
-                      : "text-text2 border-r-transparent hover:bg-surface2 hover:text-text"
+                    "relative flex items-center gap-2 px-[18px] py-2 text-[13px] min-h-[40px] transition-colors",
+                    active ? "text-gold2" : "text-text2 hover:text-text"
                   )}
                 >
-                  <span className="text-[15px] w-[19px] text-center">{page.icon}</span>
-                  {page.title}
-                  {page.id === "habits" && habitCount > 0 && (
-                    <span className="mr-auto bg-border text-text3 text-[9px] px-1.5 rounded-full font-mono">
-                      {habitCount}
-                    </span>
+                  {active && (
+                    <motion.span
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 bg-gold/7 border-r-[3px] border-r-gold"
+                      transition={MOTION.spring.soft}
+                    />
                   )}
+                  <span className="relative z-10 flex items-center gap-2 w-full">
+                    <span className="text-[15px] w-[19px] text-center">{page.icon}</span>
+                    {page.title}
+                    {page.id === "habits" && habitCount > 0 && (
+                      <span className="mr-auto bg-border text-text3 text-[9px] px-1.5 rounded-full font-mono">
+                        {habitCount}
+                      </span>
+                    )}
+                  </span>
                 </Link>
               );
             })}
@@ -232,18 +242,25 @@ export function Sidebar({
 
   return (
     <>
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-[190] bg-black/50 md:hidden"
-          onClick={onMobileClose}
-          aria-hidden
-        />
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            className="fixed inset-0 z-[190] bg-black/50 md:hidden backdrop-blur-[2px]"
+            onClick={onMobileClose}
+            aria-hidden
+            initial={modalBackdrop.initial}
+            animate={modalBackdrop.animate}
+            exit={modalBackdrop.exit}
+            transition={modalBackdrop.transition}
+          />
+        )}
+      </AnimatePresence>
       <aside
         className={cn(
           "shrink-0 bg-surface border-l border-border flex flex-col overflow-hidden relative z-[195]",
           "w-[var(--width-sidebar)]",
-          "fixed md:static inset-y-0 right-0 transition-transform duration-300 md:translate-x-0",
+          "fixed md:static inset-y-0 right-0",
+          "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:translate-x-0",
           mobileOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         )}
       >

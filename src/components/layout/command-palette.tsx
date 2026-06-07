@@ -5,6 +5,7 @@ import { NAV_PAGES } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
+import { modalBackdrop, modalPanel } from "@/lib/motion/modal";
 import {
   getFavorites,
   getRecentPages,
@@ -154,17 +155,12 @@ export function CommandPalette() {
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[220] bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 md:p-6"
+          {...modalBackdrop}
+          className="fixed inset-0 z-[220] bg-black/55 backdrop-blur-md flex items-start justify-center p-4 md:p-6"
           onClick={() => setOpen(false)}
         >
           <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
+            {...modalPanel}
             className="w-full max-w-2xl bg-surface border border-border2 rounded-[12px] shadow-premium-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
