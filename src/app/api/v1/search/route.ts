@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { getYearForUser } from "@/lib/year-data";
+import { rateLimit } from "@/lib/rate-limit";
 
 function fuzzyMatch(text: string, q: string) {
   const t = text.toLowerCase();
@@ -14,6 +15,14 @@ function fuzzyMatch(text: string, q: string) {
 export async function GET(req: Request) {
   const authResult = await requireSession();
   if ("error" in authResult) return authResult.error;
+
+  const limited = rateLimit(`search:${authResult.userId}`, 90, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests", retryAfterSec: limited.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
 
   const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) {
@@ -72,7 +81,6 @@ export async function GET(req: Request) {
   for (const c of data.careerCourses ?? []) {
     push("course", c.id, c.title, c.platform, `/learning`, `${c.title} ${c.platform}`);
   }
-
   results.sort((a, b) => b.score - a.score);
 
   return NextResponse.json({

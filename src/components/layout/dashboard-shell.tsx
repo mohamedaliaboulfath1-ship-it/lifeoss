@@ -4,13 +4,12 @@ import { useLifeOS } from "@/contexts/lifeos-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { CommandPalette } from "@/components/layout/command-palette";
+import { NavTracker } from "@/components/layout/nav-tracker";
+import { MobileNavProvider, useMobileNav } from "@/contexts/mobile-nav-context";
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { data, loading, error, setCurrentYear } = useLifeOS();
-
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+function ShellInner({ children }: { children: React.ReactNode }) {
+  const { data, error, setCurrentYear } = useLifeOS();
+  const { isOpen, close } = useMobileNav();
 
   if (error || !data?.profile) {
     const message =
@@ -26,7 +25,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden">
+      <NavTracker />
       <Sidebar
         userName={data.profile.displayName}
         avatarUrl={data.profile.avatarUrl}
@@ -35,11 +35,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         years={data.years}
         habitCount={data.yearData.habits?.length ?? 0}
         onYearChange={setCurrentYear}
+        mobileOpen={isOpen}
+        onMobileClose={close}
       />
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0">
+      <main className="flex-1 overflow-hidden flex flex-col min-w-0 w-full">
         {children}
       </main>
       <CommandPalette />
     </div>
+  );
+}
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { loading } = useLifeOS();
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  return (
+    <MobileNavProvider>
+      <ShellInner>{children}</ShellInner>
+    </MobileNavProvider>
   );
 }

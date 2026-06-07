@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
+import { seedDailyNotifications } from "@/lib/notifications/seed";
 
 export async function GET(req: Request) {
   const authResult = await requireSession();
   if ("error" in authResult) return authResult.error;
+
+  try {
+    await seedDailyNotifications(authResult.supabase, authResult.userId);
+  } catch {
+    /* non-blocking */
+  }
 
   const unreadOnly = new URL(req.url).searchParams.get("unread") === "1";
 

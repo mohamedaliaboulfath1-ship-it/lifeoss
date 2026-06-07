@@ -15,7 +15,7 @@ export default function DashboardPage() {
   return (
     <>
       <Topbar onImport={() => setImportOpen(true)} />
-      <div className="flex-1 overflow-y-auto p-7 animate-fade-up">
+      <div className="flex-1 overflow-y-auto p-4 md:p-7 animate-page-in">
         <DashboardView
           profile={data.profile!}
           yearData={data.yearData}

@@ -120,8 +120,44 @@
 
 @layer utilities {
   .animate-fade-up {
-    animation: fadeUp 0.2s ease;
+    animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
+
+  .animate-page-in {
+    animation: pageIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .shadow-premium {
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--bg) 40%, transparent),
+      0 4px 16px color-mix(in srgb, var(--bg) 25%, transparent);
+  }
+
+  .shadow-premium-lg {
+    box-shadow:
+      0 2px 4px color-mix(in srgb, var(--bg) 35%, transparent),
+      0 12px 40px color-mix(in srgb, var(--bg) 30%, transparent);
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--surface2) 0%,
+      color-mix(in srgb, var(--surface3) 80%, var(--surface2)) 50%,
+      var(--surface2) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+  color: var(--text);
 }
 
 @keyframes fadeUp {
@@ -147,4 +183,42 @@
 
 .save-dot {
   animation: pulse-dot 2s infinite;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-check {
+  animation: check-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }

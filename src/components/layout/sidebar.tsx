@@ -7,6 +7,9 @@ import { createClient } from "@/lib/supabase";
 import { NAV_PAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { getFavorites } from "@/lib/navigation-store";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 interface SidebarProps {
   userName: string;
@@ -16,6 +19,8 @@ interface SidebarProps {
   years: string[];
   habitCount?: number;
   onYearChange: (year: string) => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 function UserAvatar({ name, avatarUrl, size = 34 }: { name: string; avatarUrl?: string | null; size?: number }) {
@@ -48,9 +53,16 @@ export function Sidebar({
   years,
   habitCount = 0,
   onYearChange,
+  mobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [favorites, setFavorites] = useState<ReturnType<typeof getFavorites>>([]);
+
+  useEffect(() => {
+    setFavorites(getFavorites());
+  }, [pathname]);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -58,6 +70,7 @@ export function Sidebar({
     router.push("/login");
     router.refresh();
   }
+
   const sections = [...new Set(NAV_PAGES.map((p) => p.section).filter(Boolean))];
 
   const dateStr = new Date().toLocaleDateString("ar-SA", {
@@ -70,21 +83,32 @@ export function Sidebar({
     ...new Set([currentYear, ...years, String(new Date().getFullYear())]),
   ].sort((a, b) => b.localeCompare(a));
 
-  return (
-    <aside className="w-[var(--width-sidebar)] shrink-0 bg-surface border-l border-border flex flex-col overflow-y-auto relative">
-      <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-gold/30 to-transparent" />
-
-      <div className="px-[18px] pt-[22px] pb-4 border-b border-border">
-        <div className="font-display text-xl font-black bg-gradient-to-br from-gold to-gold3 bg-clip-text text-transparent">
-          🏛️ Life OS
+  const content = (
+    <>
+      <div className="px-[18px] pt-[22px] pb-4 border-b border-border flex items-start justify-between">
+        <div>
+          <div className="font-display text-xl font-black bg-gradient-to-br from-gold to-gold3 bg-clip-text text-transparent">
+            🏛️ Life OS
+          </div>
+          <div className="text-[10px] text-text3 tracking-[1px] mt-0.5 font-mono">
+            نظام تشغيل الحياة · {currentYear}
+          </div>
         </div>
-        <div className="text-[10px] text-text3 tracking-[1px] mt-0.5 font-mono">
-          نظام تشغيل الحياة · {currentYear}
-        </div>
+        {onMobileClose && (
+          <button
+            type="button"
+            className="md:hidden p-1.5 rounded-sm hover:bg-surface2 focus-ring"
+            onClick={onMobileClose}
+            aria-label="إغلاق القائمة"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <Link
         href="/account/profile"
+        onClick={onMobileClose}
         className="px-[18px] py-3.5 border-b border-border flex items-center gap-2.5 hover:bg-surface2/50 transition-colors"
       >
         <UserAvatar name={userName} avatarUrl={avatarUrl} />
@@ -101,7 +125,7 @@ export function Sidebar({
             type="button"
             onClick={() => onYearChange(y)}
             className={cn(
-              "flex-1 min-w-[60px] py-1.5 rounded-sm font-mono text-[11px] border transition-all cursor-pointer",
+              "flex-1 min-w-[60px] py-1.5 rounded-sm font-mono text-[11px] border transition-all cursor-pointer focus-ring",
               y === currentYear
                 ? "bg-gold/15 border-gold text-gold2"
                 : "bg-surface2 border-border text-text2 hover:border-border2 hover:text-text"
@@ -112,7 +136,34 @@ export function Sidebar({
         ))}
       </div>
 
-      <nav className="flex-1 py-2">
+      {favorites.length > 0 && (
+        <div className="py-2 border-b border-border">
+          <div className="text-[9px] font-bold text-text3 tracking-[2px] uppercase px-[18px] pb-1.5">
+            مفضّلة
+          </div>
+          {favorites.map((f) => {
+            const active = pathname.startsWith(f.href);
+            return (
+              <Link
+                key={f.href}
+                href={f.href}
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center gap-2 px-[18px] py-1.5 text-[12px] border-r-[3px] transition-all",
+                  active
+                    ? "bg-gold/7 text-gold2 border-r-gold"
+                    : "text-text2 border-r-transparent hover:bg-surface2 hover:text-text"
+                )}
+              >
+                <span className="text-[14px]">{f.icon ?? "⭐"}</span>
+                {f.title}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      <nav className="flex-1 py-2 overflow-y-auto">
         {sections.map((section) => (
           <div key={section} className="py-2">
             <div className="text-[9px] font-bold text-text3 tracking-[2px] uppercase px-[18px] pb-1.5">
@@ -124,8 +175,9 @@ export function Sidebar({
                 <Link
                   key={page.id}
                   href={page.href}
+                  onClick={onMobileClose}
                   className={cn(
-                    "flex items-center gap-2 px-[18px] py-1.5 text-[13px] border-r-[3px] transition-all",
+                    "flex items-center gap-2 px-[18px] py-2 text-[13px] border-r-[3px] transition-all min-h-[40px]",
                     active
                       ? "bg-gold/7 text-gold2 border-r-gold"
                       : "text-text2 border-r-transparent hover:bg-surface2 hover:text-text"
@@ -148,14 +200,16 @@ export function Sidebar({
       <div className="mt-auto px-[18px] py-3.5 border-t border-border space-y-1">
         <Link
           href="/account/profile"
-          className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-[12px] text-text2 hover:bg-surface2 hover:text-text transition-colors"
+          onClick={onMobileClose}
+          className="flex items-center gap-2 px-2 py-2 rounded-sm text-[12px] text-text2 hover:bg-surface2 hover:text-text transition-colors min-h-[40px]"
         >
           <span>👤</span> مركز الحساب
         </Link>
         {isAdmin && (
           <Link
             href="/admin"
-            className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-[12px] text-gold2 hover:bg-gold/10 transition-colors"
+            onClick={onMobileClose}
+            className="flex items-center gap-2 px-2 py-2 rounded-sm text-[12px] text-gold2 hover:bg-gold/10 transition-colors min-h-[40px]"
           >
             <span>🛡️</span> لوحة الأدمن
           </Link>
@@ -173,6 +227,29 @@ export function Sidebar({
           تسجيل الخروج
         </Button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-[190] bg-black/50 md:hidden"
+          onClick={onMobileClose}
+          aria-hidden
+        />
+      )}
+      <aside
+        className={cn(
+          "shrink-0 bg-surface border-l border-border flex flex-col overflow-hidden relative z-[195]",
+          "w-[var(--width-sidebar)]",
+          "fixed md:static inset-y-0 right-0 transition-transform duration-300 md:translate-x-0",
+          mobileOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
+        )}
+      >
+        <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-gold/30 to-transparent" />
+        {content}
+      </aside>
+    </>
   );
 }

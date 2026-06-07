@@ -1,23 +1,43 @@
+"use client";
+
+import { CountUp } from "@/components/ui/count-up";
+
 interface KpiCardProps {
   label: string;
   value: string;
+  numericValue?: number;
+  suffix?: string;
   sub: string;
   color: string;
   badge?: string;
 }
 
-export function KpiCard({ label, value, sub, color, badge }: KpiCardProps) {
+export function KpiCard({
+  label,
+  value,
+  numericValue,
+  suffix = "",
+  sub,
+  color,
+  badge,
+}: KpiCardProps) {
   return (
-    <div className="bg-surface border border-border rounded-[10px] p-[18px] relative overflow-hidden transition-colors hover:border-border2">
+    <div className="bg-surface border border-border rounded-[10px] p-[18px] relative overflow-hidden transition-all duration-200 hover:border-border2 hover:shadow-premium hover:-translate-y-0.5 shadow-premium group">
       <div
-        className="absolute top-0 right-0 left-0 h-0.5"
+        className="absolute top-0 right-0 left-0 h-0.5 opacity-80 group-hover:opacity-100 transition-opacity"
         style={{ background: color }}
       />
       <div className="text-[10px] text-text3 uppercase tracking-wide mb-2">
         {label}
       </div>
-      <div className="text-2xl font-black mb-1" style={{ color }}>
-        {value}
+      <div className="text-2xl font-black mb-1 tabular-nums" style={{ color }}>
+        {numericValue != null ? (
+          <>
+            <CountUp value={numericValue} suffix={suffix} />
+          </>
+        ) : (
+          value
+        )}
       </div>
       <div className="text-[11px] text-text3 font-mono">{sub}</div>
       {badge && (

@@ -46,9 +46,11 @@ export async function buildDashboardSnapshot(
 ): Promise<DashboardSnapshot> {
   const todayStr = today();
   const monthStartStr = monthStart();
+  const weekLater = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
   const [
     tasksRes,
+    dueSoonRes,
     habitsRes,
     habitLogsRes,
     goalsRes,
@@ -67,6 +69,15 @@ export async function buildDashboardSnapshot(
       .or(`due_date.lte.${todayStr},due_date.is.null`)
       .order("priority", { ascending: true })
       .limit(15),
+    db
+      .from("life_tasks")
+      .select("id, title, priority, due_date, status")
+      .eq("user_id", userId)
+      .in("status", ["inbox", "active"])
+      .gt("due_date", todayStr)
+      .lte("due_date", weekLater)
+      .order("due_date", { ascending: true })
+      .limit(8),
     db
       .from("habits")
       .select("id, name, frequency, active, category, time_of_day")
@@ -136,16 +147,26 @@ export async function buildDashboardSnapshot(
   const habitsDone = todayHabits.filter((h) => h.done).length;
   const habitsPending = todayHabits.filter((h) => !h.done);
 
+  const mapTask = (t: {
+    id: string;
+    title: string;
+    priority: string | null;
+    due_date: string | null;
+    status: string;
+  }) => ({
+    id: t.id,
+    title: t.title,
+    priority: t.priority ?? "p3",
+    dueDate: t.due_date ?? undefined,
+    status: t.status,
+  });
+
   const tasksDueToday = (tasksRes.data ?? [])
     .filter((t) => t.due_date && t.due_date <= todayStr)
     .slice(0, 8)
-    .map((t) => ({
-    id: t.id,
-    title: t.title,
-    priority: t.priority,
-    dueDate: t.due_date ?? undefined,
-    status: t.status,
-  }));
+    .map(mapTask);
+
+  const tasksDueSoon = (dueSoonRes.data ?? []).map(mapTask);
 
   const goals = goalsRes.data ?? [];
   const atRiskGoals = goals
@@ -331,6 +352,14 @@ export async function buildDashboardSnapshot(
     priorities: priorities.slice(0, 5),
     todayHabits,
     tasksDueToday,
+    tasksDueSoon,
+    weekSummary: {
+      habitPct,
+      workoutsDays: uniqueDays,
+      workoutsTarget: 5,
+      goalsAvgProgress: Math.round(avgGoalProgress),
+      tasksCompletedEstimate: Math.max(0, 10 - tasksDueToday.length),
+    },
     atRiskGoals,
     weight: {
       current: currentWeight,

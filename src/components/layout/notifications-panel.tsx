@@ -22,6 +22,7 @@ export function NotificationsPanel() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
+  const [filter, setFilter] = useState<"all" | "unread" | "urgent">("all");
 
   function load() {
     fetch("/api/notifications")
@@ -74,15 +75,39 @@ export function NotificationsPanel() {
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             className="fixed top-16 left-6 z-[210] w-[360px]"
           >
-            <Card className="p-3 space-y-2 shadow-2xl max-h-80 overflow-y-auto">
-              <div className="text-sm font-bold text-gold2 flex justify-between">
-                <span>الإشعارات</span>
+            <Card className="p-3 space-y-2 shadow-premium-lg max-h-96 overflow-y-auto w-[min(360px,calc(100vw-2rem))]">
+              <div className="text-sm font-bold text-gold2 flex justify-between items-center">
+                <span>مركز الإشعارات</span>
                 {unread > 0 && <span className="text-xs text-text3">{unread} غير مقروء</span>}
               </div>
+              <div className="flex gap-1 text-[10px]">
+                {(["all", "unread", "urgent"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    className={`px-2 py-1 rounded-sm border transition-colors focus-ring ${
+                      filter === f
+                        ? "border-gold/50 bg-gold/10 text-gold2"
+                        : "border-border text-text3 hover:border-border2"
+                    }`}
+                    onClick={() => setFilter(f)}
+                  >
+                    {f === "all" ? "الكل" : f === "unread" ? "غير مقروء" : "عاجل"}
+                  </button>
+                ))}
+              </div>
               {items.length === 0 && (
-                <div className="text-xs text-text3 py-4 text-center">لا إشعارات حالياً.</div>
+                <div className="text-xs text-text3 py-6 text-center">
+                  لا إشعارات — ستظهر تنبيهات العادات والمهام تلقائياً
+                </div>
               )}
-              {items.map((n) => (
+              {items
+                .filter((n) => {
+                  if (filter === "unread") return !n.readAt;
+                  if (filter === "urgent") return n.priority === "urgent" || n.priority === "high";
+                  return true;
+                })
+                .map((n) => (
                 <button
                   key={n.id}
                   type="button"
@@ -93,7 +118,14 @@ export function NotificationsPanel() {
                 >
                   {n.title}
                   {n.body && <div className="text-[10px] text-text3 mt-0.5">{n.body}</div>}
-                  <div className="text-[10px] text-text3">{n.type}</div>
+                  <div className="flex gap-2 text-[10px] text-text3 mt-0.5">
+                    <span>{n.type}</span>
+                    {n.priority && (
+                      <span className={n.priority === "urgent" ? "text-rose2" : ""}>
+                        · {n.priority}
+                      </span>
+                    )}
+                  </div>
                 </button>
               ))}
             </Card>

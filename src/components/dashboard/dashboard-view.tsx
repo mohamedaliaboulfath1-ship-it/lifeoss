@@ -3,12 +3,14 @@
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { CountUp } from "@/components/ui/count-up";
 import { commas } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import { HabitsToday } from "@/components/dashboard/command-center/habits-today";
 import { CareerPanel } from "@/components/dashboard/command-center/career-panel";
 import Link from "next/link";
+import { MiniChart } from "@/components/ui/mini-chart";
 
 interface Profile {
   displayName: string;
@@ -31,8 +33,14 @@ export function DashboardView({
 }: DashboardViewProps) {
   if (!dashboard) {
     return (
-      <div className="text-text3 text-sm py-12 text-center">
-        جاري تحميل مركز القيادة…
+      <div className="space-y-4 animate-pulse">
+        <div className="h-16 skeleton-shimmer rounded-[10px]" />
+        <div className="h-40 skeleton-shimmer rounded-[10px]" />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 skeleton-shimmer rounded-[10px]" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -41,7 +49,7 @@ export function DashboardView({
   const lifeScore = scores.lifeScore ?? 0;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-page-in">
       {/* ── Header + Life Score ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -119,6 +127,75 @@ export function DashboardView({
           </div>
           )}
         </Card>
+
+      {/* ── هذا الأسبوع + قريباً ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-emerald/20">
+          <CardHeader>
+            <CardTitle>📈 ما تحسّن هذا الأسبوع؟</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+                <div className="text-2xl font-black text-emerald">
+                  <CountUp value={dashboard.weekSummary.habitPct} suffix="%" />
+                </div>
+                <div className="text-[10px] text-text3 mt-1">انضباط العادات</div>
+              </div>
+              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+                <div className="text-2xl font-black text-sky">
+                  <CountUp value={dashboard.weekSummary.workoutsDays} />
+                  <span className="text-sm text-text3">/{dashboard.weekSummary.workoutsTarget}</span>
+                </div>
+                <div className="text-[10px] text-text3 mt-1">أيام تمرين</div>
+              </div>
+              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+                <div className="text-2xl font-black text-gold2">
+                  <CountUp value={dashboard.weekSummary.goalsAvgProgress} suffix="%" />
+                </div>
+                <div className="text-[10px] text-text3 mt-1">متوسط الأهداف</div>
+              </div>
+            </div>
+            <MiniChart
+              type="bar"
+              color="var(--emerald)"
+              height={100}
+              data={[
+                { label: "عادات", value: dashboard.weekSummary.habitPct },
+                { label: "تمارين", value: Math.round((dashboard.weekSummary.workoutsDays / dashboard.weekSummary.workoutsTarget) * 100) },
+                { label: "أهداف", value: dashboard.weekSummary.goalsAvgProgress },
+              ]}
+            />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>⏳ ما يقترب موعده؟</CardTitle>
+            <Link href="/tasks" className="text-[11px] text-gold2 hover:underline">
+              المهام
+            </Link>
+          </CardHeader>
+          <CardBody className="!py-2 space-y-1 max-h-52 overflow-y-auto">
+            {dashboard.tasksDueSoon.length === 0 ? (
+              <p className="text-text3 text-sm py-6 text-center">لا مواعيد خلال 7 أيام — خطّط مسبقاً</p>
+            ) : (
+              dashboard.tasksDueSoon.map((t) => (
+                <Link
+                  key={t.id}
+                  href="/tasks"
+                  className="flex items-center gap-3 p-2.5 rounded-sm bg-surface2/50 hover:bg-surface2 hover:border-gold/30 border border-transparent transition-all"
+                >
+                  <span className="text-sm flex-1 truncate">{t.title}</span>
+                  {t.dueDate && (
+                    <span className="text-[10px] font-mono text-amber2 shrink-0">{t.dueDate}</span>
+                  )}
+                </Link>
+              ))
+            )}
+          </CardBody>
+        </Card>
+      </div>
 
       {/* ── Habits + Tasks ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -204,6 +281,7 @@ export function DashboardView({
         <KpiCard
           label="🍽️ السعرات اليوم"
           value={`${Math.round(nutrition.calories)}`}
+          numericValue={Math.round(nutrition.calories)}
           sub={`/${nutrition.calorieTarget} · بروتين ${Math.round(nutrition.protein)}جم`}
           color="var(--amber2)"
           badge={
@@ -215,6 +293,8 @@ export function DashboardView({
         <KpiCard
           label="🏋️ تمارين الأسبوع"
           value={`${workouts.uniqueDays} / ${workouts.weekTarget}`}
+          numericValue={workouts.uniqueDays}
+          suffix={` / ${workouts.weekTarget}`}
           sub={`${workouts.weekSessions} مجموعة · أيام تمرين`}
           color="var(--sky)"
         />
@@ -348,7 +428,9 @@ function LifeScoreRing({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-black text-gold2">{score}</span>
+        <span className="text-xl font-black text-gold2">
+          <CountUp value={score} />
+        </span>
         <span className="text-[9px] text-text3">Life Score</span>
       </div>
     </div>

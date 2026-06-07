@@ -224,6 +224,14 @@ export interface DashboardSnapshot {
   priorities: DashboardPriority[];
   todayHabits: DashboardHabitToday[];
   tasksDueToday: DashboardTaskToday[];
+  tasksDueSoon: DashboardTaskToday[];
+  weekSummary: {
+    habitPct: number;
+    workoutsDays: number;
+    workoutsTarget: number;
+    goalsAvgProgress: number;
+    tasksCompletedEstimate: number;
+  };
   atRiskGoals: DashboardAtRiskGoal[];
   weight: DashboardWeight;
   nutrition: DashboardNutrition;
