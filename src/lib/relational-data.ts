@@ -4,8 +4,10 @@ import type {
   Book,
   CareerCertification,
   CareerCourse,
+  CareerProfile,
   CareerRoadmapStage,
   CareerSkillMatrixItem,
+  PortfolioProject,
   Debt,
   DailyJournal,
   Exercise,
@@ -90,6 +92,8 @@ export async function loadRelationalYearData(db: Db, userId: string) {
     interviews,
     mentors,
     networkContacts,
+    portfolioProjects,
+    careerProfileRow,
     learningPathsRows,
     studySessionsRows,
     knowledgeAreasRows,
@@ -146,6 +150,10 @@ export async function loadRelationalYearData(db: Db, userId: string) {
     safeSelect(
       db.from("networking_contacts").select("*").eq("user_id", userId).order("created_at", { ascending: false })
     ),
+    safeSelect(
+      db.from("portfolio_projects").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+    ),
+    safeSelect(db.from("career_profiles").select("*").eq("user_id", userId).maybeSingle()),
     safeSelect(
       db.from("learning_paths").select("*").eq("user_id", userId).order("created_at", { ascending: false })
     ),
@@ -213,35 +221,105 @@ export async function loadRelationalYearData(db: Db, userId: string) {
   const careerRoadmap: CareerRoadmapStage[] = (careerMilestones ?? []).map((m) => {
     const meta = (m.metadata as Record<string, unknown> | null) ?? {};
     const focus = Array.isArray(meta.focus) ? (meta.focus as string[]) : [];
+    const ext = m as typeof m & { salary_range?: string; progress_pct?: number };
     return {
       id: m.id,
       title: m.title,
       from: (meta.from as string) ?? undefined,
       to: (meta.to as string) ?? m.target_date ?? undefined,
       focus: focus.length ? focus : (m.description?.split(" · ") ?? []),
+      targetDate: m.target_date ?? undefined,
+      salaryRange: ext.salary_range ?? undefined,
+      description: m.description ?? undefined,
+      status: m.status as CareerRoadmapStage["status"],
+      progressPct: ext.progress_pct ?? 0,
+      stageOrder: m.stage_order,
     };
   });
 
   const careerSkills: CareerSkillMatrixItem[] = (skills ?? [])
     .filter((s) => hub(s) !== "learning")
-    .map((s) => ({
-      id: s.id,
-      name: s.name,
-      current: (s.current_level ?? 1) * 10,
-      target: (s.target_level ?? 5) * 10,
-      category: (s.category as CareerSkillMatrixItem["category"]) ?? "technical",
-    }));
+    .map((s) => {
+      const ext = s as typeof s & {
+        current_pct?: number;
+        target_pct?: number;
+        manual_score?: number;
+        evidence_score?: number;
+        scoring_mode?: string;
+      };
+      return {
+        id: s.id,
+        name: s.name,
+        current: ext.current_pct ?? (s.current_level ?? 1) * 10,
+        target: ext.target_pct ?? (s.target_level ?? 8) * 10,
+        manualScore: ext.manual_score ?? ext.current_pct ?? (s.current_level ?? 1) * 10,
+        evidenceScore: ext.evidence_score ?? 0,
+        scoringMode: (ext.scoring_mode as CareerSkillMatrixItem["scoringMode"]) ?? "hybrid",
+        category: s.category ?? "technical",
+      };
+    });
 
   const allCerts = certifications ?? [];
   const careerCertifications: CareerCertification[] = allCerts
     .filter((c) => hub(c) !== "learning")
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      provider: c.issuer ?? "",
-      status: certStatus(c.status),
-      dueDate: c.exam_date ?? undefined,
-    }));
+    .map((c) => {
+      const ext = c as typeof c & {
+        hours?: number;
+        start_date?: string;
+        progress_pct?: number;
+        priority?: string;
+        career_impact_score?: number;
+        difficulty?: string;
+      };
+      return {
+        id: c.id,
+        name: c.name,
+        provider: c.issuer ?? "",
+        status: certStatus(c.status) as CareerCertification["status"],
+        dueDate: c.exam_date ?? undefined,
+        startDate: ext.start_date ?? undefined,
+        hours: ext.hours ?? undefined,
+        progressPct: ext.progress_pct ?? 0,
+        priority: ext.priority ?? "normal",
+        careerImpactScore: ext.career_impact_score ?? 50,
+        difficulty: ext.difficulty ?? undefined,
+        notes: c.notes ?? undefined,
+      };
+    });
+
+  const careerPortfolio: PortfolioProject[] = (portfolioProjects ?? []).map((p) => {
+    const ext = p as typeof p & { outcome?: string; lessons_learned?: string; career_impact?: number; files?: unknown; links?: unknown };
+    return {
+      id: p.id,
+      title: p.title,
+      description: p.description ?? undefined,
+      skillsUsed: p.skills_used ?? [],
+      url: p.url ?? undefined,
+      outcome: ext.outcome ?? undefined,
+      lessonsLearned: ext.lessons_learned ?? undefined,
+      careerImpact: ext.career_impact ?? 0,
+      status: p.status as PortfolioProject["status"],
+      startDate: p.start_date ?? undefined,
+      finishDate: p.finish_date ?? undefined,
+    };
+  });
+
+  const cpRow = careerProfileRow as {
+    current_role?: string | null;
+    target_role?: string | null;
+    target_salary?: number | null;
+    transformation_narrative?: string | null;
+    target_date?: string | null;
+  } | null;
+  const careerProfile: CareerProfile | null = cpRow
+    ? {
+        currentRole: cpRow.current_role ?? undefined,
+        targetRole: cpRow.target_role ?? undefined,
+        targetSalary: cpRow.target_salary ?? undefined,
+        narrative: cpRow.transformation_narrative ?? undefined,
+        targetDate: cpRow.target_date ?? undefined,
+      }
+    : null;
 
   const allCourses = courses ?? [];
   const careerCourses: CareerCourse[] = allCourses
@@ -474,6 +552,8 @@ export async function loadRelationalYearData(db: Db, userId: string) {
     careerSkillMatrix: careerSkills,
     careerCertifications,
     careerCourses,
+    careerPortfolio,
+    careerProfile,
     jobApplications: jobApps,
     interviews: interviewEntries,
     mentors: mentorEntries,

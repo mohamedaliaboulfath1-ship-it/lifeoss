@@ -1,5 +1,6 @@
 import { runAnalyticsEngine, type AnalyticsResult } from "@/lib/analytics/engine";
 import { calcOverallHabitPct } from "@/lib/calculations";
+import { computeUnifiedCareerScore } from "@/lib/career/score";
 import type { YearPayload } from "@/types/lifeos";
 
 export interface DomainScores {
@@ -31,14 +32,7 @@ export function computeDomainScores(yearData: YearPayload, base: AnalyticsResult
       )
     : 50;
 
-  const careerCerts = (yearData.careerCertifications ?? []).filter(
-    (c) => c.status === "active" || c.status === "done"
-  ).length;
-  const careerCourses = (yearData.careerCourses ?? []).reduce(
-    (s, c) => s + (c.progress ?? 0),
-    0
-  );
-  const careerScore = clamp(careerCerts * 12 + careerCourses / 5);
+  const careerScore = clamp(computeUnifiedCareerScore(yearData));
 
   const healthScore = base.lifeScoreBreakdown.find((x) => x.label === "الصحة")?.score ?? 50;
 

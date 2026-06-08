@@ -242,6 +242,18 @@ export interface CareerRoadmapStage {
   from?: string;
   to?: string;
   focus: string[];
+  targetDate?: string;
+  salaryRange?: string;
+  description?: string;
+  requirements?: string[];
+  requiredSkills?: string[];
+  requiredCerts?: string[];
+  requiredExperience?: string;
+  requiredProjects?: string[];
+  successCriteria?: string;
+  status?: "planned" | "active" | "done" | "paused";
+  progressPct?: number;
+  stageOrder?: number;
 }
 
 export interface CareerSkillMatrixItem {
@@ -249,15 +261,50 @@ export interface CareerSkillMatrixItem {
   name: string;
   current: number;
   target: number;
-  category: "technical" | "analytical" | "leadership" | "communication";
+  manualScore?: number;
+  evidenceScore?: number;
+  scoringMode?: "manual" | "evidence" | "hybrid";
+  category: string;
 }
 
 export interface CareerCertification {
   id: string;
   name: string;
   provider: string;
-  status: "planned" | "active" | "done";
+  status: "planned" | "studying" | "registered" | "passed" | "expired" | "active" | "done";
   dueDate?: string;
+  startDate?: string;
+  cost?: number;
+  hours?: number;
+  difficulty?: string;
+  progressPct?: number;
+  notes?: string;
+  priority?: string;
+  careerImpactScore?: number;
+}
+
+export interface PortfolioProject {
+  id: string;
+  title: string;
+  description?: string;
+  skillsUsed: string[];
+  url?: string;
+  files?: string[];
+  links?: string[];
+  outcome?: string;
+  lessonsLearned?: string;
+  careerImpact?: number;
+  status: "planned" | "active" | "done" | "paused";
+  startDate?: string;
+  finishDate?: string;
+}
+
+export interface CareerProfile {
+  currentRole?: string;
+  targetRole?: string;
+  targetSalary?: number;
+  narrative?: string;
+  targetDate?: string;
 }
 
 export interface CareerCourse {
@@ -352,6 +399,8 @@ export interface YearPayload {
   careerSkillMatrix?: CareerSkillMatrixItem[];
   careerCertifications?: CareerCertification[];
   careerCourses?: CareerCourse[];
+  careerPortfolio?: PortfolioProject[];
+  careerProfile?: CareerProfile | null;
   jobApplications?: JobApplication[];
   interviews?: InterviewEntry[];
   mentors?: MentorEntry[];

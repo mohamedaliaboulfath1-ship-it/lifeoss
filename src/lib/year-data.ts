@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { ensureCareerSeed } from "@/lib/career/ensure-seed";
 import { buildDashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { loadIdentity, loadRelationalYearData } from "@/lib/relational-data";
 import type {
@@ -183,8 +182,6 @@ export async function assembleYearPayload(
 ): Promise<YearPayload> {
   const supabase = await createClient();
 
-  await ensureCareerSeed(supabase, userId);
-
   const [goalsRes, habitsRes, logsRes, weightRes, relational, identity] =
     await Promise.all([
       supabase.from("goals").select("*").eq("user_id", userId).eq("year", year),
@@ -228,6 +225,8 @@ export async function assembleYearPayload(
     careerSkillMatrix: relational.careerSkillMatrix,
     careerCertifications: relational.careerCertifications,
     careerCourses: relational.careerCourses,
+    careerPortfolio: relational.careerPortfolio,
+    careerProfile: relational.careerProfile,
     jobApplications: relational.jobApplications,
     interviews: relational.interviews,
     mentors: relational.mentors,

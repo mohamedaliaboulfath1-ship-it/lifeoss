@@ -5,23 +5,8 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import type { DashboardCareerSummary } from "@/types/lifeos-pro";
 import Link from "next/link";
 
-const DEFAULT_SKILLS = [
-  { name: "Excel متقدم", level: 6, target: 9 },
-  { name: "Financial Modeling", level: 3, target: 8 },
-  { name: "تحليل مالي", level: 4, target: 8 },
-];
-
 export function CareerPanel({ career }: { career: DashboardCareerSummary }) {
-  const skills =
-    career.skills.length > 0
-      ? career.skills.slice(0, 4)
-      : DEFAULT_SKILLS.map((s, i) => ({
-          id: `default-${i}`,
-          name: s.name,
-          level: s.level,
-          target: s.target,
-          hours: 0,
-        }));
+  const skills = career.skills.slice(0, 4);
 
   return (
     <Card>
@@ -35,7 +20,7 @@ export function CareerPanel({ career }: { career: DashboardCareerSummary }) {
         <div>
           <div className="flex justify-between text-xs mb-1">
             <span className="text-text3">
-              {career.currentRole} → <strong className="text-text">{career.targetRole}</strong>
+              {career.currentRole ?? "—"} → <strong className="text-text">{career.targetRole ?? "حدّد هدفك"}</strong>
             </span>
             <span className="font-mono text-gold2">{career.transformationProgress}%</span>
           </div>
@@ -71,6 +56,9 @@ export function CareerPanel({ career }: { career: DashboardCareerSummary }) {
           />
         </div>
 
+        {!skills.length && (
+          <p className="text-[11px] text-text3 text-center py-2">أضف مهاراتك من Career OS</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {skills.map((s) => (
             <div key={s.id} className="bg-surface2/60 rounded-sm p-2.5">

@@ -42,8 +42,8 @@ export async function loadCareerSummary(
   const profile = profileRes.data;
 
   return {
-    currentRole: profile?.current_role ?? "محاسب",
-    targetRole: profile?.target_role ?? "Financial Analyst",
+    currentRole: profile?.current_role ?? undefined,
+    targetRole: profile?.target_role ?? undefined,
     transformationProgress: faGoal?.progress ?? careerGoals[0]?.progress ?? 0,
     primaryGoalTitle: faGoal?.title ?? careerGoals[0]?.title,
     skills: (skillsRes.data ?? []).map((s) => ({

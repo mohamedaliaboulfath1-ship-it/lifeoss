@@ -15,6 +15,7 @@ import { buildBodyAnalytics } from "@/lib/body/analytics";
 import { buildBodyCoachInsights } from "@/lib/body/coach";
 import { resolveCurrentWeight } from "@/lib/body/weight-forecast";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
+import { computeUnifiedCareerScore } from "@/lib/career/score";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -540,7 +541,7 @@ export async function buildDashboardSnapshot(
       healthScore: workoutScore,
       financeScore: Math.min(100, Math.round((totalSavings / 12000) * 100)),
       learningScore: Math.min(100, Math.round((career.learningHoursWeek / 5) * 100)),
-      careerScore: career.transformationProgress,
+      careerScore: computeUnifiedCareerScore(yearData),
       factors: { habitPct, nutritionScore, workoutScore, avgGoalProgress },
     },
     counts: {
