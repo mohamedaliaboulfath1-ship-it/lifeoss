@@ -15,12 +15,15 @@ import type { WorkoutSetLog, YearPayload } from "@/types/lifeos";
 
 interface WorkoutsViewProps {
   yearData: YearPayload;
+  workoutProgram?: string;
   onRefresh: () => void;
 }
 
-export function WorkoutsView({ yearData, onRefresh }: WorkoutsViewProps) {
+export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: WorkoutsViewProps) {
   const [view, setView] = useState("log");
   const [modal, setModal] = useState(false);
+  const [exerciseModal, setExerciseModal] = useState(false);
+  const [newExercise, setNewExercise] = useState({ name: "", muscleGroup: "", equipment: "" });
   const [exerciseFocus, setExerciseFocus] = useState("");
   const exercises = yearData.exercises ?? [];
   const logs = yearData.workoutLogs ?? [];
@@ -131,7 +134,7 @@ export function WorkoutsView({ yearData, onRefresh }: WorkoutsViewProps) {
     <div className="space-y-6 animate-fade-up">
       <PageHeader
         title="🏋️ التمارين"
-        subtitle={`PPLUL System · ${weekDays} جلسة هذا الأسبوع`}
+        subtitle={`${workoutProgram} · ${weekDays} جلسة هذا الأسبوع`}
         actionLabel="+ تسجيل جلسة"
         onAction={() => setModal(true)}
       />
@@ -146,7 +149,8 @@ export function WorkoutsView({ yearData, onRefresh }: WorkoutsViewProps) {
       <Tabs
         tabs={[
           { id: "log", label: "📋 السجل" },
-          { id: "plan", label: "📅 PPLUL" },
+          { id: "exercises", label: "💪 تماريني" },
+          { id: "plan", label: "📅 البرنامج" },
           { id: "progress", label: "📈 Progress" },
           { id: "analytics", label: "🧠 Analytics" },
         ]}
@@ -176,6 +180,33 @@ export function WorkoutsView({ yearData, onRefresh }: WorkoutsViewProps) {
               </div>
             ))
           )}
+        </Card>
+      )}
+
+      {view === "exercises" && (
+        <Card className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="text-sm font-bold">تمارينك المخصصة</div>
+            <Button variant="gold" size="sm" onClick={() => setExerciseModal(true)}>+ تمرين</Button>
+          </div>
+          <ul className="space-y-2 text-sm">
+            {exercises.map((e) => (
+              <li key={e.id} className="flex justify-between items-center border-b border-border/40 py-2">
+                <span>{e.name} {e.muscleGroup ? `· ${e.muscleGroup}` : ""}</span>
+                <button
+                  type="button"
+                  className="text-rose2 text-xs"
+                  onClick={async () => {
+                    await fetch(`/api/workouts?entity=exercise&id=${e.id}`, { method: "DELETE" });
+                    onRefresh();
+                  }}
+                >
+                  حذف
+                </button>
+              </li>
+            ))}
+            {!exercises.length && <li className="text-text3">أضف تمارينك — مثلاً: Bench Press، Squat، Lat Pulldown</li>}
+          </ul>
         </Card>
       )}
 
@@ -252,6 +283,31 @@ export function WorkoutsView({ yearData, onRefresh }: WorkoutsViewProps) {
               </li>
             </ul>
           </Card>
+        </div>
+      )}
+
+      {exerciseModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
+            <h3 className="font-bold text-gold2">تمرين جديد</h3>
+            <div><Label>الاسم</Label><Input value={newExercise.name} onChange={(e) => setNewExercise({ ...newExercise, name: e.target.value })} /></div>
+            <div><Label>المجموعة العضلية</Label><Input value={newExercise.muscleGroup} onChange={(e) => setNewExercise({ ...newExercise, muscleGroup: e.target.value })} placeholder="صدر، ظهر..." /></div>
+            <div><Label>المعدات</Label><Input value={newExercise.equipment} onChange={(e) => setNewExercise({ ...newExercise, equipment: e.target.value })} /></div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setExerciseModal(false)}>إلغاء</Button>
+              <Button variant="gold" onClick={async () => {
+                if (!newExercise.name.trim()) return;
+                await fetch("/api/workouts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ entity: "exercise", payload: newExercise }),
+                });
+                setExerciseModal(false);
+                setNewExercise({ name: "", muscleGroup: "", equipment: "" });
+                onRefresh();
+              }}>حفظ</Button>
+            </div>
+          </div>
         </div>
       )}
 

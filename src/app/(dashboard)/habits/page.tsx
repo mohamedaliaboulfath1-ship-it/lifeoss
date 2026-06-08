@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ViewSkeleton } from "@/components/ui/skeleton";
 
 const HabitsView = dynamic(
-  () => import("@/components/dashboard/habits-view").then((m) => ({ default: m.HabitsView })),
+  () => import("@/components/habits/habits-para-view").then((m) => ({ default: m.HabitsParaView })),
   { loading: () => <ViewSkeleton />, ssr: false }
 );
 

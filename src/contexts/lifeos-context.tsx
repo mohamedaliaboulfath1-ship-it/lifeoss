@@ -19,6 +19,17 @@ interface Profile {
   height?: number | null;
   startWeight?: number | null;
   targetWeight?: number | null;
+  currentWeight?: number | null;
+  dailyCalories?: number | null;
+  proteinTarget?: number | null;
+  carbsTarget?: number | null;
+  fatsTarget?: number | null;
+  bodyPlan?: {
+    weeklyGainTarget?: number;
+    workoutProgram?: string;
+    dietPlan?: string;
+    dietNotes?: string;
+  };
   salary?: number | null;
   targetSalary?: number | null;
   currentYear: string;

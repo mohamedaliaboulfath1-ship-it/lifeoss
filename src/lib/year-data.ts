@@ -13,6 +13,15 @@ import type { Goal, GoalTask, Habit, WeightLog, YearPayload } from "@/types/life
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 
 export function mapProfile(row: ProfileRow) {
+  const ext = row as ProfileRow & {
+    current_weight?: number | null;
+    daily_calories?: number | null;
+    protein_target?: number | null;
+    carbs_target?: number | null;
+    fats_target?: number | null;
+    metadata?: { bodyPlan?: Record<string, unknown> } | null;
+  };
+  const meta = ext.metadata ?? {};
   return {
     id: row.id,
     displayName: row.display_name,
@@ -21,6 +30,17 @@ export function mapProfile(row: ProfileRow) {
     height: row.height,
     startWeight: row.start_weight,
     targetWeight: row.target_weight,
+    currentWeight: ext.current_weight ?? null,
+    dailyCalories: ext.daily_calories ?? null,
+    proteinTarget: ext.protein_target ?? null,
+    carbsTarget: ext.carbs_target ?? null,
+    fatsTarget: ext.fats_target ?? null,
+    bodyPlan: meta.bodyPlan as {
+      weeklyGainTarget?: number;
+      workoutProgram?: string;
+      dietPlan?: string;
+      dietNotes?: string;
+    } | undefined,
     salary: row.salary,
     targetSalary: row.target_salary,
     startDate: row.start_date,
@@ -67,19 +87,35 @@ function mapGoal(row: Record<string, unknown>): Goal {
     createdAt: row.created_at as string | undefined,
     tasks: (row.tasks as GoalTask[]) ?? [],
     habits: (row.habits as string) ?? undefined,
+    completionScore: row.completion_score != null ? Number(row.completion_score) : undefined,
+    habitContributionPct: row.habit_contribution_pct != null ? Number(row.habit_contribution_pct) : undefined,
+    taskContributionPct: row.task_contribution_pct != null ? Number(row.task_contribution_pct) : undefined,
+    progressContributionPct: row.progress_contribution_pct != null ? Number(row.progress_contribution_pct) : undefined,
   };
 }
 
-function mapHabit(row: HabitRow): Habit {
+function mapHabit(row: Record<string, unknown>): Habit {
+  const activeDays = row.active_days as number[] | undefined;
   return {
-    id: row.id,
-    name: row.name,
-    cat: row.cat,
-    freq: row.freq,
-    time: row.time ?? undefined,
-    dur: row.dur ?? undefined,
-    goalLink: row.goal_link ?? (row as HabitRow & { goal_id?: string }).goal_id ?? undefined,
-    note: row.note ?? undefined,
+    id: String(row.id),
+    name: String(row.name),
+    cat: String(row.cat ?? row.category ?? "prod"),
+    freq: String(row.freq ?? row.frequency ?? "daily"),
+    time: (row.time as string) ?? (row.time_of_day as string) ?? undefined,
+    dur: (row.dur as number) ?? undefined,
+    goalLink: (row.goal_link as string) ?? (row.goal_id as string) ?? undefined,
+    note: (row.note as string) ?? undefined,
+    domainId: row.domain_id as string | undefined,
+    projectId: row.project_id as string | undefined,
+    why: row.why as string | undefined,
+    stopImpact: row.stop_impact as string | undefined,
+    priority: row.priority as Habit["priority"],
+    impact: row.impact as Habit["impact"],
+    activeDays: Array.isArray(activeDays) ? activeDays : undefined,
+    lifeScoreWeight: row.life_score_weight != null ? Number(row.life_score_weight) : undefined,
+    active: row.active !== false,
+    bestStreak: row.best_streak != null ? Number(row.best_streak) : undefined,
+    streak: row.streak != null ? Number(row.streak) : undefined,
   };
 }
 
@@ -173,7 +209,7 @@ export async function assembleYearPayload(
 
   return {
     goals: (goalsRes.data ?? []).map((g) => mapGoal(g as Record<string, unknown>)),
-    habits: (habitsRes.data ?? []).map((h) => mapHabit(h as HabitRow)),
+    habits: (habitsRes.data ?? []).map((h) => mapHabit(h as Record<string, unknown>)),
     habitLogs: buildHabitLogs(filteredLogs),
     weightLogs: (weightRes.data ?? []).map((w) => mapWeight(w as WeightLogRow)),
     identity,

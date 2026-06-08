@@ -14,7 +14,14 @@ export default function NutritionPage() {
       <div className="flex-1 overflow-y-auto p-7">
         <NutritionView
           yearData={data.yearData}
-          targets={{ calories: 3000, protein: 130, carbs: 350, fats: 90 }}
+          targets={{
+            calories: data.profile.dailyCalories ?? 3000,
+            protein: data.profile.proteinTarget ?? 130,
+            carbs: data.profile.carbsTarget ?? 350,
+            fats: data.profile.fatsTarget ?? 90,
+          }}
+          bodyPlan={data.profile.bodyPlan}
+          onEditPlan={() => { window.location.href = "/body"; }}
           onRefresh={refresh}
         />
       </div>

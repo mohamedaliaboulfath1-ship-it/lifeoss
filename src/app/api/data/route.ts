@@ -39,6 +39,24 @@ export async function PATCH(req: Request) {
     if (p.height !== undefined) updates.height = p.height;
     if (p.startWeight !== undefined) updates.start_weight = p.startWeight;
     if (p.targetWeight !== undefined) updates.target_weight = p.targetWeight;
+    if (p.currentWeight !== undefined) updates.current_weight = p.currentWeight;
+    if (p.dailyCalories !== undefined) updates.daily_calories = p.dailyCalories;
+    if (p.proteinTarget !== undefined) updates.protein_target = p.proteinTarget;
+    if (p.carbsTarget !== undefined) updates.carbs_target = p.carbsTarget;
+    if (p.fatsTarget !== undefined) updates.fats_target = p.fatsTarget;
+    if (p.bodyGoal !== undefined) updates.body_goal = p.bodyGoal;
+    if (p.weeklyGainTarget !== undefined) updates.weekly_gain_target = p.weeklyGainTarget;
+    if (p.fiberTarget !== undefined) updates.fiber_target = p.fiberTarget;
+    if (p.waterTargetMl !== undefined) updates.water_target_ml = p.waterTargetMl;
+    if (p.bodyPlan !== undefined) {
+      const { data: existing } = await authResult.supabase
+        .from("profiles")
+        .select("metadata")
+        .eq("id", authResult.userId)
+        .maybeSingle();
+      const prevMeta = (existing?.metadata as Record<string, unknown>) ?? {};
+      updates.metadata = { ...prevMeta, bodyPlan: p.bodyPlan };
+    }
     if (p.salary !== undefined) updates.salary = p.salary;
     if (p.targetSalary !== undefined) updates.target_salary = p.targetSalary;
     if (p.startDate !== undefined) updates.start_date = p.startDate;

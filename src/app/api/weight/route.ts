@@ -59,7 +59,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id });
+  await authResult.supabase
+    .from("profiles")
+    .update({ current_weight: body.weight, updated_at: new Date().toISOString() })
+    .eq("id", authResult.userId);
+
+  return NextResponse.json({ ok: true, id, currentWeight: body.weight });
+}
+
+const currentSchema = z.object({ weight: z.number().positive() });
+
+export async function PATCH(req: Request) {
+  const authResult = await requireSession();
+  if ("error" in authResult) return authResult.error;
+
+  const body = currentSchema.parse(await req.json());
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const id = uid();
+
+  await authResult.supabase.from("weight_logs").upsert({
+    id,
+    user_id: authResult.userId,
+    log_date: todayStr,
+    weight: body.weight,
+  });
+
+  const { error } = await authResult.supabase
+    .from("profiles")
+    .update({ current_weight: body.weight, updated_at: new Date().toISOString() })
+    .eq("id", authResult.userId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, currentWeight: body.weight });
 }
 
 export async function DELETE(req: Request) {

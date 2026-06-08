@@ -16,6 +16,13 @@ export default function WeightPage() {
           yearData={data.yearData}
           startWeight={data.profile.startWeight}
           targetWeight={data.profile.targetWeight}
+          currentWeight={data.profile.currentWeight}
+          bodyPlan={data.profile.bodyPlan}
+          dailyCalories={data.profile.dailyCalories}
+          proteinTarget={data.profile.proteinTarget}
+          carbsTarget={data.profile.carbsTarget}
+          fatsTarget={data.profile.fatsTarget}
+          height={data.profile.height}
           onRefresh={refresh}
         />
       </div>

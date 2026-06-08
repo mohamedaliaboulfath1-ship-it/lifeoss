@@ -14,6 +14,7 @@ export default function WorkoutsPage() {
       <div className="flex-1 overflow-y-auto p-7">
         <WorkoutsView
           yearData={data.yearData}
+          workoutProgram={data.profile.bodyPlan?.workoutProgram}
           onRefresh={refresh}
         />
       </div>

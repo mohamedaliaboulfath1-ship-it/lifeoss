@@ -44,6 +44,10 @@ export interface Goal {
   targetDate?: string;
   domainId?: string;
   createdAt?: string;
+  completionScore?: number;
+  habitContributionPct?: number;
+  taskContributionPct?: number;
+  progressContributionPct?: number;
 }
 
 /** Goal with required Pro fields for Kanban / probability */
@@ -61,6 +65,17 @@ export interface Habit {
   dur?: number;
   goalLink?: string;
   note?: string;
+  domainId?: string;
+  projectId?: string;
+  why?: string;
+  stopImpact?: string;
+  priority?: "low" | "normal" | "high" | "critical";
+  impact?: "low" | "medium" | "high";
+  activeDays?: number[];
+  lifeScoreWeight?: number;
+  active?: boolean;
+  bestStreak?: number;
+  streak?: number;
 }
 
 export interface WeightLog {
@@ -148,6 +163,8 @@ export interface Measurement {
   waist?: number;
   arm?: number;
   thigh?: number;
+  calf?: number;
+  bodyFat?: number;
   note?: string;
 }
 

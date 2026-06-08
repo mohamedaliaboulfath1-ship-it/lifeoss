@@ -8,6 +8,12 @@ import { buildActionableInsights } from "@/lib/dashboard/insights";
 import { buildWealthCoachInsights, wealthCoachToDashboardInsights } from "@/lib/wealth/coach-insights";
 import { subscriptionMonthlyEquivalent } from "@/lib/wealth/categories";
 import { budgetAlertLevel } from "@/lib/wealth/snapshot";
+import { enrichHabit } from "@/lib/habits/intelligence";
+import { calcGoalCompletionScore } from "@/lib/goals/completion";
+import { buildHabitCoachInsights } from "@/lib/life-coach/habit-coach";
+import { buildBodyAnalytics } from "@/lib/body/analytics";
+import { buildBodyCoachInsights } from "@/lib/body/coach";
+import { resolveCurrentWeight } from "@/lib/body/weight-forecast";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
 
 function greeting(): string {
@@ -86,7 +92,7 @@ export async function buildDashboardSnapshot(
       .limit(8),
     db
       .from("habits")
-      .select("id, name, frequency, active, category, time_of_day")
+      .select("id, name, frequency, active, category, time_of_day, cat, freq, goal_id, project_id, domain_id, why, stop_impact, priority, impact, active_days, life_score_weight, best_streak")
       .eq("user_id", userId)
       .eq("active", true),
     db
@@ -96,7 +102,7 @@ export async function buildDashboardSnapshot(
       .eq("log_date", todayStr),
     db
       .from("goals")
-      .select("id, title, progress, status, target_date, due_date, area, category, created_at, priority")
+      .select("id, title, progress, status, target_date, due_date, area, category, created_at, priority, level, parent_id, tasks")
       .eq("user_id", userId)
       .in("status", ["active", "paused"])
       .limit(30),
@@ -121,7 +127,7 @@ export async function buildDashboardSnapshot(
       .gte("tx_date", monthStartStr),
     db
       .from("profiles")
-      .select("start_weight, target_weight, daily_calories, protein_target, carbs_target, fats_target, life_start_date, start_date, salary, cash_balance")
+      .select("start_weight, target_weight, current_weight, height, daily_calories, protein_target, carbs_target, fats_target, life_start_date, start_date, salary, cash_balance")
       .eq("id", userId)
       .maybeSingle(),
     loadCareerSummary(db, userId),
@@ -278,7 +284,10 @@ export async function buildDashboardSnapshot(
   };
 
   const wLogs = yearData.weightLogs ?? [];
-  const currentWeight = wLogs.length ? wLogs[wLogs.length - 1].weight : startWeight;
+  const currentWeight = resolveCurrentWeight({
+    latestLog: wLogs.length ? wLogs[wLogs.length - 1].weight : null,
+    profileCurrent: profile?.current_weight,
+  });
   const weightProgressPct =
     currentWeight && startWeight && targetWeight && targetWeight !== startWeight
       ? Math.max(
@@ -397,9 +406,80 @@ export async function buildDashboardSnapshot(
       nearestRenewal,
     })
   );
-  const insights = [...wealthInsights, ...baseInsights]
+
+  const habitLogsMap: Record<string, Record<string, boolean>> = {};
+  for (const l of habitLogsRes.data ?? []) {
+    if (!habitLogsMap[l.habit_id]) habitLogsMap[l.habit_id] = {};
+    habitLogsMap[l.habit_id][l.log_date] = l.done;
+  }
+  const goalsMap = new Map(goals.map((g) => [g.id, {
+    id: g.id, title: g.title, level: g.level, parentId: g.parent_id,
+    progress: g.progress, status: g.status, targetDate: g.target_date ?? g.due_date,
+    due: g.due_date, createdAt: g.created_at, tasks: g.tasks as { id: string; text: string; done: boolean }[] | undefined,
+  }]));
+  const enrichedHabits = (habitsRes.data ?? []).map((h) =>
+    enrichHabit(
+      {
+        id: h.id, name: h.name, cat: h.cat ?? h.category ?? "prod", freq: h.freq ?? h.frequency ?? "daily",
+        goalLink: h.goal_id ?? undefined, projectId: h.project_id ?? undefined, domainId: h.domain_id ?? undefined,
+        why: h.why ?? undefined, stopImpact: h.stop_impact ?? undefined,
+        priority: h.priority, impact: h.impact, activeDays: h.active_days as number[] | undefined,
+        lifeScoreWeight: h.life_score_weight != null ? Number(h.life_score_weight) : undefined,
+        bestStreak: h.best_streak ?? undefined,
+      },
+      habitLogsMap,
+      goalsMap as Map<string, import("@/types/lifeos").Goal>
+    )
+  );
+  const goalCompletions = goals
+    .filter((g) => g.status !== "done")
+    .map((g) => {
+      const linkedHabits = (habitsRes.data ?? []).filter(
+        (h) => h.goal_id === g.id || h.project_id === g.id
+      ).map((h) => ({
+        id: h.id, name: h.name, cat: h.cat ?? "prod", freq: h.frequency ?? "daily",
+        goalLink: h.goal_id, activeDays: h.active_days as number[] | undefined,
+      }));
+      return calcGoalCompletionScore({
+        goal: {
+          id: g.id, title: g.title, area: "body", priority: "high",
+          progress: g.progress, status: g.status as import("@/types/lifeos").GoalStatus,
+          level: g.level as import("@/types/lifeos").GoalLevel,
+          targetDate: g.target_date ?? g.due_date ?? undefined,
+          createdAt: g.created_at,
+          tasks: g.tasks as import("@/types/lifeos").GoalTask[] | undefined,
+        },
+        linkedHabits,
+        logs: habitLogsMap,
+      });
+    });
+  const bodyAnalytics = buildBodyAnalytics({
+    weightLogs: wLogs.map((w) => ({ id: w.id ?? "", date: w.date, weight: w.weight })),
+    measurements: (yearData.measureLogs ?? []).map((m) => ({ ...m })),
+    startWeight: startWeight ?? wLogs[0]?.weight ?? null,
+    targetWeight,
+    heightCm: profile?.height,
+    currentWeightOverride: profile?.current_weight,
+    weeklyGainTarget: (profile as { weekly_gain_target?: number })?.weekly_gain_target ?? 0.5,
+  });
+  const bodyCoachInsights = buildBodyCoachInsights({
+    weightLogs: wLogs.map((w) => ({ id: w.id ?? "", date: w.date, weight: w.weight })),
+    measurements: (yearData.measureLogs ?? []).map((m) => ({ ...m })),
+    current: bodyAnalytics.hasWeight ? bodyAnalytics.currentWeight : null,
+    target: targetWeight,
+    weeklyRate: (profile as { weekly_gain_target?: number })?.weekly_gain_target ?? 0.5,
+    bodyGoal: (profile as { body_goal?: string })?.body_goal,
+  });
+  const habitCoachInsights = buildHabitCoachInsights({
+    habits: enrichedHabits,
+    goalCompletions,
+    body: bodyAnalytics,
+    savingsRate,
+  });
+
+  const insights = [...bodyCoachInsights, ...habitCoachInsights, ...wealthInsights, ...baseInsights]
     .filter((v, i, arr) => arr.findIndex((x) => x.id === v.id) === i)
-    .slice(0, 8);
+    .slice(0, 10);
 
   const lifeStart = profile?.life_start_date ?? profile?.start_date;
   const daysFromStart = lifeStart

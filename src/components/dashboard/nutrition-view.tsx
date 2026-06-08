@@ -21,10 +21,12 @@ interface NutritionViewProps {
     carbs?: number;
     fats?: number;
   };
+  bodyPlan?: { dietPlan?: string; dietNotes?: string };
+  onEditPlan?: () => void;
   onRefresh: () => void;
 }
 
-export function NutritionView({ yearData, targets, onRefresh }: NutritionViewProps) {
+export function NutritionView({ yearData, targets, bodyPlan, onEditPlan, onRefresh }: NutritionViewProps) {
   const [tab, setTab] = useState("overview");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
@@ -185,6 +187,16 @@ export function NutritionView({ yearData, targets, onRefresh }: NutritionViewPro
         actionLabel="+ Meal Builder"
         onAction={() => setModal(true)}
       />
+
+      <Card className="p-4 border-gold/25 bg-gold/5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold">{bodyPlan?.dietPlan ?? "خطتك الغذائية"}</div>
+          <div className="text-xs text-text3">{bodyPlan?.dietNotes || "عدّل السعرات والماكروز من خطتي في صفحة الجسم"}</div>
+        </div>
+        {onEditPlan && (
+          <Button variant="ghost" size="sm" onClick={onEditPlan}>⚙️ تعديل الخطة</Button>
+        )}
+      </Card>
 
       <Tabs
         tabs={[

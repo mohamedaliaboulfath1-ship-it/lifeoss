@@ -33,7 +33,15 @@ export const NAV_PAGES: NavPage[] = [
     href: "/habits",
     icon: "🔄",
     title: "العادات",
-    sub: "بناء الشخصية يوماً بيوم",
+    sub: "مرتبطة بالأهداف والمشاريع",
+    section: "الرئيسية",
+  },
+  {
+    id: "areas",
+    href: "/areas",
+    icon: "🗂️",
+    title: "المجالات",
+    sub: "PARA — مناطق الحياة",
     section: "الرئيسية",
   },
   {

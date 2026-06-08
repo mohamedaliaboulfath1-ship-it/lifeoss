@@ -12,6 +12,7 @@ import { CareerPanel } from "@/components/dashboard/command-center/career-panel"
 import Link from "next/link";
 import { MiniChart } from "@/components/ui/mini-chart";
 import { StaggerGrid, StaggerItem } from "@/components/motion/stagger";
+import { ProjectCommandCenter } from "@/components/dashboard/project-command-center";
 
 interface Profile {
   displayName: string;
@@ -133,6 +134,10 @@ export function DashboardView({
           </div>
           )}
         </Card>
+      </StaggerItem>
+
+      <StaggerItem>
+        <ProjectCommandCenter dashboard={dashboard} yearData={yearData} />
       </StaggerItem>
 
       {/* ── هذا الأسبوع + قريباً ── */}
@@ -287,7 +292,7 @@ export function DashboardView({
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label="⚖️ الوزن"
-          value={weight.current ? `${weight.current} كجم` : "—"}
+          value={weight.current ? `${weight.current} كجم` : "لم يُسجّل بعد"}
           sub={`الهدف: ${weight.target ?? 75} كجم`}
           color="var(--gold)"
           badge={weight.progressPct ? `${weight.progressPct}%` : undefined}

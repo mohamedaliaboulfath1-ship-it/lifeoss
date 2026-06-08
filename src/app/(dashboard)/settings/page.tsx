@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useTheme, type ThemeMode } from "@/contexts/theme-context";
 import { useToast } from "@/contexts/toast-context";
 import { useLifeOS } from "@/contexts/lifeos-context";
+import { useEffect, useState } from "react";
+import { Input, Label } from "@/components/ui/input";
 
 const THEMES: { id: ThemeMode; label: string }[] = [
   { id: "dark", label: "داكن" },
@@ -17,6 +19,32 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const { data } = useLifeOS();
+  const [accentColor, setAccentColor] = useState("#fbbf24");
+  const [sidebarOrder, setSidebarOrder] = useState("default");
+
+  useEffect(() => {
+    fetch("/api/preferences")
+      .then((r) => r.json())
+      .then((j) => {
+        const p = j.settings?.personalization as { accentColor?: string; sidebarOrder?: string } | undefined;
+        if (p?.accentColor) setAccentColor(p.accentColor);
+        if (p?.sidebarOrder) setSidebarOrder(p.sidebarOrder);
+      })
+      .catch(() => null);
+  }, []);
+
+  async function savePersonalization() {
+    const res = await fetch("/api/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        settings: {
+          personalization: { accentColor, sidebarOrder, dashboardLayout: ["projects", "habits", "tasks", "insights"] },
+        },
+      }),
+    });
+    toast(res.ok ? "تم حفظ التخصيص" : "فشل الحفظ", res.ok ? "success" : "error");
+  }
 
   async function exportJson() {
     try {
@@ -85,6 +113,28 @@ export default function SettingsPage() {
               </Button>
             ))}
           </div>
+        </Card>
+
+        <Card className="p-5 space-y-4">
+          <h2 className="font-bold text-gold2">تخصيص LifeOS</h2>
+          <p className="text-text3 text-sm">تعديل المظهر دون تغيير هيكل النظام الأساسي.</p>
+          <div>
+            <Label>لون التمييز (Accent)</Label>
+            <Input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="h-10 w-24" />
+          </div>
+          <div>
+            <Label>ترتيب الشريط الجانبي</Label>
+            <select
+              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+              value={sidebarOrder}
+              onChange={(e) => setSidebarOrder(e.target.value)}
+            >
+              <option value="default">افتراضي</option>
+              <option value="goals-first">الأهداف أولاً</option>
+              <option value="habits-first">العادات أولاً</option>
+            </select>
+          </div>
+          <Button variant="gold" size="sm" onClick={savePersonalization}>حفظ التخصيص</Button>
         </Card>
 
         <Card className="p-5 space-y-4">
