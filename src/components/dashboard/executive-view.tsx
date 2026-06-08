@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import type { YearPayload } from "@/types/lifeos";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
+import type { TimeOverviewPayload } from "@/types/time";
 
 interface ExecutiveViewProps {
   dashboard?: DashboardSnapshot | null;
@@ -11,6 +14,12 @@ interface ExecutiveViewProps {
 }
 
 export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
+  const [timeOs, setTimeOs] = useState<TimeOverviewPayload | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/time/overview").then((r) => r.json()).then(setTimeOs).catch(() => null);
+  }, []);
+
   const lifeScore = dashboard?.scores.lifeScore ?? 0;
   const quarterProgress = Math.min(100, Math.round((dashboard?.yearProgress ?? 0) / 4 * 1.1));
   const annualProgress = dashboard?.yearProgress ?? 0;
@@ -65,6 +74,28 @@ export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
           <div className="text-lg font-bold text-sky">{goalProbability}</div>
         </Card>
       </div>
+
+      {timeOs && (
+        <div className="grid md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="text-xs text-text3">Time Utilization</div>
+            <div className="text-2xl font-black">{timeOs.utilizationPct}%</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-xs text-text3">Focus Score</div>
+            <div className="text-2xl font-black text-gold2">{timeOs.focusScore.score}%</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-xs text-text3">Deep Work (أسبوع)</div>
+            <div className="text-2xl font-black">{timeOs.deepWorkHours.week}س</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-xs text-text3">Burnout Risk</div>
+            <div className="text-lg font-bold capitalize">{timeOs.burnoutRisk}</div>
+            <Link href="/time" className="text-[10px] text-gold2">Time Intelligence →</Link>
+          </Card>
+        </div>
+      )}
 
       <Card className="p-4 space-y-2">
         <h3 className="font-bold text-gold2">Executive Summary</h3>

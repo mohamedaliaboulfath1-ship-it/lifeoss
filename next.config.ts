@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
       { source: "/analysis", destination: "/analytics", permanent: true },
       { source: "/review", destination: "/reviews", permanent: true },
       { source: "/identity", destination: "/dashboard", permanent: false },
-      { source: "/timeblock", destination: "/tasks", permanent: false },
-      { source: "/pomodoro", destination: "/tasks", permanent: false },
+      { source: "/timeblock", destination: "/planner", permanent: true },
+      { source: "/pomodoro", destination: "/planner", permanent: true },
     ];
   },
 };

@@ -53,6 +53,22 @@ export const NAV_PAGES: NavPage[] = [
     section: "الرئيسية",
   },
   {
+    id: "planner",
+    href: "/planner",
+    icon: "📅",
+    title: "Time Planner",
+    sub: "جدولة ذكية — Day · Week · Month",
+    section: "الرئيسية",
+  },
+  {
+    id: "time",
+    href: "/time",
+    icon: "⏱️",
+    title: "Time Intelligence",
+    sub: "أين يذهب وقتك؟ Focus · Capacity",
+    section: "الرئيسية",
+  },
+  {
     id: "body",
     href: "/body",
     icon: "💪",

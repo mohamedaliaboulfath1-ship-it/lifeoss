@@ -37,6 +37,8 @@ const goalSchema = z.object({
     .array(z.object({ id: z.string(), text: z.string(), done: z.boolean() }))
     .optional(),
   habits: z.string().optional(),
+  requiredHours: z.number().min(0).optional(),
+  loggedHours: z.number().min(0).optional(),
 });
 
 export async function POST(req: Request) {
@@ -74,6 +76,8 @@ export async function POST(req: Request) {
     tasks: body.tasks ?? [],
     habits: body.habits || null,
     start_val: body.current ?? "0",
+    required_hours: body.requiredHours ?? 0,
+    logged_hours: body.loggedHours ?? 0,
   };
 
   const { error } = await authResult.supabase.from("goals").upsert(row);
@@ -118,6 +122,8 @@ const patchSchema = z.object({
     .array(z.object({ id: z.string(), text: z.string(), done: z.boolean() }))
     .optional(),
   due: z.string().optional(),
+  requiredHours: z.number().min(0).optional(),
+  loggedHours: z.number().min(0).optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -152,6 +158,8 @@ export async function PATCH(req: Request) {
     updates.due_date = body.due || null;
     updates.target_date = body.due || null;
   }
+  if (body.requiredHours !== undefined) updates.required_hours = body.requiredHours;
+  if (body.loggedHours !== undefined) updates.logged_hours = body.loggedHours;
 
   const { error } = await authResult.supabase
     .from("goals")
