@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
+import { maybeSeedMohamedArabic } from "@/lib/seed/run-mohamed-arabic";
 import { getUserContext } from "@/lib/year-data";
 
 function errorMessage(e: unknown) {
@@ -12,6 +13,11 @@ export async function GET() {
   if ("error" in authResult) return authResult.error;
 
   try {
+    await maybeSeedMohamedArabic(
+      authResult.supabase,
+      authResult.userId,
+      authResult.user.email
+    );
     const ctx = await getUserContext(authResult.userId);
     return NextResponse.json(ctx);
   } catch (e) {

@@ -9,7 +9,8 @@
     "lint": "next lint",
     "migrate": "node scripts/run-migrations.mjs",
     "test:backup": "node scripts/test-mappers.mjs",
-    "test:smoke": "node scripts/smoke-test.mjs"
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "seed:mohamed": "node scripts/seed-mohamed-arabic.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
