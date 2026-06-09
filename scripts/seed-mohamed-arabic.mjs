@@ -153,7 +153,6 @@ async function main() {
     water_target_ml: 3000,
     current_year: YEAR,
     onboarded: true,
-    career_seeded: true,
     metadata: {
       seed: SEED_TAG,
       bodyPlan: {
@@ -372,8 +371,11 @@ async function main() {
       timezone: "Africa/Cairo",
       updated_at: new Date().toISOString(),
     });
-    if (error) throw new Error(`user_time_settings: ${error.message}`);
-    console.log("  ✓ جدول العمل (أحد–خميس 8:30–16:30 · سبت 11:00–16:00 · جمعة إجازة)");
+    if (error) {
+      console.warn("  ⚠ إعدادات الوقت — تخطي (شغّل migration 017):", error.message);
+    } else {
+      console.log("  ✓ جدول العمل (أحد–خميس 8:30–16:30 · سبت 11:00–16:00 · جمعة إجازة)");
+    }
   } else {
     console.log("  [dry-run] user_time_settings");
   }

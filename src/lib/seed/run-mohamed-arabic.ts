@@ -89,7 +89,6 @@ export async function runMohamedArabicSeed(
     water_target_ml: 3000,
     current_year: YEAR,
     onboarded: true,
-    career_seeded: true,
     metadata: {
       seed: SEED_TAG,
       bodyPlan: {
@@ -240,7 +239,7 @@ export async function runMohamedArabicSeed(
     timezone: "Africa/Cairo",
     updated_at: new Date().toISOString(),
   });
-  if (tErr) throw new Error(`user_time_settings: ${tErr.message}`);
+  if (tErr) console.warn("user_time_settings skipped:", tErr.message);
 
   return {
     ok: true as const,

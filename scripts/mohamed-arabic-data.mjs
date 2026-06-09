@@ -595,7 +595,12 @@ export function buildSeedPayload(userId) {
       active_days: [0, 1, 2, 3, 4, 5, 6],
       metadata: { seed: SEED_TAG, reviewType: "annual" },
     },
-  ];
+  ].map((h) => ({
+    ...h,
+    streak: h.streak ?? 0,
+    best_streak: h.best_streak ?? 0,
+    life_score_weight: h.life_score_weight ?? 1,
+  }));
 
   const tasks = [
     // الجسد
@@ -620,12 +625,15 @@ export function buildSeedPayload(userId) {
     { id: "seed_task_finish_book", title: "إنهاء الكتاب الحالي", domain_id: "domain_learning", goal_id: I.goalReading, project_id: I.projReading, priority: "p1", status: "active", estimated_time: 120 },
     { id: "seed_task_reading_list", title: "إعداد قائمة قراءة", domain_id: "domain_learning", goal_id: I.goalReading, project_id: I.projReading, priority: "p2", status: "done", estimated_time: 30 },
     { id: "seed_task_study_schedule", title: "جدولة أوقات التعلم الأسبوعية", domain_id: "domain_learning", goal_id: I.goalReading, project_id: I.projReading, priority: "p2", status: "inbox", estimated_time: 20 },
-  ].map((t) => ({
-    ...t,
-    user_id: userId,
-    notes: null,
-    metadata: { seed: SEED_TAG, projectId: t.project_id },
-  }));
+  ].map((t) => {
+    const { project_id, ...rest } = t;
+    return {
+      ...rest,
+      user_id: userId,
+      notes: null,
+      metadata: { seed: SEED_TAG, projectId: project_id },
+    };
+  });
 
   const books = [
     {
