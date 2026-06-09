@@ -72,6 +72,8 @@ export interface Habit {
   priority?: "low" | "normal" | "high" | "critical";
   impact?: "low" | "medium" | "high";
   activeDays?: number[];
+  frequencyType?: string;
+  frequencyValue?: Record<string, unknown>;
   lifeScoreWeight?: number;
   active?: boolean;
   bestStreak?: number;

@@ -20,11 +20,10 @@ interface Props {
 }
 
 export function HabitCard({ habit, onToggle, onEdit, pending }: Props) {
-  const dayNames = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"];
-  const activeDayLabels = habit.activeDays.map((d) => dayNames[d]).join(" · ");
+  const schedule = habit.scheduleLabel ?? "يومي";
 
   return (
-    <Card className="p-4 border-border2 hover:border-gold/30 transition-colors">
+    <Card className="p-4 glass-premium hover:border-gold/25 transition-all duration-300">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -37,16 +36,18 @@ export function HabitCard({ habit, onToggle, onEdit, pending }: Props) {
             {habit.domainIcon} {habit.domainName ?? habit.cat}
           </div>
         </div>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onToggle}
-          className={`w-9 h-9 rounded-md border-2 shrink-0 flex items-center justify-center transition-colors ${
-            habit.doneToday ? "bg-emerald border-emerald text-white" : "border-border2 hover:border-gold/50"
-          } ${pending ? "opacity-60" : ""}`}
-        >
-          {habit.doneToday ? "✓" : ""}
-        </button>
+        {habit.dueToday !== false && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onToggle}
+            className={`w-9 h-9 rounded-xl border-2 shrink-0 flex items-center justify-center transition-all ${
+              habit.doneToday ? "bg-emerald border-emerald text-white" : "border-border2 hover:border-gold/50"
+            } ${pending ? "opacity-60" : ""}`}
+          >
+            {habit.doneToday ? "✓" : ""}
+          </button>
+        )}
       </div>
 
       {(habit.goalTitle || habit.projectTitle) && (
@@ -87,7 +88,7 @@ export function HabitCard({ habit, onToggle, onEdit, pending }: Props) {
         <ProgressBar value={habit.lifeScoreContribution} color="var(--gold)" />
       </div>
 
-      <div className="text-[10px] text-text3">الأيام: {activeDayLabels}</div>
+      <div className="text-[10px] text-text3">الجدول: {schedule}{habit.dueToday === false ? " · ليس اليوم" : ""}</div>
 
       {habit.stopImpact && (
         <div className="text-[10px] text-rose2/80 mt-2">

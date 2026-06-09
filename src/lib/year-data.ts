@@ -111,6 +111,8 @@ function mapHabit(row: Record<string, unknown>): Habit {
     priority: row.priority as Habit["priority"],
     impact: row.impact as Habit["impact"],
     activeDays: Array.isArray(activeDays) ? activeDays : undefined,
+    frequencyType: row.frequency_type as string | undefined,
+    frequencyValue: row.frequency_value as Record<string, unknown> | undefined,
     lifeScoreWeight: row.life_score_weight != null ? Number(row.life_score_weight) : undefined,
     active: row.active !== false,
     bestStreak: row.best_streak != null ? Number(row.best_streak) : undefined,

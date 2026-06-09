@@ -55,9 +55,9 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full glass-premium">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>🔄 عادات اليوم</CardTitle>
+        <CardTitle>🔄 Today&apos;s Habits</CardTitle>
         <motion.span
           key={pct}
           initial={{ opacity: 0.6, scale: 0.95 }}
@@ -72,7 +72,7 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
         <AnimatedProgress value={pct} color="var(--emerald)" height="h-1" />
         {local.length === 0 ? (
           <p className="text-text3 text-sm py-4 text-center">
-            لا عادات يومية —{" "}
+            لا عادات مطلوبة اليوم —{" "}
             <Link href="/habits" className="text-gold2 hover:underline">
               أضف عادة
             </Link>
@@ -85,7 +85,7 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
               disabled={busy === h.id}
               onChange={() => toggle(h.id)}
               label={h.name}
-              meta={h.timeOfDay}
+              meta={h.scheduleLabel ?? h.timeOfDay}
             />
           ))
         )}

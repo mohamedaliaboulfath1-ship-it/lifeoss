@@ -139,6 +139,13 @@
       0 12px 40px color-mix(in srgb, var(--bg) 30%, transparent);
   }
 
+  .glass-premium {
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-color: color-mix(in srgb, var(--border) 55%, transparent);
+  }
+
   .focus-ring {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
   }

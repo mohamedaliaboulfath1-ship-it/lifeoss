@@ -23,6 +23,10 @@ export interface EnrichedHabit {
   priority: HabitPriority;
   impact: HabitImpact;
   activeDays: number[];
+  frequencyType?: string;
+  frequencyValue?: Record<string, unknown>;
+  scheduleLabel?: string;
+  dueToday?: boolean;
   lifeScoreWeight: number;
   currentStreak: number;
   bestStreak: number;

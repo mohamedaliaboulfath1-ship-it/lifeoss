@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { enrichHabit } from "@/lib/habits/intelligence";
+import { activeDaysFromSchedule } from "@/lib/habits/schedule";
 import { resolveDomainId } from "@/lib/domains";
 import { getYearForUser } from "@/lib/year-data";
 import { uid } from "@/lib/utils";
@@ -40,6 +41,8 @@ const habitSchema = z.object({
   priority: z.enum(["low", "normal", "high", "critical"]).optional(),
   impact: z.enum(["low", "medium", "high"]).optional(),
   activeDays: z.array(z.number().min(0).max(6)).optional(),
+  frequencyType: z.enum(["daily", "weekly", "monthly", "interval", "custom"]).optional(),
+  frequencyValue: z.record(z.unknown()).optional(),
   lifeScoreWeight: z.number().optional(),
 });
 
@@ -52,6 +55,9 @@ export async function POST(req: Request) {
   const id = body.id ?? uid();
   const cat = body.cat ?? "health";
   const goalId = body.goalLink || null;
+  const frequencyType = body.frequencyType ?? "daily";
+  const frequencyValue = body.frequencyValue ?? {};
+  const activeDays = body.activeDays ?? activeDaysFromSchedule({ frequencyType, frequencyValue, activeDays: body.activeDays });
 
   const { error } = await authResult.supabase.from("habits").upsert({
     id,
@@ -75,7 +81,9 @@ export async function POST(req: Request) {
     stop_impact: body.stopImpact ?? null,
     priority: body.priority ?? "normal",
     impact: body.impact ?? "medium",
-    active_days: body.activeDays ?? [0, 1, 2, 3, 4, 5, 6],
+    active_days: activeDays,
+    frequency_type: frequencyType,
+    frequency_value: frequencyValue,
     life_score_weight: body.lifeScoreWeight ?? 1,
   });
 
@@ -112,7 +120,9 @@ export async function POST(req: Request) {
     stopImpact: body.stopImpact,
     priority: body.priority,
     impact: body.impact,
-    activeDays: body.activeDays,
+    activeDays,
+    frequencyType,
+    frequencyValue,
     lifeScoreWeight: body.lifeScoreWeight,
   };
 
@@ -159,28 +169,31 @@ export async function PATCH(req: Request) {
   }
 
   const body = habitSchema.extend({ id: z.string() }).parse(raw);
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.cat !== undefined) { updates.cat = body.cat; updates.category = body.cat; }
+  if (body.freq !== undefined) { updates.freq = body.freq; updates.frequency = body.freq; }
+  if (body.time !== undefined) updates.time = body.time ?? null;
+  if (body.goalLink !== undefined) { updates.goal_id = body.goalLink ?? null; updates.goal_link = body.goalLink ?? null; }
+  if (body.projectId !== undefined) updates.project_id = body.projectId ?? null;
+  if (body.domainId !== undefined) updates.domain_id = body.domainId;
+  if (body.note !== undefined) updates.note = body.note ?? null;
+  if (body.why !== undefined) updates.why = body.why ?? null;
+  if (body.stopImpact !== undefined) updates.stop_impact = body.stopImpact ?? null;
+  if (body.priority !== undefined) updates.priority = body.priority;
+  if (body.impact !== undefined) updates.impact = body.impact;
+  if (body.lifeScoreWeight !== undefined) updates.life_score_weight = body.lifeScoreWeight;
+  if (body.frequencyType !== undefined) {
+    updates.frequency_type = body.frequencyType;
+    updates.frequency_value = body.frequencyValue ?? {};
+    updates.active_days = activeDaysFromSchedule(body);
+  } else if (body.activeDays !== undefined) {
+    updates.active_days = body.activeDays;
+  }
+
   const { error } = await authResult.supabase
     .from("habits")
-    .update({
-      name: body.name,
-      cat: body.cat,
-      category: body.cat,
-      freq: body.freq,
-      frequency: body.freq,
-      time: body.time ?? null,
-      goal_id: body.goalLink ?? null,
-      goal_link: body.goalLink ?? null,
-      project_id: body.projectId ?? null,
-      domain_id: body.domainId ?? (body.cat ? resolveDomainId(body.cat) : undefined),
-      note: body.note ?? null,
-      why: body.why ?? null,
-      stop_impact: body.stopImpact ?? null,
-      priority: body.priority,
-      impact: body.impact,
-      active_days: body.activeDays,
-      life_score_weight: body.lifeScoreWeight,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", body.id)
     .eq("user_id", authResult.userId);
 

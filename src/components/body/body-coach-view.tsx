@@ -6,10 +6,10 @@ import { Tabs } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { MiniChart } from "@/components/ui/mini-chart";
 import { ProgressPhotosPanel } from "@/components/body/progress-photos-panel";
 import { BodyPlanPanel, type BodyPlan } from "@/components/body/body-plan-panel";
 import { WeightHeroCard } from "@/components/body/weight-hero-card";
+import { WeightTrendPanel } from "@/components/body/weight-trend-panel";
 import { buildBodyAnalytics } from "@/lib/body/analytics";
 import { buildBodyCoachInsights } from "@/lib/body/coach";
 import { uid, today } from "@/lib/utils";
@@ -81,8 +81,6 @@ export function BodyCoachView(props: Props) {
     [localLogs, props.yearData.measureLogs, analytics.currentWeight, target, weeklyRate, props.bodyPlan?.bodyGoal]
   );
 
-  const chartData = localLogs.map((l) => ({ label: l.date.slice(5), value: l.weight }));
-
   async function saveWeight() {
     const w = parseFloat(weightForm.weight);
     if (!w || w <= 0) return;
@@ -150,6 +148,20 @@ export function BodyCoachView(props: Props) {
           analytics={analytics}
           weeklyRateTarget={weeklyRate}
           onAddWeight={() => setWeightModal(true)}
+          onUpdateCurrentWeight={async (w) => {
+            await fetch("/api/weight", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ weight: w }),
+            });
+            setLocalLogs((prev) => {
+              const todayStr = today();
+              const existing = prev.find((l) => l.date === todayStr);
+              if (existing) return prev.map((l) => (l.date === todayStr ? { ...l, weight: w } : l));
+              return [...prev, { id: uid(), date: todayStr, weight: w }].sort((a, b) => a.date.localeCompare(b.date));
+            });
+            void refreshSilent();
+          }}
         />
       )}
 
@@ -165,12 +177,7 @@ export function BodyCoachView(props: Props) {
               ))}
             </Card>
           )}
-          {chartData.length > 0 && (
-            <Card className="p-4">
-              <div className="text-sm font-bold mb-3">منحنى الوزن</div>
-              <MiniChart data={chartData} type="line" color="var(--gold)" />
-            </Card>
-          )}
+          <WeightTrendPanel logs={localLogs} />
         </>
       )}
 

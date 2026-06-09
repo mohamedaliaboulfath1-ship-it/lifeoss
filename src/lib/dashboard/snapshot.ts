@@ -9,6 +9,7 @@ import { buildWealthCoachInsights, wealthCoachToDashboardInsights } from "@/lib/
 import { subscriptionMonthlyEquivalent } from "@/lib/wealth/categories";
 import { budgetAlertLevel } from "@/lib/wealth/snapshot";
 import { enrichHabit } from "@/lib/habits/intelligence";
+import { formatScheduleLabel, getMissedHabits, isHabitDueOnDate } from "@/lib/habits/schedule";
 import { calcGoalCompletionScore } from "@/lib/goals/completion";
 import { buildHabitCoachInsights } from "@/lib/life-coach/habit-coach";
 import { buildBodyAnalytics } from "@/lib/body/analytics";
@@ -93,7 +94,7 @@ export async function buildDashboardSnapshot(
       .limit(8),
     db
       .from("habits")
-      .select("id, name, frequency, active, category, time_of_day, cat, freq, goal_id, project_id, domain_id, why, stop_impact, priority, impact, active_days, life_score_weight, best_streak")
+      .select("id, name, frequency, frequency_type, frequency_value, active, category, time_of_day, cat, freq, goal_id, project_id, domain_id, why, stop_impact, priority, impact, active_days, life_score_weight, best_streak")
       .eq("user_id", userId)
       .eq("active", true),
     db
@@ -145,23 +146,60 @@ export async function buildDashboardSnapshot(
   const carbsTarget = profile?.carbs_target ?? profileExtras?.carbsTarget ?? 350;
   const fatsTarget = profile?.fats_target ?? profileExtras?.fatsTarget ?? 90;
 
-  const dailyHabits = (habitsRes.data ?? []).filter(
-    (h) => h.frequency === "daily" || !h.frequency || h.frequency === "daily"
-  );
-  const doneSet = new Set(
-    (habitLogsRes.data ?? []).filter((l) => l.done).map((l) => l.habit_id)
+  const logsMap: Record<string, Record<string, boolean>> = {};
+  for (const l of habitLogsRes.data ?? []) {
+    if (!logsMap[l.habit_id]) logsMap[l.habit_id] = {};
+    logsMap[l.habit_id][l.log_date] = l.done;
+  }
+
+  const activeHabits = (habitsRes.data ?? []).filter((h) => h.active !== false);
+  const dueTodayHabits = activeHabits.filter((h) =>
+    isHabitDueOnDate(
+      {
+        id: h.id,
+        frequencyType: h.frequency_type,
+        frequencyValue: h.frequency_value,
+        activeDays: h.active_days as number[] | undefined,
+        freq: h.frequency,
+      },
+      todayStr,
+      logsMap
+    )
   );
 
-  const todayHabits = dailyHabits.map((h) => ({
+  const todayHabits = dueTodayHabits.map((h) => ({
     id: h.id,
     name: h.name,
-    done: doneSet.has(h.id),
+    done: Boolean(logsMap[h.id]?.[todayStr]),
     category: h.category ?? undefined,
     timeOfDay: h.time_of_day ?? undefined,
+    scheduleLabel: formatScheduleLabel({
+      frequencyType: h.frequency_type,
+      frequencyValue: h.frequency_value,
+      activeDays: h.active_days as number[] | undefined,
+    }),
   }));
 
   const habitsDone = todayHabits.filter((h) => h.done).length;
   const habitsPending = todayHabits.filter((h) => !h.done);
+
+  const missedHabits = getMissedHabits(
+    activeHabits.map((h) => ({
+      id: h.id,
+      name: h.name,
+      frequencyType: h.frequency_type,
+      frequencyValue: h.frequency_value,
+      activeDays: h.active_days as number[] | undefined,
+      active: h.active !== false,
+    })),
+    logsMap
+  ).map((m) => ({
+    id: m.habitId,
+    name: m.name,
+    missedDate: m.missedDate,
+    daysAgo: m.daysAgo,
+    scheduleLabel: m.scheduleLabel,
+  }));
 
   const mapTask = (t: {
     id: string;
@@ -225,13 +263,24 @@ export async function buildDashboardSnapshot(
       entityId: t.id,
     });
   }
+  for (const m of missedHabits.slice(0, 1)) {
+    priorities.push({
+      rank: rank++,
+      type: "habit",
+      urgency: "urgent",
+      title: m.name,
+      subtitle: `فاتت منذ ${m.daysAgo} يوم`,
+      actionUrl: "/habits",
+      entityId: m.id,
+    });
+  }
   for (const h of habitsPending.slice(0, 2)) {
     priorities.push({
       rank: rank++,
       type: "habit",
       urgency: "high",
       title: h.name,
-      subtitle: "عادة اليوم",
+      subtitle: h.scheduleLabel ?? "عادة اليوم",
       actionUrl: "/habits",
       entityId: h.id,
     });
@@ -425,6 +474,7 @@ export async function buildDashboardSnapshot(
         goalLink: h.goal_id ?? undefined, projectId: h.project_id ?? undefined, domainId: h.domain_id ?? undefined,
         why: h.why ?? undefined, stopImpact: h.stop_impact ?? undefined,
         priority: h.priority, impact: h.impact, activeDays: h.active_days as number[] | undefined,
+        frequencyType: h.frequency_type, frequencyValue: h.frequency_value,
         lifeScoreWeight: h.life_score_weight != null ? Number(h.life_score_weight) : undefined,
         bestStreak: h.best_streak ?? undefined,
       },
@@ -497,6 +547,7 @@ export async function buildDashboardSnapshot(
     yearProgress: yearProgress(),
     priorities: priorities.slice(0, 5),
     todayHabits,
+    missedHabits,
     tasksDueToday,
     tasksDueSoon,
     weekSummary: {
@@ -548,6 +599,7 @@ export async function buildDashboardSnapshot(
       tasksDueToday: tasksDueToday.length,
       habitsPendingToday: habitsPending.length,
       habitsDoneToday: habitsDone,
+      habitsMissed: missedHabits.length,
       goalsAtRisk: atRiskGoals.length,
       unreadNotifications: (notifRes.data ?? []).length,
     },

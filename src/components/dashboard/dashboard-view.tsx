@@ -8,6 +8,7 @@ import { commas } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import { HabitsToday } from "@/components/dashboard/command-center/habits-today";
+import { MissedHabits } from "@/components/dashboard/command-center/missed-habits";
 import { CareerPanel } from "@/components/dashboard/command-center/career-panel";
 import Link from "next/link";
 import { MiniChart } from "@/components/ui/mini-chart";
@@ -56,7 +57,8 @@ export function DashboardView({
       <StaggerItem>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-[26px] font-black mb-1">{dashboard.greeting}</h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-text3 mb-1">Executive Command Center</p>
+          <h2 className="font-display text-[28px] font-black mb-1 tracking-tight">{dashboard.greeting}</h2>
           <p className="text-text3 text-[13px]">{dashboard.subtitle}</p>
           <div className="mt-2 flex items-center gap-2 text-[11px]">
             <span className="text-text3">تقدّم السنة</span>
@@ -98,7 +100,7 @@ export function DashboardView({
 
       {/* ── TOP 5 PRIORITIES — 30 second answer ── */}
       <StaggerItem>
-      <Card className="p-4 border-gold/40 bg-gradient-to-br from-gold/[0.06] to-transparent">
+      <Card className="p-4 border-gold/30 glass-premium bg-gradient-to-br from-gold/[0.04] to-transparent">
           <h3 className="text-sm font-bold text-gold2 mb-3">⚡ ماذا تفعل الآن؟</h3>
           {dashboard.priorities.length === 0 ? (
             <div className="text-sm text-text3 space-y-2 py-2">
@@ -213,10 +215,11 @@ export function DashboardView({
 
       {/* ── Habits + Tasks ── */}
       <StaggerItem>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <HabitsToday habits={dashboard.todayHabits} />
+        <MissedHabits habits={dashboard.missedHabits ?? []} />
 
-        <Card className="h-full">
+        <Card className="h-full glass-premium">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>✅ مهام اليوم</CardTitle>
             <Link href="/tasks" className="text-[11px] text-gold2 hover:underline">

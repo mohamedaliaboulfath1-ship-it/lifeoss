@@ -140,6 +140,15 @@ export interface DashboardHabitToday {
   done: boolean;
   category?: string;
   timeOfDay?: string;
+  scheduleLabel?: string;
+}
+
+export interface DashboardMissedHabit {
+  id: string;
+  name: string;
+  missedDate: string;
+  daysAgo: number;
+  scheduleLabel?: string;
 }
 
 export interface DashboardTaskToday {
@@ -223,6 +232,7 @@ export interface DashboardSnapshot {
   yearProgress: number;
   priorities: DashboardPriority[];
   todayHabits: DashboardHabitToday[];
+  missedHabits: DashboardMissedHabit[];
   tasksDueToday: DashboardTaskToday[];
   tasksDueSoon: DashboardTaskToday[];
   weekSummary: {
@@ -244,6 +254,7 @@ export interface DashboardSnapshot {
     tasksDueToday: number;
     habitsPendingToday: number;
     habitsDoneToday: number;
+    habitsMissed: number;
     goalsAtRisk: number;
     unreadNotifications: number;
   };

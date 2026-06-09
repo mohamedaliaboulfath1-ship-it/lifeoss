@@ -9,6 +9,8 @@ import { Input, Label } from "@/components/ui/input";
 import { Tabs } from "@/components/ui/tabs";
 import { MiniChart } from "@/components/ui/mini-chart";
 import { HabitCard } from "@/components/habits/habit-card";
+import { HabitSchedulePicker } from "@/components/habits/habit-schedule-picker";
+import type { FrequencyType } from "@/lib/habits/schedule";
 import { SYSTEM_DOMAINS } from "@/lib/domains";
 import { today } from "@/lib/utils";
 import type { YearPayload, Goal } from "@/types/lifeos";
@@ -37,6 +39,8 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
     why: "",
     impact: "medium" as const,
     priority: "normal" as const,
+    frequencyType: "daily" as FrequencyType,
+    frequencyValue: {} as Record<string, unknown>,
   });
 
   const showModal = modalOpen || !!forceAddModal;
@@ -70,7 +74,7 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
     );
   }, [domainFilter, enriched]);
 
-  const todayHabits = enriched.filter((h) => h.active);
+  const todayHabits = enriched.filter((h) => h.active && h.dueToday);
   const todayDone = todayHabits.filter((h) => h.doneToday).length;
   const avgAdherence = enriched.length
     ? Math.round(enriched.reduce((s, h) => s + h.adherencePct, 0) / enriched.length)
@@ -120,7 +124,7 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
       toast(j.migrationRequired ? "شغّل migration 014 في Supabase" : "فشل الإضافة", "error");
       return;
     }
-    setForm({ name: "", cat: "health", goalLink: "", projectId: "", why: "", impact: "medium", priority: "normal" });
+    setForm({ name: "", cat: "health", goalLink: "", projectId: "", why: "", impact: "medium", priority: "normal", frequencyType: "daily", frequencyValue: {} });
     setModalOpen(false);
     onAddModalClose?.();
     await reload();
@@ -200,11 +204,14 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
 
       {tab === "today" && (
         <div className="space-y-3">
+          {!todayHabits.length && (
+            <Card className="p-6 text-center text-text3 text-sm glass-premium">لا عادات مطلوبة اليوم حسب الجدول</Card>
+          )}
           {todayHabits.map((h) => (
-            <Card key={h.id} className="p-4 flex items-center justify-between gap-4">
+            <Card key={h.id} className="p-4 flex items-center justify-between gap-4 glass-premium">
               <div>
                 <div className="font-bold">{h.name}</div>
-                <div className="text-xs text-text3">{h.goalTitle ?? h.projectTitle ?? h.domainName}</div>
+                <div className="text-xs text-text3">{h.scheduleLabel} · {h.goalTitle ?? h.projectTitle ?? h.domainName}</div>
               </div>
               <Button variant={h.doneToday ? "ghost" : "gold"} size="sm" onClick={() => toggle(h.id)}>
                 {h.doneToday ? "✓ تم" : "إنجاز"}
@@ -289,6 +296,11 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
               <Label>لماذا أفعلها؟</Label>
               <Input value={form.why} onChange={(e) => setForm({ ...form, why: e.target.value })} placeholder="ربط بالهدف طويل المدى" />
             </div>
+            <HabitSchedulePicker
+              frequencyType={form.frequencyType}
+              frequencyValue={form.frequencyValue}
+              onChange={(frequencyType, frequencyValue) => setForm({ ...form, frequencyType, frequencyValue })}
+            />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>التأثير</Label>
