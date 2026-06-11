@@ -5,6 +5,7 @@ import { WeeklyPulse } from "./compositions/weekly-pulse";
 import { WeeklyReview } from "./compositions/weekly-review";
 import { MonthlyBriefing } from "./compositions/monthly-briefing";
 import { YearInReview } from "./compositions/year-in-review";
+import { AchievementReveal } from "./compositions/achievement-reveal";
 
 export const RemotionRoot = () => {
   return (
@@ -65,6 +66,15 @@ export const RemotionRoot = () => {
           topRisk: "هدف الوزن متأخر أسبوعين",
           opportunity: "زيادة ساعات التعلم",
         }}
+      />
+      <Composition
+        id="AchievementReveal"
+        component={AchievementReveal}
+        durationInFrames={45}
+        fps={30}
+        width={400}
+        height={300}
+        defaultProps={{ emoji: "🏆", title: "إنجاز!", kind: "goal" }}
       />
       <Composition
         id="YearInReview"

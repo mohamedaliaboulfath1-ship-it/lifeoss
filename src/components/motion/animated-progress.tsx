@@ -2,7 +2,6 @@
 
 import { motion, useSpring, useTransform } from "framer-motion";
 import { useEffect } from "react";
-import { MOTION } from "@/lib/motion";
 import { useInViewEnter } from "@/hooks/use-in-view-enter";
 import { cn } from "@/lib/utils";
 
@@ -48,8 +47,8 @@ export function AnimatedProgress({
       className={cn(`${height} bg-surface3 rounded-full overflow-hidden relative`, className)}
     >
       <motion.div
-        className="h-full rounded-full origin-right"
-        style={{ width, background: color }}
+        className="h-full rounded-full origin-right progress-glow-bar"
+        style={{ width, ["--progress-color" as string]: color }}
       />
       {showLabel && (
         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-text3">

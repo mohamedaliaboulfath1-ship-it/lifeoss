@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MOTION } from "@/lib/motion";
+import { motionV2 } from "@/lib/motion/presets-v2";
 import type { Achievement } from "@/contexts/achievement-context";
 
 const KIND_EMOJI: Record<string, string> = {
@@ -14,6 +14,18 @@ const KIND_EMOJI: Record<string, string> = {
   streak: "🔥",
 };
 
+const KIND_STATE: Record<string, string> = {
+  habit: "state-success",
+  task: "state-success",
+  goal: "state-growth",
+  weight: "state-growth",
+  finance: "state-growth",
+  learning: "state-growth",
+  streak: "state-success",
+};
+
+const PARTICLES = Array.from({ length: 8 }, (_, i) => i);
+
 export function AchievementBurst({ achievement }: { achievement: Achievement | null }) {
   return (
     <AnimatePresence>
@@ -24,26 +36,44 @@ export function AchievementBurst({ achievement }: { achievement: Achievement | n
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: MOTION.duration.fast }}
+          transition={{ duration: 0.15 }}
         >
+          {PARTICLES.map((p) => (
+            <motion.span
+              key={p}
+              className="absolute w-1.5 h-1.5 rounded-full bg-emerald2"
+              initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1.2, 0],
+                x: Math.cos((p / 8) * Math.PI * 2) * 80,
+                y: Math.sin((p / 8) * Math.PI * 2) * 80,
+              }}
+              transition={{ duration: 0.7, delay: p * 0.03, ease: "easeOut" }}
+            />
+          ))}
+
           <motion.div
-            initial={{ scale: 0.85, opacity: 0, y: 12 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 1.05, opacity: 0, y: -8 }}
-            transition={MOTION.spring.snappy}
-            className="px-6 py-4 rounded-2xl glass-premium border border-gold/30 shadow-premium-lg text-center max-w-sm mx-4"
+            {...motionV2.achievementUnlock}
+            className={`px-8 py-5 rounded-2xl glass-premium border shadow-premium-lg text-center max-w-sm mx-4 layered-card ${KIND_STATE[achievement.kind] ?? "state-success"}`}
           >
             <motion.span
-              className="text-4xl block mb-2"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.4, ease: MOTION.ease.out }}
+              className="text-5xl block mb-3"
+              animate={{ scale: [1, 1.25, 1], rotate: [0, -8, 0] }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
               {achievement.emoji ?? KIND_EMOJI[achievement.kind] ?? "✨"}
             </motion.span>
-            <div className="font-bold text-gold2 text-sm">{achievement.title}</div>
+            <div className="font-bold text-gold2 text-base">{achievement.title}</div>
             {achievement.subtitle && (
-              <div className="text-xs text-text3 mt-1">{achievement.subtitle}</div>
+              <div className="text-xs text-text2 mt-2">{achievement.subtitle}</div>
             )}
+            <motion.div
+              className="mt-3 h-0.5 rounded-full bg-gradient-to-r from-emerald via-gold to-sky"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+            />
           </motion.div>
         </motion.div>
       )}

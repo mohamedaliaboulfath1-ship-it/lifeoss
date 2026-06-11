@@ -4,11 +4,21 @@
 /* Semantic tokens — gold · blue · gray blend */
 :root,
 [data-theme="dark"] {
-  --bg: #13161c;
-  --bg2: #181c24;
-  --surface: #1e232b;
-  --surface2: #252b35;
-  --surface3: #2d3440;
+  --bg: #0c0e14;
+  --bg2: #12151d;
+  --surface: #171b26;
+  --surface2: #1e2433;
+  --surface3: #252d3f;
+  /* Semantic V2 */
+  --success: #34d399;
+  --success-dim: #065f46;
+  --warning: #fbbf24;
+  --warning-dim: #78350f;
+  --critical: #f87171;
+  --critical-dim: #7f1d1d;
+  --growth: #38bdf8;
+  --growth-dim: #0c4a6e;
+  --focus: #818cf8;
   --border: #3a424f;
   --border2: #4a5568;
   --text: #e8ecf2;
@@ -192,39 +202,155 @@
     border-color: color-mix(in srgb, var(--border) 45%, var(--sky) 22%);
   }
 
+  /* Premium multi-stop gradients — never same→same */
+  .gradient-premium-slate {
+    background: linear-gradient(145deg, #1e293b 0%, #312e81 48%, #4c1d95 100%);
+    border-color: color-mix(in srgb, #6366f1 35%, var(--border));
+  }
+
   .gradient-indigo {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 14%, var(--surface)), color-mix(in srgb, var(--sky) 10%, var(--surface)));
-    border-color: color-mix(in srgb, var(--gold) 22%, var(--border));
+    background: linear-gradient(145deg, #1e3a5f 0%, #3730a3 50%, #6b21a8 100%);
+    border-color: color-mix(in srgb, #6366f1 30%, var(--border));
   }
 
   .gradient-blue {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--sky) 14%, var(--surface)), color-mix(in srgb, var(--purple) 10%, var(--surface)));
-    border-color: color-mix(in srgb, var(--sky) 25%, var(--border));
+    background: linear-gradient(145deg, #0c4a6e 0%, #1d4ed8 50%, #4338ca 100%);
+    border-color: color-mix(in srgb, var(--sky) 35%, var(--border));
   }
 
   .gradient-emerald {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--teal) 12%, var(--surface)), color-mix(in srgb, var(--sky) 8%, var(--surface)));
-    border-color: color-mix(in srgb, var(--teal) 22%, var(--border));
+    background: linear-gradient(145deg, #064e3b 0%, #0d9488 50%, #0891b2 100%);
+    border-color: color-mix(in srgb, var(--emerald) 35%, var(--border));
   }
 
   .gradient-orange {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 16%, var(--surface)), color-mix(in srgb, var(--rose) 8%, var(--surface)));
-    border-color: color-mix(in srgb, var(--gold) 28%, var(--border));
+    background: linear-gradient(145deg, #9a3412 0%, #d97706 50%, #be185d 100%);
+    border-color: color-mix(in srgb, var(--amber) 35%, var(--border));
   }
 
   .gradient-purple {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--purple) 14%, var(--surface)), color-mix(in srgb, var(--sky) 10%, var(--gold) 6%));
-    border-color: color-mix(in srgb, var(--purple) 25%, var(--border));
+    background: linear-gradient(145deg, #312e81 0%, #6b21a8 50%, #831843 100%);
+    border-color: color-mix(in srgb, var(--purple) 35%, var(--border));
   }
 
   .gradient-rose {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--rose) 12%, var(--surface)), color-mix(in srgb, var(--gold) 8%, var(--surface)));
-    border-color: color-mix(in srgb, var(--rose) 22%, var(--border));
+    background: linear-gradient(145deg, #881337 0%, #be185d 50%, #9a3412 100%);
+    border-color: color-mix(in srgb, var(--rose) 35%, var(--border));
   }
 
   .gradient-cyan {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--sky) 16%, var(--surface)), color-mix(in srgb, var(--teal) 10%, var(--surface)));
-    border-color: color-mix(in srgb, var(--sky) 28%, var(--border));
+    background: linear-gradient(145deg, #155e75 0%, #0284c7 50%, #4f46e5 100%);
+    border-color: color-mix(in srgb, var(--sky) 35%, var(--border));
+  }
+
+  /* Area personality */
+  .area-body { background: linear-gradient(145deg, #064e3b 0%, #0d9488 55%, #06b6d4 100%); }
+  .area-career { background: linear-gradient(145deg, #1e3a8a 0%, #4338ca 55%, #6d28d9 100%); }
+  .area-finance { background: linear-gradient(145deg, #14532d 0%, #059669 50%, #ca8a04 100%); }
+  .area-learning { background: linear-gradient(145deg, #4c1d95 0%, #6d28d9 55%, #3730a3 100%); }
+  .area-books { background: linear-gradient(145deg, #9a3412 0%, #d97706 55%, #ea580c 100%); }
+  .area-health { background: linear-gradient(145deg, #134e4a 0%, #0d9488 55%, #10b981 100%); }
+  .area-soul { background: linear-gradient(145deg, #581c87 0%, #9d174d 55%, #be185d 100%); }
+
+  [data-theme="light"] .gradient-premium-slate,
+  [data-theme="light"] .gradient-indigo,
+  [data-theme="light"] .gradient-blue,
+  [data-theme="light"] .gradient-emerald,
+  [data-theme="light"] .gradient-orange,
+  [data-theme="light"] .gradient-purple,
+  [data-theme="light"] .gradient-rose,
+  [data-theme="light"] .gradient-cyan,
+  [data-theme="light"] .area-body,
+  [data-theme="light"] .area-career,
+  [data-theme="light"] .area-finance,
+  [data-theme="light"] .area-learning,
+  [data-theme="light"] .area-books,
+  [data-theme="light"] .area-health,
+  [data-theme="light"] .area-soul {
+    filter: saturate(0.85) brightness(1.08);
+    opacity: 0.95;
+  }
+
+  /* Layered card system */
+  .layered-card {
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+      0 4px 24px color-mix(in srgb, var(--bg) 50%, transparent);
+  }
+
+  .layered-card-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, white 12%, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .layered-card-accent {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, white 25%, transparent), transparent);
+    z-index: 1;
+  }
+
+  .layered-card-content {
+    padding: inherit;
+  }
+
+  .surface-l1 { backdrop-filter: none; }
+  .surface-l2 {
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px color-mix(in srgb, var(--bg) 45%, transparent);
+  }
+  .surface-l3 {
+    backdrop-filter: blur(16px);
+    box-shadow: 0 16px 48px color-mix(in srgb, var(--bg) 55%, transparent);
+  }
+  .surface-l4 {
+    backdrop-filter: blur(24px);
+    box-shadow: 0 24px 64px color-mix(in srgb, var(--bg) 65%, transparent);
+  }
+
+  /* Semantic feedback states */
+  .state-success {
+    border-color: color-mix(in srgb, var(--success) 45%, var(--border)) !important;
+    box-shadow: 0 0 28px color-mix(in srgb, var(--success) 12%, transparent);
+  }
+
+  .state-warning {
+    border-color: color-mix(in srgb, var(--warning) 40%, var(--border)) !important;
+    animation: warning-breathe 3s ease-in-out infinite;
+  }
+
+  .state-critical {
+    border-color: color-mix(in srgb, var(--critical) 45%, var(--border)) !important;
+    background-image: linear-gradient(145deg, color-mix(in srgb, var(--critical-dim) 40%, var(--surface)), var(--surface2)) !important;
+    animation: critical-pulse 2.5s ease-in-out infinite;
+  }
+
+  .state-growth {
+    border-color: color-mix(in srgb, var(--growth) 40%, var(--border)) !important;
+    box-shadow: 0 0 24px color-mix(in srgb, var(--growth) 10%, transparent);
+  }
+
+  .badge-success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 35%, transparent); }
+  .badge-warning { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); }
+  .badge-critical { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 35%, transparent); }
+  .badge-growth { background: color-mix(in srgb, var(--growth) 18%, transparent); color: var(--growth); border: 1px solid color-mix(in srgb, var(--growth) 35%, transparent); }
+  .badge-default { background: var(--surface3); color: var(--text3); border: 1px solid var(--border); }
+
+  /* Premium progress glow */
+  .progress-glow-bar {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--progress-color, var(--gold)) 40%, transparent);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--progress-color, var(--gold)) 70%, transparent),
+      var(--progress-color, var(--gold))
+    ) !important;
   }
 
   .surface-elevated {
@@ -340,6 +466,16 @@
   100% {
     background-position: -200% 0;
   }
+}
+
+@keyframes warning-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 0%, transparent); }
+  50% { box-shadow: 0 0 20px 2px color-mix(in srgb, var(--warning) 18%, transparent); }
+}
+
+@keyframes critical-pulse {
+  0%, 100% { border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
+  50% { border-color: color-mix(in srgb, var(--critical) 55%, var(--border)); }
 }
 
 @keyframes check-pop {

@@ -2,8 +2,9 @@
 
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
+import { LayeredCard } from "@/components/ui/layered-card";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { AREA_THEMES, scoreSemanticState, type AreaThemeId } from "@/lib/design/tokens";
 import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
 import { cardHover, cardTap } from "@/lib/motion/card";
 import type { AreaPreview } from "@/types/areas";
@@ -45,9 +46,12 @@ export function AreaPreviewCard({ preview }: Props) {
       onClick={handleOpen}
       className="cursor-pointer h-full"
     >
-      <Card
-        className="p-4 h-full glass-premium hover:shadow-premium transition-shadow group"
-        style={{ borderColor: `${preview.color}30` }}
+      <LayeredCard
+        gradient={areaGradient(preview.slug)}
+        state={scoreSemanticState(preview.healthScore)}
+        level={2}
+        className="p-4 h-full group"
+        style={{ borderColor: `${preview.color}40` }}
       >
         <div className="flex items-start gap-3 mb-3">
           <ProgressRing
@@ -87,9 +91,23 @@ export function AreaPreviewCard({ preview }: Props) {
             ⚠️ {preview.needsAttention[0]}
           </div>
         )}
-      </Card>
+      </LayeredCard>
     </motion.div>
   );
+}
+
+function areaGradient(slug: string): string {
+  const map: Record<string, AreaThemeId> = {
+    body: "body",
+    health: "health",
+    career: "career",
+    finance: "finance",
+    learning: "learning",
+    books: "books",
+    soul: "soul",
+  };
+  const id = map[slug] ?? "default";
+  return AREA_THEMES[id].gradient;
 }
 
 function StatChip({ label, value }: { label: string; value: number }) {
