@@ -1,7 +1,9 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { CountUp } from "@/components/ui/count-up";
 import { kpiVariants } from "@/lib/ui/variants";
+import { kpiPulse } from "@/lib/motion/dashboard";
 import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
@@ -24,7 +26,7 @@ export function KpiCard({
   badge,
 }: KpiCardProps) {
   return (
-    <div className={cn(kpiVariants({ animate: true }), "group")}>
+    <motion.div layout className={cn(kpiVariants({ animate: true }), "group")} whileHover={kpiPulse}>
       <div
         className="absolute top-0 right-0 left-0 h-0.5 opacity-80 group-hover:opacity-100 transition-opacity"
         style={{ background: color }}
@@ -50,6 +52,6 @@ export function KpiCard({
           {badge}
         </span>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MotionCard, MotionModal } from "@/components/motion/motion";
+import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
+import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { BOOK_TYPE_LABELS } from "@/lib/icons";
 import { Tabs } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
@@ -37,8 +40,57 @@ type BookExt = Book & {
   rating?: number;
 };
 
+function BookGalleryCard({
+  book,
+  onOpen,
+  onEdit,
+  onProgress,
+  onRemove,
+}: {
+  book: BookExt;
+  onOpen: (book: BookExt, rect: DOMRect) => void;
+  onEdit: (book: BookExt) => void;
+  onProgress: (id: string, delta: number) => void;
+  onRemove: (id: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const pct = book.pages ? Math.round(((book.curPage ?? 0) / book.pages) * 100) : 0;
+
+  function handleOpen() {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    onOpen(book, rect);
+  }
+
+  return (
+    <div ref={ref} onClick={handleOpen} className="h-full">
+    <MotionCard
+      layout
+      className="border border-border rounded-[10px] overflow-hidden bg-surface cursor-pointer group h-full"
+    >
+      <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center overflow-hidden">
+        <BookCover title={book.title} coverUrl={book.coverUrl} coverPath={book.coverPath} />
+      </div>
+      <div className="p-3 space-y-1">
+        <div className="font-bold text-sm truncate">{book.title}</div>
+        <div className="text-[10px] text-text3">
+          {BOOK_TYPE_LABELS[book.bookType ?? "physical"] ?? "كتاب"} · {book.status}
+        </div>
+        <ProgressBar value={pct} color="var(--sky)" />
+        <div className="flex gap-1 pt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(book)}>✏️</Button>
+          <Button variant="ghost" size="sm" onClick={() => onProgress(book.id, 10)}>+10</Button>
+          <Button variant="danger" size="sm" onClick={() => onRemove(book.id)}>🗑</Button>
+        </div>
+      </div>
+    </MotionCard>
+    </div>
+  );
+}
+
 export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   const { toast } = useToast();
+  const expand = useExpandTransitionOptional();
   const [books, setBooks] = useState<BookExt[]>([]);
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [view, setView] = useState("gallery");
@@ -112,6 +164,26 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       return hay.includes(q);
     });
   }, [books, query, typeFilter, statusFilter, categoryFilter]);
+
+  function openBookWithExpand(book: BookExt, rect: DOMRect) {
+    const pct = book.pages ? Math.round(((book.curPage ?? 0) / book.pages) * 100) : 0;
+    if (expand) {
+      expand.expandCard(
+        {
+          entity: "book",
+          id: book.id,
+          title: book.title,
+          subtitle: book.author ?? "مكتبة LifeOS",
+          progress: pct,
+          icon: "📚",
+        },
+        rect,
+        () => openBookModal(book)
+      );
+    } else {
+      openBookModal(book);
+    }
+  }
 
   function openBookModal(book?: BookExt) {
     if (book) {
@@ -346,11 +418,20 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard label="مكتمل" value={String(done)} sub={`/${goal}`} color="var(--emerald)" />
-        <KpiCard label="قيد القراءة" value={String(reading)} sub="" color="var(--sky)" />
+        <KpiCard label="مكتمل" value={String(done)} numericValue={done} sub={`/${goal}`} color="var(--emerald)" />
+        <KpiCard label="قيد القراءة" value={String(reading)} numericValue={reading} sub="" color="var(--sky)" />
         <KpiCard label="جلسات الشهر" value={String(sessions.filter((s) => s.date.startsWith(new Date().toISOString().slice(0, 7))).length)} sub="" color="var(--gold)" />
-        <KpiCard label="التقدم السنوي" value={`${goalProgress}%`} sub="" color="var(--purple)" />
+        <KpiCard label="التقدم السنوي" value={`${goalProgress}%`} numericValue={goalProgress} sub="" color="var(--purple)" />
       </div>
+
+      <Card className="p-4 glass-premium">
+        <ProgressJourney
+          current={done}
+          target={goal}
+          unit="كتاب"
+          label="رحلة القراءة السنوية"
+        />
+      </Card>
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4">
@@ -443,35 +524,18 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       {filteredBooks.length === 0 ? (
         <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => openBookModal()} />
       ) : view === "gallery" ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredBooks.map((b) => {
-            const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
-            const ext = b as BookExt;
-            return (
-              <MotionCard key={b.id} className="border border-border rounded-[10px] overflow-hidden bg-surface">
-                <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center overflow-hidden">
-                  <BookCover
-                    title={b.title}
-                    coverUrl={ext.coverUrl}
-                    coverPath={ext.coverPath}
-                  />
-                </div>
-                <div className="p-3 space-y-1">
-                  <div className="font-bold text-sm truncate">{b.title}</div>
-                  <div className="text-[10px] text-text3">
-                    {BOOK_TYPE_LABELS[ext.bookType ?? "physical"] ?? "كتاب"} · {b.status}
-                  </div>
-                  <ProgressBar value={pct} color="var(--sky)" />
-                  <div className="flex gap-1 pt-1 flex-wrap">
-                    <Button variant="ghost" size="sm" onClick={() => openBookModal(ext)}>✏️</Button>
-                    <Button variant="ghost" size="sm" onClick={() => updateProgress(b.id, 10)}>+10</Button>
-                    <Button variant="danger" size="sm" onClick={() => removeBook(b.id)}>🗑</Button>
-                  </div>
-                </div>
-              </MotionCard>
-            );
-          })}
-        </div>
+        <LayoutAnimateList className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredBooks.map((b) => (
+            <BookGalleryCard
+              key={b.id}
+              book={b as BookExt}
+              onOpen={openBookWithExpand}
+              onEdit={openBookModal}
+              onProgress={updateProgress}
+              onRemove={removeBook}
+            />
+          ))}
+        </LayoutAnimateList>
       ) : view === "shelf" ? (
         <div className="space-y-6">
           {["reading", "done", "planned"].map((status) => {
@@ -488,9 +552,13 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                     return (
                       <MotionCard
                         key={b.id}
+                        layout
                         className="shrink-0 cursor-pointer"
                         style={{ marginBottom: i % 2 === 0 ? 0 : 8 }}
-                        onClick={() => openBookModal(ext)}
+                        onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          openBookWithExpand(ext, rect);
+                        }}
                       >
                         <div className="w-16 h-24 rounded-sm overflow-hidden border border-border shadow-md hover:-translate-y-1 transition-transform">
                           <BookCover title={b.title} coverUrl={ext.coverUrl} coverPath={ext.coverPath} />

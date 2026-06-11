@@ -4,7 +4,9 @@ import { useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { ProgressRing } from "@/components/ui/progress-ring";
+import { LifeScoreOrbPlayer } from "@/components/remotion/life-score-orb-player";
+import { AmbientHeroBg } from "@/components/remotion/ambient-hero-bg";
+import { WeeklyPulsePlayer } from "@/components/remotion/weekly-pulse-player";
 import { BentoGrid, BentoTile } from "@/components/ui/bento-grid";
 import { CountUp } from "@/components/ui/count-up";
 import { commas } from "@/lib/utils";
@@ -16,7 +18,6 @@ import { CareerPanel } from "@/components/dashboard/command-center/career-panel"
 import { WeightVizCard } from "@/components/visual/weight-viz-card";
 import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
 import Link from "next/link";
-import { MiniChart } from "@/components/ui/mini-chart";
 import { StaggerGrid, StaggerItem } from "@/components/motion/stagger";
 import { ProjectCommandCenter } from "@/components/dashboard/project-command-center";
 import { useGoalExpand } from "@/contexts/goal-expand-context";
@@ -83,20 +84,19 @@ export function DashboardView({
       <StaggerItem>
         <BentoGrid>
           <BentoTile span="hero" delay={0}>
-            <Card className="h-full p-5 md:p-6 glass-premium border-gold/15 bg-gradient-to-br from-gold/[0.05] via-transparent to-sky/[0.04]">
+            <Card className="relative h-full p-5 md:p-6 glass-premium border-gold/15 overflow-hidden">
+              <AmbientHeroBg className="opacity-50" />
+              <div className="relative z-10">
               <p className="text-[10px] uppercase tracking-[0.25em] text-text3 mb-2">LifeOS · Today</p>
               <h2 className="font-display text-2xl md:text-[32px] font-black mb-1 tracking-tight leading-tight">
                 {dashboard.greeting}
               </h2>
               <p className="text-text3 text-sm mb-4 max-w-md">{dashboard.subtitle}</p>
               <div className="flex flex-wrap items-end gap-5">
-                <ProgressRing
-                  key={scorePulse}
-                  value={lifeScore}
+                <LifeScoreOrbPlayer
+                  score={lifeScore}
                   size={96}
-                  pulse={scorePulse > 0}
-                  label="Life Score"
-                  color="var(--gold)"
+                  pulseKey={scorePulse}
                 />
                 <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-[11px] flex-1 min-w-[160px]">
                   <ScorePill label="انضباط" value={scores.disciplineScore} color="var(--gold)" />
@@ -111,6 +111,7 @@ export function DashboardView({
                   <div className="h-full bg-gradient-to-r from-gold to-sky rounded-full transition-all duration-500" style={{ width: `${dashboard.yearProgress ?? 0}%` }} />
                 </div>
                 <span className="font-mono text-gold2"><CountUp value={dashboard.yearProgress ?? 0} suffix="%" /></span>
+              </div>
               </div>
             </Card>
           </BentoTile>
@@ -222,15 +223,15 @@ export function DashboardView({
                 <div className="text-[10px] text-text3 mt-1">متوسط الأهداف</div>
               </div>
             </div>
-            <MiniChart
-              type="bar"
-              color="var(--emerald)"
-              height={100}
-              data={[
-                { label: "عادات", value: dashboard.weekSummary.habitPct },
-                { label: "تمارين", value: Math.round((dashboard.weekSummary.workoutsDays / dashboard.weekSummary.workoutsTarget) * 100) },
-                { label: "أهداف", value: dashboard.weekSummary.goalsAvgProgress },
-              ]}
+            <WeeklyPulsePlayer
+              habitPct={dashboard.weekSummary.habitPct}
+              workoutPct={Math.round(
+                (dashboard.weekSummary.workoutsDays /
+                  Math.max(1, dashboard.weekSummary.workoutsTarget)) *
+                  100
+              )}
+              goalsPct={dashboard.weekSummary.goalsAvgProgress}
+              className="mx-auto"
             />
           </CardBody>
         </Card>

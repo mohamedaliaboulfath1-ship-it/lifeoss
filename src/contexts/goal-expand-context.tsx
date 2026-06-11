@@ -5,44 +5,63 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Goal } from "@/types/lifeos";
 
-export interface GoalExpandSnapshot {
-  goalId: string;
+export type ExpandEntity = "goal" | "project" | "task" | "book" | "area";
+
+export interface ExpandSnapshot {
+  entity: ExpandEntity;
+  id: string;
   title: string;
-  progress: number;
-  area: string;
+  subtitle?: string;
+  progress?: number;
+  icon?: string;
+  href?: string;
   rect: { top: number; left: number; width: number; height: number };
 }
 
-type Phase = "idle" | "morphing" | "revealed";
+type Phase = "idle" | "morphing";
 
-interface GoalExpandContextValue {
+interface ExpandTransitionContextValue {
   phase: Phase;
-  snapshot: GoalExpandSnapshot | null;
+  snapshot: ExpandSnapshot | null;
+  expandCard: (
+    snapshot: Omit<ExpandSnapshot, "rect">,
+    rect: DOMRect,
+    onReveal?: () => void
+  ) => void;
   expandGoal: (goal: Pick<Goal, "id" | "title" | "area" | "progress">, rect: DOMRect) => void;
   clearExpand: () => void;
 }
 
-const GoalExpandContext = createContext<GoalExpandContextValue | null>(null);
+const ExpandTransitionContext = createContext<ExpandTransitionContextValue | null>(null);
 
 export function GoalExpandProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [snapshot, setSnapshot] = useState<GoalExpandSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<ExpandSnapshot | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
+  const onRevealRef = useRef<(() => void) | null>(null);
 
-  const expandGoal = useCallback(
-    (goal: Pick<Goal, "id" | "title" | "area" | "progress">, rect: DOMRect) => {
+  const clearExpand = useCallback(() => {
+    setPhase("idle");
+    setSnapshot(null);
+    onRevealRef.current = null;
+  }, []);
+
+  const expandCard = useCallback(
+    (
+      data: Omit<ExpandSnapshot, "rect">,
+      rect: DOMRect,
+      onReveal?: () => void
+    ) => {
       setSnapshot({
-        goalId: goal.id,
-        title: goal.title,
-        progress: goal.progress ?? 0,
-        area: goal.area,
+        ...data,
         rect: {
           top: rect.top,
           left: rect.left,
@@ -51,37 +70,72 @@ export function GoalExpandProvider({ children }: { children: ReactNode }) {
         },
       });
       setPhase("morphing");
-      router.push(`/goals/${goal.id}`);
+      onRevealRef.current = onReveal ?? null;
+      if (data.href) {
+        router.push(data.href);
+      }
     },
     [router]
   );
 
-  const clearExpand = useCallback(() => {
-    setPhase("idle");
-    setSnapshot(null);
-  }, []);
+  const expandGoal = useCallback(
+    (goal: Pick<Goal, "id" | "title" | "area" | "progress">, rect: DOMRect) => {
+      expandCard(
+        {
+          entity: "goal",
+          id: goal.id,
+          title: goal.title,
+          progress: goal.progress ?? 0,
+          subtitle: "Goal Command Center",
+          href: `/goals/${goal.id}`,
+        },
+        rect
+      );
+    },
+    [expandCard]
+  );
 
   useEffect(() => {
-    if (!snapshot) return;
-    if (pathname === `/goals/${snapshot.goalId}`) return;
-    if (!pathname.startsWith("/goals/")) {
-      clearExpand();
-    }
+    if (!snapshot || phase !== "morphing") return;
+    const t = setTimeout(() => {
+      if (onRevealRef.current) onRevealRef.current();
+      if (!snapshot.href) clearExpand();
+    }, 460);
+    return () => clearTimeout(t);
+  }, [snapshot, phase, clearExpand]);
+
+  useEffect(() => {
+    if (!snapshot?.href) return;
+    const target = snapshot.href.split("?")[0];
+    if (pathname === target || pathname.startsWith(`${target}/`)) return;
+    const base = target.split("/").slice(0, 2).join("/");
+    if (!pathname.startsWith(base)) clearExpand();
   }, [pathname, snapshot, clearExpand]);
 
   return (
-    <GoalExpandContext.Provider value={{ phase, snapshot, expandGoal, clearExpand }}>
+    <ExpandTransitionContext.Provider
+      value={{ phase, snapshot, expandCard, expandGoal, clearExpand }}
+    >
       {children}
-    </GoalExpandContext.Provider>
+    </ExpandTransitionContext.Provider>
   );
 }
 
-export function useGoalExpand() {
-  const ctx = useContext(GoalExpandContext);
-  if (!ctx) throw new Error("useGoalExpand must be used within GoalExpandProvider");
+export function useExpandTransition() {
+  const ctx = useContext(ExpandTransitionContext);
+  if (!ctx) throw new Error("useExpandTransition requires GoalExpandProvider");
   return ctx;
 }
 
+export function useExpandTransitionOptional() {
+  return useContext(ExpandTransitionContext);
+}
+
+/** @deprecated use useExpandTransition */
+export function useGoalExpand() {
+  return useExpandTransition();
+}
+
 export function useGoalExpandOptional() {
-  return useContext(GoalExpandContext);
+  return useExpandTransitionOptional();
 }

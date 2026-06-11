@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MOTION } from "@/lib/motion/transitions";
+import { AmbientHeroBg } from "@/components/remotion/ambient-hero-bg";
+import { LifeScoreOrbPlayer } from "@/components/remotion/life-score-orb-player";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import type { YearPayload } from "@/types/lifeos";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
@@ -73,9 +75,15 @@ export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
       transition={MOTION.spring}
       className="space-y-6"
     >
-      <Card className="p-5 gradient-indigo floating-panel border-gold/20">
-        <h2 className="font-display text-2xl font-black mb-1">🏛️ Executive Command Center</h2>
-        <p className="text-sm text-text3">مركز القيادة التنفيذي — أسبوعك في لمحة</p>
+      <Card className="relative p-5 gradient-indigo floating-panel border-gold/20 overflow-hidden">
+        <AmbientHeroBg className="opacity-35" />
+        <div className="relative z-10 flex flex-wrap items-center gap-5">
+          <LifeScoreOrbPlayer score={lifeScore} size={80} />
+          <div>
+            <h2 className="font-display text-2xl font-black mb-1">🏛️ Executive Command Center</h2>
+            <p className="text-sm text-text3">مركز القيادة التنفيذي — أسبوعك في لمحة</p>
+          </div>
+        </div>
       </Card>
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">

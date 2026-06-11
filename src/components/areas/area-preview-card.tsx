@@ -1,8 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useRef } from "react";
+import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
+import { cardHover, cardTap } from "@/lib/motion/card";
 import type { AreaPreview } from "@/types/areas";
 
 interface Props {
@@ -10,38 +13,70 @@ interface Props {
 }
 
 export function AreaPreviewCard({ preview }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
+  const expand = useExpandTransitionOptional();
+
+  function handleOpen() {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    if (expand) {
+      expand.expandCard(
+        {
+          entity: "area",
+          id: preview.slug,
+          title: preview.nameAr,
+          subtitle: "Area Command Center",
+          progress: preview.healthScore,
+          icon: preview.icon,
+          href: `/areas/${preview.slug}`,
+        },
+        rect
+      );
+    } else {
+      window.location.href = `/areas/${preview.slug}`;
+    }
+  }
+
   return (
-    <Link href={`/areas/${preview.slug}`}>
+    <motion.div
+      ref={ref}
+      whileHover={cardHover}
+      whileTap={cardTap}
+      onClick={handleOpen}
+      className="cursor-pointer h-full"
+    >
       <Card
-        className="p-4 h-full hover:border-gold/40 transition-all cursor-pointer group"
+        className="p-4 h-full glass-premium hover:shadow-premium transition-shadow group"
         style={{ borderColor: `${preview.color}30` }}
       >
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{preview.icon}</span>
-            <div>
-              <div className="font-bold group-hover:text-gold2 transition-colors">{preview.nameAr}</div>
-              <div className="text-[10px] text-text3">Health Score: {preview.healthScore}%</div>
+        <div className="flex items-start gap-3 mb-3">
+          <ProgressRing
+            value={preview.healthScore}
+            size={52}
+            strokeWidth={4}
+            color={preview.color}
+            showValue
+            suffix="%"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{preview.icon}</span>
+              <div className="font-bold group-hover:text-gold2 transition-colors truncate">
+                {preview.nameAr}
+              </div>
             </div>
-          </div>
-          <div
-            className="text-lg font-black font-mono"
-            style={{ color: preview.color }}
-          >
-            {preview.healthScore}
+            <div className="text-[10px] text-text3 mt-1">Health Score</div>
           </div>
         </div>
-
-        <ProgressBar value={preview.healthScore} color={preview.color} className="h-1.5 mb-3" />
 
         <div className="grid grid-cols-2 gap-2 text-[11px] mb-3">
-          <StatChip label="أهداف" value={preview.activeGoals} href={`/areas/${preview.slug}#goals`} />
-          <StatChip label="عادات" value={preview.habits} href={`/areas/${preview.slug}#habits`} />
-          <StatChip label="مهام" value={preview.tasks} href={`/areas/${preview.slug}#tasks`} />
-          <StatChip label="كتب" value={preview.books} href={`/areas/${preview.slug}#books`} />
+          <StatChip label="أهداف" value={preview.activeGoals} />
+          <StatChip label="عادات" value={preview.habits} />
+          <StatChip label="مهام" value={preview.tasks} />
+          <StatChip label="كتب" value={preview.books} />
         </div>
 
-        {preview.highlights.slice(0, 4).map((h) => (
+        {preview.highlights.slice(0, 3).map((h) => (
           <div key={h.label} className="text-[10px] text-text3 truncate">
             <span className="text-text2">{h.label}:</span> {h.value}
           </div>
@@ -53,19 +88,15 @@ export function AreaPreviewCard({ preview }: Props) {
           </div>
         )}
       </Card>
-    </Link>
+    </motion.div>
   );
 }
 
-function StatChip({ label, value, href }: { label: string; value: number; href: string }) {
+function StatChip({ label, value }: { label: string; value: number }) {
   return (
-    <Link
-      href={href}
-      onClick={(e) => e.stopPropagation()}
-      className="px-2 py-1 rounded-sm bg-surface2/80 hover:bg-surface2 flex justify-between"
-    >
+    <div className="px-2 py-1 rounded-sm bg-surface2/80 flex justify-between">
       <span className="text-text3">{label}</span>
       <span className="font-mono font-bold">{value}</span>
-    </Link>
+    </div>
   );
 }

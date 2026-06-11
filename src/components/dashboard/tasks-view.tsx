@@ -13,6 +13,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AnimatePresence } from "framer-motion";
 import { TaskRow } from "@/components/motion/task-row";
 import { MotionModal } from "@/components/motion/motion";
+import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { useAchievementOptional } from "@/contexts/achievement-context";
 import { today, uid } from "@/lib/utils";
 import type { LifeTask, YearPayload } from "@/types/lifeos";
 
@@ -39,6 +41,7 @@ const VIEW_TABS = [
 export function TasksView({ yearData, onRefresh }: TasksViewProps) {
   const { patchYearData, refreshSilent } = useLifeOS();
   const { toast } = useToast();
+  const celebrate = useAchievementOptional()?.celebrate;
   const [filter, setFilter] = useState("today");
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState("list");
@@ -283,6 +286,13 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
                     pending={pendingIds.has(task.id)}
                     dimmed={focusMode && task.priority !== "p1"}
                     onToggle={() => toggleDone(task.id)}
+                    onCelebrate={() =>
+                      celebrate?.({
+                        kind: "task",
+                        title: "مهمة منجزة!",
+                        subtitle: task.title,
+                      })
+                    }
                     onRemove={() => removeTask(task.id)}
                   />
                 ))}

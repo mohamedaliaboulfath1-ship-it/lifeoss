@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { Tabs } from "@/components/ui/tabs";
 import { GoalsKanban } from "@/components/dashboard/goals-kanban";
 import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
+import { MotionModal } from "@/components/motion/motion";
 import { useGoalExpand } from "@/contexts/goal-expand-context";
 import { areaLabel, calcGoalPct } from "@/lib/calculations";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
@@ -351,7 +352,7 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
         </Card>
       )}
 
-      {showModal && <GoalFormModal form={form} setForm={setForm} onClose={() => { setModalOpen(false); onAddClose?.(); }} onSave={saveGoal} goals={goals} />}
+      <GoalFormModal open={showModal} form={form} setForm={setForm} onClose={() => { setModalOpen(false); onAddClose?.(); }} onSave={saveGoal} goals={goals} />
     </div>
   );
 }
@@ -468,12 +469,14 @@ function TimelineGoalRow({ goal }: { goal: Goal }) {
 }
 
 function GoalFormModal({
+  open,
   form,
   setForm,
   onClose,
   onSave,
   goals,
 }: {
+  open: boolean;
   form: { title: string; area: GoalArea; priority: "high" | "med" | "low"; level: GoalLevel; description: string; why: string; due: string; progress: number; parentId: string };
   setForm: Dispatch<SetStateAction<typeof form>>;
   onClose: () => void;
@@ -481,8 +484,8 @@ function GoalFormModal({
   goals: Goal[];
 }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-      <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <MotionModal open={open} onClose={onClose}>
+      <div className="bg-surface border border-border2 rounded-[10px] w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto glass-premium">
         <h3 className="font-bold text-gold2">🎯 هدف جديد</h3>
         <div>
           <Label>العنوان</Label>
@@ -546,7 +549,7 @@ function GoalFormModal({
           <Button variant="gold" onClick={onSave}>حفظ</Button>
         </div>
       </div>
-    </div>
+    </MotionModal>
   );
 }
 

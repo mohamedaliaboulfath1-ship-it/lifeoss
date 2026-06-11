@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { uid } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
+import { RemotionRecapSection } from "@/components/reviews/remotion-recap-section";
 
 interface ReviewsViewProps {
   yearData: YearPayload;
@@ -236,8 +237,33 @@ export function ReviewsView({ yearData }: ReviewsViewProps) {
     else setApiReviews((prev) => prev.filter((p) => p.id !== id));
   }
 
+  const booksDone = (yearData.books ?? []).filter((b) => b.status === "done").length;
+  const goalsDone = (yearData.goals ?? []).filter((g) => g.done || g.status === "done").length;
+  const habitCompletions = Object.values(yearData.habitLogs ?? {}).reduce(
+    (sum, day) => sum + Object.values(day).filter(Boolean).length,
+    0
+  );
+  const recapData = {
+    lifeScore: 72,
+    habitsPct: journals.length ? Math.min(100, journals.length * 10) : 65,
+    workouts: yearData.workoutLogs?.length ?? 0,
+    goalsDone,
+    learningHours: Math.round((yearData.pomSessions?.length ?? 0) * 0.5),
+    topWin: filtered[0]?.wins ?? "استمرار الالتزام اليومي",
+    topRisk: filtered[0]?.challenges ?? "لا مخاطر مسجّلة",
+    opportunity: filtered[0]?.nextFocus ?? "تعزيز التعلم",
+    year: new Date().getFullYear().toString(),
+    habitsCompleted: habitCompletions,
+    booksRead: booksDone,
+    weightDelta: 3,
+    savingsTotal: 0,
+  };
+
   return (
     <div className="space-y-6 animate-fade-up">
+      {(tab === "weekly" || tab === "monthly" || tab === "annual") && (
+        <RemotionRecapSection data={recapData} />
+      )}
       <PageHeader title="📔 المراجعات" subtitle="تعلّم من أسبوعك وشهرك" />
 
       <Tabs

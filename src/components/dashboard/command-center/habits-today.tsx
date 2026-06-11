@@ -13,6 +13,7 @@ import { useToast } from "@/contexts/toast-context";
 import { motion } from "framer-motion";
 import { MOTION } from "@/lib/motion";
 import { AutoAnimateList } from "@/components/motion/auto-animate-list";
+import { useAchievementOptional } from "@/contexts/achievement-context";
 
 interface HabitsTodayProps {
   habits: DashboardHabitToday[];
@@ -22,6 +23,7 @@ interface HabitsTodayProps {
 export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
   const { refreshSilent } = useLifeOS();
   const { toast } = useToast();
+  const celebrate = useAchievementOptional()?.celebrate;
   const [local, setLocal] = useState(habits);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -45,6 +47,13 @@ export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
         body: JSON.stringify({ habitId, date: today() }),
       });
       if (!res.ok) throw new Error("failed");
+      if (!prev) {
+        celebrate?.({
+          kind: "habit",
+          title: "عادة مكتملة!",
+          subtitle: "استمر — أنت تبني زخمك",
+        });
+      }
       void refreshSilent();
     } catch {
       setLocal((list) =>

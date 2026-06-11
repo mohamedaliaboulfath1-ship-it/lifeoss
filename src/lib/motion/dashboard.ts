@@ -20,9 +20,9 @@ export const dashboardStagger = {
 } as const;
 
 export const kpiPulse = {
-  scale: [1, 1.02, 1],
+  scale: [1, 1.02, 1] as number[],
   transition: { duration: MOTION.duration.slow, ease: MOTION.ease.out },
-} as const;
+};
 
 export const progressFill = {
   transition: { duration: MOTION.duration.slow, ease: MOTION.ease.out },

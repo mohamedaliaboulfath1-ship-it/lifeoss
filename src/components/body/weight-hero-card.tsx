@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { TrendArrow } from "@/components/ui/trend-arrow";
 import { GoalTrajectory, buildWeightForecast } from "@/components/ui/goal-trajectory";
 import { CountUp } from "@/components/ui/count-up";
@@ -131,6 +132,14 @@ export function WeightHeroCard({
             className="rounded-xl bg-surface2/50 border border-border/40 p-2"
           />
         </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border/40">
+        <ProgressJourney
+          current={analytics.currentWeight}
+          target={analytics.targetWeight}
+          journeyLabel="رحلة التحول الجسدي"
+        />
       </div>
 
       <div className="flex justify-center mt-4">

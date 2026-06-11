@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { AreaPreviewCard } from "@/components/areas/area-preview-card";
+import { PremiumSurface } from "@/components/motion/premium-surface";
+import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { MotionModal } from "@/components/motion/motion";
 import type { AreaPreview } from "@/types/areas";
 
 export function AreasIntelligenceView() {
@@ -63,17 +66,18 @@ export function AreasIntelligenceView() {
         subtitle="كل مجال = مركز قيادة — أين أنت؟ ماذا تفعل؟ ما الخطوة التالية؟"
       />
 
-      <Card className="p-4 flex flex-wrap gap-6 items-center justify-between">
+      <PremiumSurface variant="gradient-indigo" className="p-5 flex flex-wrap gap-6 items-center justify-between">
         <div>
+          <p className="text-[10px] uppercase tracking-widest text-text3 mb-1">Life Areas Intelligence</p>
+          <div className="text-3xl font-black text-gold2">{avgScore}%</div>
           <div className="text-xs text-text3">متوسط صحة الحياة</div>
-          <div className="text-2xl font-black text-gold2">{avgScore}%</div>
         </div>
         <div className="flex gap-4 text-sm text-text3">
           <span>{previews.length} مجالات</span>
           <span>{previews.reduce((s, p) => s + p.activeGoals, 0)} أهداف نشطة</span>
           <span>{previews.filter((p) => p.needsAttention.length).length} تحتاج انتباه</span>
         </div>
-      </Card>
+      </PremiumSurface>
 
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -82,28 +86,26 @@ export function AreasIntelligenceView() {
           ))}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <LayoutAnimateList className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {previews.map((p) => (
             <AreaPreviewCard key={p.id} preview={p} />
           ))}
-        </div>
+        </LayoutAnimateList>
       )}
 
       <Button variant="gold" onClick={() => setModal(true)}>+ مجال مخصص</Button>
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <Card className="w-full max-w-sm p-6 space-y-4">
-            <h3 className="font-bold">مجال جديد</h3>
-            <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
-            <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={addArea}>حفظ</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <MotionModal open={modal} onClose={() => setModal(false)}>
+        <Card className="w-full max-w-sm p-6 space-y-4 glass-premium">
+          <h3 className="font-bold">مجال جديد</h3>
+          <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
+          <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
+            <Button variant="gold" onClick={addArea}>حفظ</Button>
+          </div>
+        </Card>
+      </MotionModal>
     </div>
   );
 }

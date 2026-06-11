@@ -2,10 +2,8 @@
 
 import { motion } from "framer-motion";
 import { listItem, taskCompleteExit } from "@/lib/motion/list";
-import { habitCheckPop } from "@/lib/motion/list";
-import { MOTION } from "@/lib/motion";
+import { HabitCheck } from "@/components/motion/habit-check";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LifeTask } from "@/types/lifeos";
 
@@ -15,9 +13,10 @@ interface TaskRowProps {
   dimmed?: boolean;
   onToggle: () => void;
   onRemove: () => void;
+  onCelebrate?: () => void;
 }
 
-export function TaskRow({ task, pending, dimmed, onToggle, onRemove }: TaskRowProps) {
+export function TaskRow({ task, pending, dimmed, onToggle, onRemove, onCelebrate }: TaskRowProps) {
   const done = task.status === "done";
 
   return (
@@ -32,24 +31,16 @@ export function TaskRow({ task, pending, dimmed, onToggle, onRemove }: TaskRowPr
         dimmed && "opacity-45"
       )}
     >
-      <motion.button
-        type="button"
+      <HabitCheck
+        variant="icon"
+        checked={done}
         disabled={pending}
-        onClick={onToggle}
-        whileTap={{ scale: pending ? 1 : MOTION.scale.press }}
-        className={cn(
-          "w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 focus-ring",
-          done ? "bg-emerald border-emerald" : "border-border2 bg-surface2 hover:border-gold/40",
-          pending && "opacity-60"
-        )}
-        aria-label={done ? "إلغاء الإنجاز" : "إنجاز المهمة"}
-      >
-        {done && (
-          <motion.span {...habitCheckPop}>
-            <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-          </motion.span>
-        )}
-      </motion.button>
+        onChange={() => {
+          onToggle();
+          if (!done) onCelebrate?.();
+        }}
+        label={task.title}
+      />
       <div className="flex-1 min-w-0">
         <motion.div
           className="text-sm font-medium"
@@ -57,17 +48,15 @@ export function TaskRow({ task, pending, dimmed, onToggle, onRemove }: TaskRowPr
             opacity: done ? 0.5 : 1,
             textDecorationLine: done ? "line-through" : "none",
           }}
-          transition={{ duration: MOTION.duration.normal }}
+          transition={{ duration: 0.22 }}
         >
           {task.title}
         </motion.div>
-        <div className="flex gap-2 text-[10px] text-text3 font-mono">
-          {task.dueDate && <span>{task.dueDate}</span>}
-          <span>{(task.priority ?? "p3").toUpperCase()}</span>
-          {task.estimatedTime ? <span>{task.estimatedTime}د</span> : null}
-        </div>
+        {task.dueDate && (
+          <div className="text-[10px] text-text3 font-mono">{task.dueDate}</div>
+        )}
       </div>
-      <Button variant="danger" size="sm" onClick={onRemove}>
+      <Button variant="ghost" size="sm" onClick={onRemove} disabled={pending}>
         🗑
       </Button>
     </motion.li>
