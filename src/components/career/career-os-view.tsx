@@ -12,6 +12,7 @@ import { VirtualList } from "@/components/ui/virtual-list";
 import { CareerRoadmapDnd } from "@/components/career/career-roadmap-dnd";
 import { CareerJobsPanel } from "@/components/career/career-jobs-panel";
 import { CareerIntegrationsPanel } from "@/components/career/career-integrations-panel";
+import { SkillTree } from "@/components/career/skill-tree";
 import { uid } from "@/lib/utils";
 import type { CareerReadiness } from "@/lib/career/readiness";
 import type { CareerIntegrations } from "@/lib/career/integration";
@@ -206,6 +207,17 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
       )}
 
       {tab === "skills" && (
+        <div className="space-y-4">
+          <SkillTree
+            skills={d.skills.map((s) => ({
+              id: s.id,
+              name: s.name,
+              currentPct: s.current,
+              targetPct: s.target,
+            }))}
+            readinessScore={d.readiness.score}
+            promotionScore={Math.round(d.readiness.score * 0.9)}
+          />
         <Card className="p-4 space-y-4">
           <div className="flex justify-between">
             <div className="text-sm font-bold">Skills Matrix 2.0 (0–100)</div>
@@ -239,6 +251,7 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             )}
           />
         </Card>
+        </div>
       )}
 
       {tab === "certs" && (

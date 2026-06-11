@@ -8,6 +8,7 @@ import { useToast } from "@/contexts/toast-context";
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { useEffect, useState } from "react";
 import { Input, Label } from "@/components/ui/input";
+import { LayoutCustomizer } from "@/components/settings/layout-customizer";
 
 const THEMES: { id: ThemeMode; label: string }[] = [
   { id: "dark", label: "داكن" },
@@ -114,6 +115,8 @@ export default function SettingsPage() {
             ))}
           </div>
         </Card>
+
+        <LayoutCustomizer />
 
         <Card className="p-5 space-y-4">
           <h2 className="font-bold text-gold2">تخصيص LifeOS</h2>

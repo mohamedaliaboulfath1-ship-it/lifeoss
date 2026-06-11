@@ -691,7 +691,10 @@ function GoalDetailModal({
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
       <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold text-gold2 text-lg">{goal.title}</h3>
+        <div className="flex justify-between items-start gap-2">
+          <h3 className="font-bold text-gold2 text-lg">{goal.title}</h3>
+          <a href={`/goals/${goal.id}`} className="text-xs text-gold2 hover:underline shrink-0">Command Center →</a>
+        </div>
         {prob && <div className="text-sm text-text2">{prob.text}</div>}
         <ProgressBar value={pct} color={areaColor(goal.area)} />
         {goal.why && <div><div className="text-xs text-text3 mb-1">لماذا</div><p className="text-sm">{goal.why}</p></div>}

@@ -8,27 +8,18 @@ import { Tabs } from "@/components/ui/tabs";
 import { Input, Label } from "@/components/ui/input";
 import { ScheduleSettingsPanel } from "@/components/time/schedule-settings-panel";
 import { FocusTimer } from "@/components/time/focus-timer";
+import { FocusDashboardPanel } from "@/components/time/focus-dashboard-panel";
+import { TimeCalendar24h, TimeAgendaView } from "@/components/time/time-calendar-24h";
+import { WeeklyPlanningPanel } from "@/components/time/weekly-planning-panel";
 import { getWeekDates, today, uid } from "@/lib/utils";
-import { DOMAIN_COLORS } from "@/lib/time/defaults";
 import type { TimeBlock, UserTimeSettings, SuggestedSlot } from "@/types/time";
 
 const VIEW_TABS = [
   { id: "week", label: "أسبوع" },
   { id: "day", label: "يوم" },
   { id: "month", label: "شهر" },
+  { id: "agenda", label: "أجندة" },
 ];
-
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
-const DAY_LABELS = ["سبت", "أحد", "إثن", "ثلا", "أرب", "خمي", "جمع"];
-
-function blockStyle(block: TimeBlock) {
-  const start = new Date(block.startAt);
-  const end = new Date(block.endAt);
-  const top = ((start.getHours() - 6) * 60 + start.getMinutes()) / 60;
-  const height = Math.max(0.5, (end.getTime() - start.getTime()) / 3600000);
-  const color = block.color ?? (block.domainId ? DOMAIN_COLORS[block.domainId] : "var(--gold)");
-  return { top: `${top * 48}px`, height: `${height * 48}px`, borderColor: color, background: `${color}22` };
-}
 
 export function PlannerView() {
   const [view, setView] = useState("week");
@@ -52,8 +43,15 @@ export function PlannerView() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    const rangeStart = view === "month"
+      ? new Date(weekDates[0]).toISOString().slice(0, 7) + "-01"
+      : weekDates[0];
+    const rangeEnd = view === "month"
+      ? weekDates[6]
+      : weekDates[6];
+
     const [blocksRes, settingsRes] = await Promise.all([
-      fetch(`/api/time/blocks?start=${weekDates[0]}&end=${weekDates[6]}`),
+      fetch(`/api/time/blocks?start=${rangeStart}&end=${rangeEnd}`),
       fetch("/api/time/settings"),
     ]);
     const bj = await blocksRes.json();
@@ -61,7 +59,7 @@ export function PlannerView() {
     setBlocks(bj.blocks ?? []);
     setSettings(sj.settings ?? null);
     setLoading(false);
-  }, [weekDates]);
+  }, [weekDates, view]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -111,15 +109,41 @@ export function PlannerView() {
     await load();
   }
 
-  const dayDate = view === "day" ? today() : null;
-  const displayDates = view === "day" && dayDate ? [dayDate] : view === "month" ? weekDates : weekDates;
+  async function moveBlock(blockId: string, newStartAt: string, newEndAt: string) {
+    await fetch("/api/time/blocks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: blockId, startAt: newStartAt, endAt: newEndAt }),
+    });
+    await load();
+  }
+
+  const displayDates = useMemo(() => {
+    if (view === "day") return [today()];
+    if (view === "month" || view === "agenda") return weekDates;
+    return weekDates;
+  }, [view, weekDates]);
+
+  function openSlot(date: string, hour: number) {
+    setForm((f) => ({
+      ...f,
+      date,
+      startTime: `${String(hour).padStart(2, "0")}:00`,
+    }));
+    setModal(true);
+    void suggestTime();
+  }
 
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Time Planner"
-        subtitle="جدولة ذكية — Day · Week · Month · Drag & Drop"
+        title="Time OS"
+        subtitle="24 ساعة · Day · Week · Month · Agenda · Drag & Drop"
       />
+
+      <FocusDashboardPanel blocks={blocks} settings={settings} />
+
+      <WeeklyPlanningPanel weekDates={weekDates} blocks={blocks} settings={settings} />
 
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <Tabs tabs={VIEW_TABS} active={view} onChange={setView} />
@@ -135,65 +159,22 @@ export function PlannerView() {
 
       {loading ? (
         <div className="h-96 skeleton-shimmer rounded-[10px]" />
+      ) : view === "agenda" ? (
+        <TimeAgendaView blocks={blocks} onBlockClick={(b) => void markDone(b)} />
       ) : view === "month" ? (
         <Card className="p-4">
           <div className="text-sm font-bold mb-3">شهر — {blocks.length} كتلة</div>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto">
-            {blocks.map((b) => (
-              <div key={b.id} className="flex justify-between text-sm p-2 rounded-sm bg-surface2/50 border border-border/40">
-                <span>{b.title}</span>
-                <span className="text-text3 text-xs">{new Date(b.startAt).toLocaleString("ar-SA")}</span>
-              </div>
-            ))}
-          </div>
+          <TimeAgendaView blocks={blocks} onBlockClick={(b) => void markDone(b)} />
         </Card>
       ) : (
-        <Card className="p-2 overflow-x-auto">
-          <div className="flex min-w-[700px]">
-            <div className="w-10 shrink-0">
-              {HOURS.map((h) => (
-                <div key={h} className="h-12 text-[10px] text-text3 pr-1 text-left">{h}:00</div>
-              ))}
-            </div>
-            {displayDates.map((date, di) => (
-              <div key={date} className="flex-1 min-w-[90px] border-r border-border/30 relative">
-                <div className="text-center text-[10px] font-bold py-1 border-b border-border/30 sticky top-0 bg-surface z-10">
-                  {DAY_LABELS[di]} {date.slice(8)}
-                </div>
-                <div className="relative" style={{ height: HOURS.length * 48 }}>
-                  {HOURS.map((h) => (
-                    <div
-                      key={h}
-                      className="absolute w-full border-t border-border/20 hover:bg-gold/5 cursor-pointer"
-                      style={{ top: (h - 6) * 48, height: 48 }}
-                      onClick={() => {
-                        setForm((f) => ({ ...f, date, startTime: `${String(h).padStart(2, "0")}:00` }));
-                        setModal(true);
-                        void suggestTime();
-                      }}
-                      role="presentation"
-                    />
-                  ))}
-                  {blocks
-                    .filter((b) => b.startAt.slice(0, 10) === date)
-                    .map((b) => (
-                      <button
-                        key={b.id}
-                        type="button"
-                        className="absolute left-0.5 right-0.5 rounded-sm border text-[10px] p-1 overflow-hidden text-right z-20 hover:brightness-110"
-                        style={blockStyle(b)}
-                        onClick={() => void markDone(b)}
-                        title={`${b.title} — اضغط لإكمال`}
-                      >
-                        <div className="font-medium truncate">{b.title}</div>
-                        <div className="text-text3">{b.status}</div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <TimeCalendar24h
+          dates={displayDates}
+          blocks={blocks}
+          settings={settings}
+          onSlotClick={openSlot}
+          onBlockMove={moveBlock}
+          onBlockClick={(b) => void markDone(b)}
+        />
       )}
 
       <FocusTimer onComplete={() => void load()} />

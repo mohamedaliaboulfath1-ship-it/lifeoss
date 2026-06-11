@@ -122,13 +122,29 @@ export function WealthFinanceView({ yearData, salary }: Props) {
             <Card className="p-4 text-center"><div className="text-2xl font-black text-rose2">{commas(Math.round(subMonthly * 12))}</div><div className="text-xs text-text3">سنوياً ﷼</div></Card>
             <Card className="p-4 text-center"><div className="text-2xl font-black">{subs.filter((s) => s.active).length}</div><div className="text-xs text-text3">اشتراك نشط</div></Card>
           </div>
+          {(() => {
+            const soon = subs.filter((s) => {
+              if (!s.renewalDate || !s.active) return false;
+              const days = Math.ceil((new Date(s.renewalDate).getTime() - Date.now()) / 86400000);
+              return days >= 0 && days <= 7;
+            });
+            return soon.length > 0 ? (
+              <Card className="p-3 border-amber/40 bg-amber/10 text-sm">
+                🔔 <strong>{soon.length}</strong> اشتراك يتجدد خلال 7 أيام: {soon.map((s) => s.name).join("، ")}
+              </Card>
+            ) : null;
+          })()}
           <Button variant="gold" onClick={() => { setModal("sub"); setForm({ billingCycle: "monthly", renewalDate: today() }); }}>+ اشتراك</Button>
           {subs.length === 0 ? <EmptyState icon="📱" title="لا اشتراكات" description="أضف Netflix، iCloud، Gym..." actionLabel="+ إضافة" onAction={() => setModal("sub")} /> : (
             <div className="space-y-2">
-              {subs.map((s) => (
-                <Card key={s.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+              {subs.map((s) => {
+                const renewalSoon = s.renewalDate
+                  ? Math.ceil((new Date(s.renewalDate).getTime() - Date.now()) / 86400000) <= 7
+                  : false;
+                return (
+                <Card key={s.id} className={`p-4 flex flex-wrap items-center justify-between gap-3 ${renewalSoon ? "border-amber/40" : ""}`}>
                   <div>
-                    <div className="font-bold">{s.name}</div>
+                    <div className="font-bold">{s.name} {renewalSoon && <span className="text-[10px] text-amber2">🔔 قريب</span>}</div>
                     <div className="text-xs text-text3">{s.category} · {CYCLES.find((c) => c.id === s.billingCycle)?.label} · {commas(s.price)} {s.currency}</div>
                     {s.renewalDate && <div className="text-[10px] text-amber2">تجديد: {s.renewalDate}</div>}
                   </div>
@@ -137,7 +153,8 @@ export function WealthFinanceView({ yearData, salary }: Props) {
                     <Button variant="danger" size="sm" onClick={() => financeDelete("subscription", s.id).then(reload)}>حذف</Button>
                   </div>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

@@ -8,6 +8,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { VirtualList } from "@/components/ui/virtual-list";
 import { AreaKnowledgeGraph } from "@/components/areas/area-knowledge-graph";
 import { AreaOverviewCommand } from "@/components/areas/area-overview-command";
+import { AreaIntelligencePanel } from "@/components/areas/area-intelligence-panel";
 import { GoalDrillDownPanel } from "@/components/areas/goal-drill-down-panel";
 import type { AreaHubPayload, GoalDrillDown } from "@/types/areas";
 
@@ -221,14 +222,17 @@ export function AreaHubView({ slug }: Props) {
       )}
 
       {tab === "coach" && (
-        <Card className="p-4 space-y-3">
-          {hub.coach.map((c) => (
-            <div key={c.id} className={`p-3 rounded-sm border text-sm ${c.priority === "high" ? "border-red2/40 bg-red2/5" : "border-border2 bg-surface2"}`}>
-              {c.icon} {c.message}
-              {c.action && <div className="text-xs text-gold2 mt-1">{c.action}</div>}
-            </div>
-          ))}
-        </Card>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <AreaIntelligencePanel hub={hub} />
+          <Card className="p-4 space-y-3">
+            {hub.coach.map((c) => (
+              <div key={c.id} className={`p-3 rounded-sm border text-sm ${c.priority === "high" ? "border-red2/40 bg-red2/5" : "border-border2 bg-surface2"}`}>
+                {c.icon} {c.message}
+                {c.action && <div className="text-xs text-gold2 mt-1">{c.action}</div>}
+              </div>
+            ))}
+          </Card>
+        </div>
       )}
 
       {drillDown && <GoalDrillDownPanel data={drillDown} onClose={() => setDrillDown(null)} />}
