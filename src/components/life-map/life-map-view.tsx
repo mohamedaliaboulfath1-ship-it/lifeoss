@@ -1,28 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import type { LifeMapNode, LifeMapPayload } from "@/lib/life-map/build-global-graph";
-
-const TYPE_META: Record<string, { color: string; icon: string; label: string }> = {
-  goal: { color: "var(--gold)", icon: "🎯", label: "هدف" },
-  project: { color: "var(--sky)", icon: "📁", label: "مشروع" },
-  task: { color: "var(--amber2)", icon: "✅", label: "مهمة" },
-  habit: { color: "var(--emerald)", icon: "🔄", label: "عادة" },
-  book: { color: "var(--purple)", icon: "📚", label: "كتاب" },
-  skill: { color: "var(--pink)", icon: "⚡", label: "مهارة" },
-  course: { color: "var(--teal)", icon: "🎓", label: "دورة" },
-  cert: { color: "var(--coral)", icon: "🏅", label: "شهادة" },
-};
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LifeMapCanvas, type LifeMapCanvasHandle } from "./life-map-canvas";
+import { LifeMapPanel } from "./life-map-panel";
+import type { LifeMapNode, LifeMapPayload } from "@/lib/life-map/types";
+import { PageUnfold } from "@/components/motion/unfold-reveal";
 
 export function LifeMapView() {
   const [data, setData] = useState<LifeMapPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
   const [selected, setSelected] = useState<LifeMapNode | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const canvasRef = useRef<LifeMapCanvasHandle | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,149 +28,118 @@ export function LifeMapView() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const filtered = useMemo(() => {
-    if (!data) return [];
-    if (filter === "all") return data.nodes;
-    return data.nodes.filter((n) => n.type === filter);
-  }, [data, filter]);
+  const searchResults = useMemo(() => {
+    if (!data || !query.trim()) return [];
+    const q = query.trim().toLowerCase();
+    return data.nodes.filter((n) => n.label.toLowerCase().includes(q) || n.type.includes(q)).slice(0, 8);
+  }, [data, query]);
 
-  if (loading && !data) {
-    return <div className="h-64 skeleton-shimmer rounded-2xl" />;
+  function focusNode(node: LifeMapNode) {
+    setSelected(node);
+    setFocusId(node.id);
+    window.setTimeout(() => setFocusId(null), 800);
   }
 
-  const stats = data?.stats;
+  if (loading && !data) {
+    return <div className="h-[calc(100vh-120px)] skeleton-shimmer rounded-2xl" />;
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-20 text-text3">
+        تعذّر تحميل خريطة الحياة —{" "}
+        <button type="button" className="text-gold2 underline" onClick={() => void load()}>إعادة المحاولة</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="خريطة الحياة"
-        subtitle="Life Map — رؤية · أهداف · مشاريع · عادات · مهام · كتب · مهارات"
-      />
+    <PageUnfold className="flex flex-col h-[calc(100vh-88px)] min-h-[600px] -mx-4 md:-mx-6">
+      {/* Toolbar */}
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-wrap items-center gap-3 px-4 md:px-6 py-3 border-b border-border/40 glass-premium shrink-0 z-10"
+      >
+        <div>
+          <h1 className="font-display text-xl font-black text-gold2">خريطة الحياة</h1>
+          <p className="text-[10px] text-text3 font-mono">Life Map V2 — Neural Life OS</p>
+        </div>
 
-      {stats && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex-1 min-w-[200px] max-w-md relative">
+          <Input
+            placeholder="🔍 ابحث: FMVA، جيم، صندوق طوارئ..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="text-sm"
+          />
+          {searchResults.length > 0 && (
+            <div className="absolute top-full mt-1 w-full bg-surface border border-border rounded-xl shadow-premium-lg z-50 overflow-hidden">
+              {searchResults.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => { setQuery(""); focusNode(n); }}
+                  className="w-full text-right px-3 py-2 text-sm hover:bg-surface2 flex items-center gap-2"
+                >
+                  <span>{n.icon}</span>
+                  <span className="truncate">{n.label}</span>
+                  <span className="text-[10px] text-text3 mr-auto">{n.type}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => canvasRef.current?.fitView()}>
+            ⊞ ملاءمة
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => canvasRef.current?.resetView()}>
+            ⟲ إعادة
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void load()}>
+            ↻ تحديث
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 text-[10px]">
           {[
-            { k: "visions", label: "رؤى", v: stats.visions },
-            { k: "goals", label: "أهداف", v: stats.goals },
-            { k: "projects", label: "مشاريع", v: stats.projects },
-            { k: "habits", label: "عادات", v: stats.habits },
-            { k: "tasks", label: "مهام", v: stats.tasks },
-            { k: "books", label: "كتب", v: stats.books },
-            { k: "skills", label: "مهارات", v: stats.skills },
+            { label: "أهداف", v: data.stats.goals },
+            { label: "مشاريع", v: data.stats.projects },
+            { label: "عادات", v: data.stats.habits },
+            { label: "مهام", v: data.stats.tasks },
+            { label: "كتب", v: data.stats.books },
           ].map((s) => (
-            <span key={s.k} className="text-xs px-3 py-1.5 rounded-full glass-premium border border-border/40">
-              <span className="text-text3">{s.label}</span>{" "}
-              <span className="font-mono font-bold text-gold2">{s.v}</span>
+            <span key={s.label} className="px-2 py-1 rounded-full bg-surface2 border border-border/40">
+              {s.label} <b className="text-gold2">{s.v}</b>
             </span>
           ))}
         </div>
-      )}
+      </motion.header>
 
-      <div className="flex flex-wrap gap-2">
-        {["all", "goal", "project", "habit", "task", "book", "skill"].map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-              filter === f ? "bg-gold/20 text-gold2 border border-gold/40" : "bg-surface2 text-text3 border border-border/40 hover:border-gold/20"
-            }`}
-          >
-            {f === "all" ? "الكل" : TYPE_META[f]?.label ?? f}
-          </button>
-        ))}
+      {/* Infinite canvas */}
+      <div className="relative flex-1 min-h-0">
+        <LifeMapCanvas
+          data={data}
+          selectedId={selected?.id ?? null}
+          hoveredId={hoveredId}
+          focusId={focusId}
+          onSelect={setSelected}
+          onHover={setHoveredId}
+          canvasRef={canvasRef}
+        />
+
+        {selected && (
+          <LifeMapPanel
+            node={selected}
+            nodes={data.nodes}
+            edges={data.edges}
+            onSelectNode={focusNode}
+            onClose={() => setSelected(null)}
+          />
+        )}
       </div>
-
-      <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 p-5 min-h-[420px] glass-premium">
-          <div className="text-sm font-bold mb-4 text-text2">الشبكة التفاعلية</div>
-          {!filtered.length ? (
-            <p className="text-text3 text-sm text-center py-12">أضف أهدافاً وعادات لبناء خريطة حياتك</p>
-          ) : (
-            <div className="flex flex-wrap justify-center gap-3">
-              <AnimatePresence mode="popLayout">
-                {filtered.map((n, i) => {
-                  const meta = TYPE_META[n.type] ?? TYPE_META.goal;
-                  return (
-                    <motion.button
-                      key={n.id}
-                      type="button"
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ delay: i * 0.02 }}
-                      onClick={() => setSelected(n)}
-                      className={`px-4 py-3 rounded-xl border text-right min-w-[120px] max-w-[180px] transition-shadow hover:shadow-lg hover:-translate-y-0.5 ${
-                        selected?.id === n.id ? "ring-2 ring-gold/50" : ""
-                      }`}
-                      style={{
-                        borderColor: `${meta.color}50`,
-                        background: `${meta.color}12`,
-                      }}
-                    >
-                      <div className="text-lg">{meta.icon}</div>
-                      <div className="text-xs font-medium truncate mt-1">{n.label}</div>
-                      <div className="text-[10px] text-text3">{meta.label}</div>
-                      {n.progress != null && (
-                        <div className="text-[10px] font-mono text-gold2 mt-1">{n.progress}%</div>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </Card>
-
-        <Card className="p-5 glass-premium">
-          <div className="text-sm font-bold mb-3">التفاصيل</div>
-          {selected ? (
-            <motion.div key={selected.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
-              <div className="text-lg">{TYPE_META[selected.type]?.icon}</div>
-              <div className="font-bold">{selected.label}</div>
-              <div className="text-xs text-text3">{TYPE_META[selected.type]?.label}</div>
-              {selected.progress != null && (
-                <div className="text-sm">التقدم: <span className="font-mono text-gold2">{selected.progress}%</span></div>
-              )}
-              {selected.domainSlug && (
-                <Link href={`/areas/${selected.domainSlug}`} className="text-xs text-gold2 hover:underline block">
-                  → مجال {selected.domainSlug}
-                </Link>
-              )}
-              {selected.href && (
-                <Link href={selected.href} className="inline-block mt-2 text-sm px-4 py-2 rounded-lg bg-gold/15 text-gold2 hover:bg-gold/25">
-                  فتح
-                </Link>
-              )}
-              {data?.edges.filter((e) => e.from === selected.id || e.to === selected.id).length ? (
-                <div className="pt-2 border-t border-border/40">
-                  <div className="text-xs text-text3 mb-1">مرتبط بـ:</div>
-                  {data.edges
-                    .filter((e) => e.from === selected.id || e.to === selected.id)
-                    .slice(0, 6)
-                    .map((e) => {
-                      const otherId = e.from === selected.id ? e.to : e.from;
-                      const other = data.nodes.find((n) => n.id === otherId);
-                      return other ? (
-                        <button
-                          key={`${e.from}-${e.to}`}
-                          type="button"
-                          onClick={() => setSelected(other)}
-                          className="block text-xs text-left w-full py-1 hover:text-gold2 truncate"
-                        >
-                          {TYPE_META[other.type]?.icon} {other.label}
-                        </button>
-                      ) : null;
-                    })}
-                </div>
-              ) : null}
-            </motion.div>
-          ) : (
-            <p className="text-text3 text-sm">اضغط على أي عقدة لعرض التفاصيل والروابط</p>
-          )}
-        </Card>
-      </div>
-    </div>
+    </PageUnfold>
   );
 }
