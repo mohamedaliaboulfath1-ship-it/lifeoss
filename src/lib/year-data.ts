@@ -39,6 +39,7 @@ export function mapProfile(row: ProfileRow) {
       workoutProgram?: string;
       dietPlan?: string;
       dietNotes?: string;
+      bodyGoal?: "gain" | "lose" | "recomp" | "maintain" | "athletic";
     } | undefined,
     salary: row.salary,
     targetSalary: row.target_salary,

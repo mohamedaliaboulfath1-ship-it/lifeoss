@@ -6,6 +6,7 @@ import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { today } from "@/lib/utils";
 import type { PhotoTimelineGroup, PhotoAngle } from "@/types/wealth";
+import { TransformationCompareSlider } from "@/components/body/transformation-compare-slider";
 
 const ANGLES: { id: PhotoAngle; label: string }[] = [
   { id: "front", label: "أمام" },
@@ -131,28 +132,44 @@ export function ProgressPhotosPanel() {
         </div>
       )}
 
-      {compare && compareGroups.length === 2 && (
-        <Card className="p-4 border-gold/30">
-          <div className="text-sm font-bold mb-3">مقارنة {compare[0]} ↔ {compare[1]}</div>
-          <div className="grid grid-cols-2 gap-4">
-            {compareGroups.map((g) => (
-              <div key={g.date}>
-                <div className="text-xs text-text3 mb-2">{g.date} — {g.weight ?? "?"} كجم</div>
-                <div className="grid grid-cols-3 gap-1">
-                  {ANGLES.map((a) => (
-                    <div key={a.id} className="aspect-[3/4] rounded-sm border border-border overflow-hidden">
-                      {g.photos[a.id]?.signedUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={g.photos[a.id]!.signedUrl} alt="" className="w-full h-full object-cover" />
-                      ) : <div className="h-full bg-surface2" />}
+      {compare && compareGroups.length === 2 && (() => {
+        const [before, after] = compareGroups.sort((a, b) => a.date.localeCompare(b.date));
+        const beforeUrl = before.photos.front?.signedUrl ?? before.photos.side?.signedUrl;
+        const afterUrl = after.photos.front?.signedUrl ?? after.photos.side?.signedUrl;
+        return (
+          <Card className="p-4 border-gold/30">
+            <div className="text-sm font-bold mb-3">مقارنة التحول — اسحب للمقارنة</div>
+            {beforeUrl && afterUrl ? (
+              <TransformationCompareSlider
+                beforeUrl={beforeUrl}
+                afterUrl={afterUrl}
+                beforeLabel={before.date}
+                afterLabel={after.date}
+                beforeWeight={before.weight}
+                afterWeight={after.weight}
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {compareGroups.map((g) => (
+                  <div key={g.date}>
+                    <div className="text-xs text-text3 mb-2">{g.date} — {g.weight ?? "?"} كجم</div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {ANGLES.map((a) => (
+                        <div key={a.id} className="aspect-[3/4] rounded-sm border border-border overflow-hidden">
+                          {g.photos[a.id]?.signedUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={g.photos[a.id]!.signedUrl} alt="" className="w-full h-full object-cover" />
+                          ) : <div className="h-full bg-surface2" />}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+            )}
+          </Card>
+        );
+      })()}
     </div>
   );
 }

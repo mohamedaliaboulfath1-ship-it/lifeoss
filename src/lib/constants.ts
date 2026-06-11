@@ -45,6 +45,22 @@ export const NAV_PAGES: NavPage[] = [
     section: "الرئيسية",
   },
   {
+    id: "life-map",
+    href: "/life-map",
+    icon: "🗺️",
+    title: "خريطة الحياة",
+    sub: "Life Map — الرؤية والروابط",
+    section: "الرئيسية",
+  },
+  {
+    id: "resources",
+    href: "/resources",
+    icon: "📌",
+    title: "الموارد",
+    sub: "PARA Resources — مراجع وروابط",
+    section: "الرئيسية",
+  },
+  {
     id: "tasks",
     href: "/tasks",
     icon: "✅",

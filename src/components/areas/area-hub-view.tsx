@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { VirtualList } from "@/components/ui/virtual-list";
 import { AreaKnowledgeGraph } from "@/components/areas/area-knowledge-graph";
+import { AreaOverviewCommand } from "@/components/areas/area-overview-command";
 import { GoalDrillDownPanel } from "@/components/areas/goal-drill-down-panel";
 import type { AreaHubPayload, GoalDrillDown } from "@/types/areas";
 
@@ -130,27 +131,7 @@ export function AreaHubView({ slug }: Props) {
       )}
 
       {tab === "overview" && (
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card className="p-4 space-y-2">
-            <div className="text-sm font-bold">📅 Timeline — اليوم</div>
-            {hub.timeline.filter((e) => e.period === "today").map((e) => (
-              <div key={e.id} className="text-sm">{e.icon} {e.text}</div>
-            ))}
-            {!hub.timeline.filter((e) => e.period === "today").length && <p className="text-text3 text-xs">لا نشاط اليوم</p>}
-          </Card>
-          <Card className="p-4 space-y-2">
-            <div className="text-sm font-bold">📆 هذا الأسبوع</div>
-            {hub.timeline.filter((e) => e.period === "week").map((e) => (
-              <div key={e.id} className="text-sm">{e.icon} {e.text}</div>
-            ))}
-          </Card>
-          <Card className="p-4 md:col-span-2">
-            <div className="text-sm font-bold mb-2">🧠 Area Coach</div>
-            {hub.coach.slice(0, 3).map((c) => (
-              <div key={c.id} className="text-sm p-2 rounded-sm bg-surface2 mb-1">{c.icon} {c.message}</div>
-            ))}
-          </Card>
-        </div>
+        <AreaOverviewCommand hub={hub} onNav={setTab} onOpenGoal={openGoal} />
       )}
 
       {tab === "goals" && (

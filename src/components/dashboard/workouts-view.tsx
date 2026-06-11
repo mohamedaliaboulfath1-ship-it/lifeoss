@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs } from "@/components/ui/tabs";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -9,9 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MiniChart } from "@/components/ui/mini-chart";
+import { MuscleHeatmap } from "@/components/workouts/muscle-heatmap";
 import { PPLUL_PLAN } from "@/lib/lifeos-v1/defaults";
 import { today, uid } from "@/lib/utils";
 import type { WorkoutSetLog, YearPayload } from "@/types/lifeos";
+
+type WorkoutTemplate = {
+  id: string;
+  name: string;
+  splitType: string;
+  daysPerWeek: number;
+  schedule: { day: string; label: string; exercises?: string[]; focus?: string }[];
+  notes?: string;
+};
 
 interface WorkoutsViewProps {
   yearData: YearPayload;
@@ -23,8 +33,24 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
   const [view, setView] = useState("log");
   const [modal, setModal] = useState(false);
   const [exerciseModal, setExerciseModal] = useState(false);
+  const [templateModal, setTemplateModal] = useState(false);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [newExercise, setNewExercise] = useState({ name: "", muscleGroup: "", equipment: "" });
+  const [newTemplate, setNewTemplate] = useState({
+    name: "",
+    splitType: "ppl" as "ppl" | "upper_lower" | "full_body" | "custom",
+    daysPerWeek: "4",
+    notes: "",
+  });
   const [exerciseFocus, setExerciseFocus] = useState("");
+
+  const loadTemplates = useCallback(async () => {
+    const res = await fetch("/api/workouts/templates");
+    const json = await res.json().catch(() => ({}));
+    setTemplates(json.templates ?? []);
+  }, []);
+
+  useEffect(() => { void loadTemplates(); }, [loadTemplates]);
   const exercises = yearData.exercises ?? [];
   const logs = yearData.workoutLogs ?? [];
   const selectedExercise = exerciseFocus || exercises[0]?.id || "";
@@ -100,6 +126,16 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
     return Object.entries(dist).map(([label, value]) => ({ label, value }));
   }, [exercises, logs]);
 
+  const muscleDistMap = useMemo(() => {
+    const nameToGroup = new Map(exercises.map((e) => [e.id, e.muscleGroup || "أخرى"]));
+    const dist: Record<string, number> = {};
+    logs.forEach((l) => {
+      const group = nameToGroup.get(l.exerciseId || "") || "أخرى";
+      dist[group] = (dist[group] ?? 0) + 1;
+    });
+    return dist;
+  }, [exercises, logs]);
+
   async function saveLog() {
     const ex = exercises.find((e) => e.id === form.exerciseId);
     const log: WorkoutSetLog = {
@@ -151,6 +187,7 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
           { id: "log", label: "📋 السجل" },
           { id: "exercises", label: "💪 تماريني" },
           { id: "plan", label: "📅 البرنامج" },
+          { id: "templates", label: "🗂️ قوالب" },
           { id: "progress", label: "📈 Progress" },
           { id: "analytics", label: "🧠 Analytics" },
         ]}
@@ -222,6 +259,52 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
         </div>
       )}
 
+      {view === "templates" && (
+        <Card className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="text-sm font-bold">برامجك المخصصة</div>
+            <Button variant="gold" size="sm" onClick={() => setTemplateModal(true)}>+ قالب</Button>
+          </div>
+          {templates.length === 0 ? (
+            <EmptyState
+              icon="🗂️"
+              title="لا قوالب بعد"
+              description="أنشئ برنامج PPL أو Upper/Lower أو Full Body"
+              actionLabel="+ أول قالب"
+              onAction={() => setTemplateModal(true)}
+            />
+          ) : (
+            <div className="grid md:grid-cols-2 gap-3">
+              {templates.map((t) => (
+                <Card key={t.id} className="p-4 border-border2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-gold2">{t.name}</div>
+                      <div className="text-xs text-text3">{t.splitType} · {t.daysPerWeek} أيام/أسبوع</div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-rose2 text-xs"
+                      onClick={async () => {
+                        await fetch(`/api/workouts/templates?id=${t.id}`, { method: "DELETE" });
+                        await loadTemplates();
+                      }}
+                    >
+                      حذف
+                    </button>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {(t.schedule ?? []).slice(0, 5).map((d) => (
+                      <div key={d.day} className="text-xs text-text3">{d.day}: {d.label}</div>
+                    ))}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
       {view === "progress" && (
         <div className="grid xl:grid-cols-3 gap-4">
           <Card className="p-4 xl:col-span-2">
@@ -265,6 +348,10 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
             <MiniChart data={weeklyVolume} type="bar" color="var(--gold)" />
           </Card>
           <Card className="p-4">
+            <div className="text-sm font-bold mb-3">Muscle Heatmap</div>
+            <MuscleHeatmap distribution={muscleDistMap} />
+          </Card>
+          <Card className="p-4">
             <div className="text-sm font-bold mb-3">Muscle Group Distribution</div>
             <MiniChart data={muscleDist} type="bar" color="var(--sky)" />
           </Card>
@@ -283,6 +370,57 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
               </li>
             </ul>
           </Card>
+        </div>
+      )}
+
+      {templateModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
+            <h3 className="font-bold text-gold2">قالب تمرين جديد</h3>
+            <div><Label>الاسم</Label><Input value={newTemplate.name} onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })} placeholder="PPL Bulking" /></div>
+            <div>
+              <Label>نوع التقسيم</Label>
+              <select
+                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                value={newTemplate.splitType}
+                onChange={(e) => setNewTemplate({ ...newTemplate, splitType: e.target.value as typeof newTemplate.splitType })}
+              >
+                <option value="ppl">PPL</option>
+                <option value="upper_lower">Upper / Lower</option>
+                <option value="full_body">Full Body</option>
+                <option value="custom">مخصص</option>
+              </select>
+            </div>
+            <div><Label>أيام/أسبوع</Label><Input value={newTemplate.daysPerWeek} onChange={(e) => setNewTemplate({ ...newTemplate, daysPerWeek: e.target.value })} /></div>
+            <div><Label>ملاحظات</Label><Input value={newTemplate.notes} onChange={(e) => setNewTemplate({ ...newTemplate, notes: e.target.value })} /></div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setTemplateModal(false)}>إلغاء</Button>
+              <Button variant="gold" onClick={async () => {
+                if (!newTemplate.name.trim()) return;
+                const defaultSchedule = newTemplate.splitType === "ppl"
+                  ? [
+                      { day: "الأحد", label: "Push", focus: "صدر + كتف + ترايسبس" },
+                      { day: "الثلاثاء", label: "Pull", focus: "ظهر + بايسبس" },
+                      { day: "الخميس", label: "Legs", focus: "أرجل + جلوت" },
+                    ]
+                  : [{ day: "اليوم 1", label: newTemplate.name, focus: "مخصص" }];
+                await fetch("/api/workouts/templates", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: newTemplate.name,
+                    splitType: newTemplate.splitType,
+                    daysPerWeek: parseInt(newTemplate.daysPerWeek, 10) || 4,
+                    schedule: defaultSchedule,
+                    notes: newTemplate.notes || undefined,
+                  }),
+                });
+                setTemplateModal(false);
+                setNewTemplate({ name: "", splitType: "ppl", daysPerWeek: "4", notes: "" });
+                await loadTemplates();
+              }}>حفظ</Button>
+            </div>
+          </div>
         </div>
       )}
 

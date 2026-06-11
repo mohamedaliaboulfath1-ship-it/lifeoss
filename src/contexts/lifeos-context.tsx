@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { BodyGoal } from "@/components/body/body-plan-panel";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 
@@ -29,7 +30,9 @@ interface Profile {
     workoutProgram?: string;
     dietPlan?: string;
     dietNotes?: string;
+    bodyGoal?: BodyGoal;
   };
+  weight?: number | null;
   salary?: number | null;
   targetSalary?: number | null;
   currentYear: string;

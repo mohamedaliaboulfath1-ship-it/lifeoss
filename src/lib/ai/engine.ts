@@ -123,3 +123,47 @@ export function buildExecutiveBrief(
     nextActions: insights.slice(0, 3).map((x) => x.title),
   };
 }
+
+export interface LifeBriefing {
+  period: "daily" | "weekly" | "monthly";
+  generatedAt: string;
+  headline: string;
+  scores: { life: number; finance: number; career: number; learning: number };
+  insights: AiInsight[];
+  risks: AiInsight[];
+  recommendations: AiInsight[];
+  nextActions: string[];
+}
+
+export function buildLifeBriefing(
+  period: "daily" | "weekly" | "monthly",
+  yearData: YearPayload,
+  dashboard?: DashboardSnapshot | null
+): LifeBriefing {
+  const insights = buildAiInsights(yearData, dashboard);
+  const risks = insights.filter((i) => i.type === "risk");
+  const recommendations = insights.filter((i) => i.type === "opportunity" || i.type === "priority");
+  const brief = buildExecutiveBrief(dashboard, insights);
+
+  const periodHeadlines = {
+    daily: `إحاطة يومية — ${brief.headline}`,
+    weekly: `مراجعة أسبوعية — Life Score ${dashboard?.scores.lifeScore ?? 0}`,
+    monthly: `مراجعة شهرية — ${insights.length} رؤى نشطة`,
+  };
+
+  return {
+    period,
+    generatedAt: new Date().toISOString(),
+    headline: periodHeadlines[period],
+    scores: {
+      life: dashboard?.scores.lifeScore ?? 0,
+      finance: dashboard?.scores.financeScore ?? 0,
+      career: dashboard?.scores.careerScore ?? 0,
+      learning: dashboard?.scores.learningScore ?? 0,
+    },
+    insights: insights.slice(0, 5),
+    risks: risks.slice(0, 3),
+    recommendations: recommendations.slice(0, 4),
+    nextActions: brief.nextActions,
+  };
+}

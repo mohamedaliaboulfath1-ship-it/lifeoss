@@ -432,6 +432,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       <Tabs
         tabs={[
           { id: "gallery", label: "🖼️ معرض" },
+          { id: "shelf", label: "📚 رف" },
           { id: "list", label: "📋 قائمة" },
           { id: "progress", label: "📈 التقدم" },
         ]}
@@ -468,6 +469,37 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                   </div>
                 </div>
               </MotionCard>
+            );
+          })}
+        </div>
+      ) : view === "shelf" ? (
+        <div className="space-y-6">
+          {["reading", "done", "planned"].map((status) => {
+            const shelfBooks = filteredBooks.filter((b) => b.status === status);
+            if (!shelfBooks.length) return null;
+            return (
+              <div key={status}>
+                <div className="text-xs text-text3 mb-2 font-bold uppercase tracking-wider">
+                  {status === "reading" ? "قيد القراءة" : status === "done" ? "مكتمل" : "مخطط"}
+                </div>
+                <div className="flex items-end gap-1 pb-2 border-b-4 border-[#3d2b1f] px-2 min-h-[140px]">
+                  {shelfBooks.map((b, i) => {
+                    const ext = b as BookExt;
+                    return (
+                      <MotionCard
+                        key={b.id}
+                        className="shrink-0 cursor-pointer"
+                        style={{ marginBottom: i % 2 === 0 ? 0 : 8 }}
+                        onClick={() => openBookModal(ext)}
+                      >
+                        <div className="w-16 h-24 rounded-sm overflow-hidden border border-border shadow-md hover:-translate-y-1 transition-transform">
+                          <BookCover title={b.title} coverUrl={ext.coverUrl} coverPath={ext.coverPath} />
+                        </div>
+                      </MotionCard>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,10 @@ import { Tabs } from "@/components/ui/tabs";
 import { Input, Label } from "@/components/ui/input";
 import { MiniChart } from "@/components/ui/mini-chart";
 import { today, uid } from "@/lib/utils";
+import { DIET_MODES, calcMacroAdherence, calcMacrosFromMode, type DietMode } from "@/lib/nutrition/diet-modes";
 import type { MealLog, YearPayload } from "@/types/lifeos";
+
+type MealTemplate = { id: string; name: string; calories: number; protein: number; carbs: number; fats: number };
 
 interface NutritionViewProps {
   yearData: YearPayload;
@@ -22,15 +25,40 @@ interface NutritionViewProps {
     fats?: number;
   };
   bodyPlan?: { dietPlan?: string; dietNotes?: string };
+  bodyGoal?: string;
+  currentWeight?: number;
   onEditPlan?: () => void;
   onRefresh: () => void;
 }
 
-export function NutritionView({ yearData, targets, bodyPlan, onEditPlan, onRefresh }: NutritionViewProps) {
+const BODY_GOAL_TO_MODE: Record<string, DietMode> = {
+  gain: "bulk",
+  lose: "cut",
+  maintain: "maintain",
+  recomp: "recomp",
+  athletic: "recomp",
+};
+
+export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWeight = 70, onEditPlan, onRefresh }: NutritionViewProps) {
   const [tab, setTab] = useState("overview");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
-  const targetCal = targets?.calories ?? 3000;
+  const [dietMode, setDietMode] = useState<DietMode>(BODY_GOAL_TO_MODE[bodyGoal ?? "gain"] ?? "bulk");
+  const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lifeos_meal_templates");
+      if (raw) setMealTemplates(JSON.parse(raw) as MealTemplate[]);
+    } catch { /* ignore */ }
+  }, []);
+
+  const modeMacros = useMemo(
+    () => calcMacrosFromMode(dietMode, currentWeight, targets?.calories ?? 2500),
+    [dietMode, currentWeight, targets?.calories]
+  );
+
+  const targetCal = targets?.calories ?? modeMacros.calories;
   const targetP = targets?.protein ?? 130;
   const targetC = targets?.carbs ?? 350;
   const targetF = targets?.fats ?? 90;
@@ -173,11 +201,32 @@ export function NutritionView({ yearData, targets, bodyPlan, onEditPlan, onRefre
     onRefresh();
   }
 
+  const nutritionScore = useMemo(
+    () => calcMacroAdherence(totals, { calories: targetCal, protein: targetP, carbs: targetC, fats: targetF }),
+    [totals, targetCal, targetP, targetC, targetF]
+  );
+
+  function saveMealTemplate() {
+    const tpl: MealTemplate = {
+      id: uid(),
+      name: mealName,
+      calories: totals.cal || (foods.find((f) => f.id === foodId)?.calories ?? 0),
+      protein: totals.p || (foods.find((f) => f.id === foodId)?.protein ?? 0),
+      carbs: totals.c || (foods.find((f) => f.id === foodId)?.carbs ?? 0),
+      fats: totals.f || (foods.find((f) => f.id === foodId)?.fats ?? 0),
+    };
+    const next = [...mealTemplates, tpl];
+    setMealTemplates(next);
+    localStorage.setItem("lifeos_meal_templates", JSON.stringify(next));
+  }
+
   const insights = [];
   if (totals.cal < targetCal * 0.7)
     insights.push({ type: "warning", title: "سعرات منخفضة", msg: "أضف زيت زيتون أو مكسرات" });
   if (totals.p < targetP * 0.6)
     insights.push({ type: "warning", title: "بروتين ناقص", msg: "زِد الدجاج أو البيض" });
+  if (nutritionScore < 60)
+    insights.push({ type: "warning", title: "التزام منخفض", msg: `Nutrition Score: ${nutritionScore}% — حاول الوصول لـ 80%+` });
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -188,14 +237,39 @@ export function NutritionView({ yearData, targets, bodyPlan, onEditPlan, onRefre
         onAction={() => setModal(true)}
       />
 
-      <Card className="p-4 border-gold/25 bg-gold/5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-bold">{bodyPlan?.dietPlan ?? "خطتك الغذائية"}</div>
-          <div className="text-xs text-text3">{bodyPlan?.dietNotes || "عدّل السعرات والماكروز من خطتي في صفحة الجسم"}</div>
+      <Card className="p-4 border-gold/25 bg-gold/5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-bold">{bodyPlan?.dietPlan ?? "خطتك الغذائية"}</div>
+            <div className="text-xs text-text3">{bodyPlan?.dietNotes || "اختر وضع التغذية أو عدّل من صفحة الجسم"}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-text3">Nutrition Score</div>
+            <div className="text-xl font-black text-gold2">{nutritionScore}%</div>
+          </div>
+          {onEditPlan && (
+            <Button variant="ghost" size="sm" onClick={onEditPlan}>⚙️ تعديل الخطة</Button>
+          )}
         </div>
-        {onEditPlan && (
-          <Button variant="ghost" size="sm" onClick={onEditPlan}>⚙️ تعديل الخطة</Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {DIET_MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setDietMode(m.id)}
+              className={`px-3 py-1.5 rounded-sm text-xs border transition-colors ${
+                dietMode === m.id
+                  ? "border-gold bg-gold/15 text-gold2 font-bold"
+                  : "border-border hover:bg-surface2"
+              }`}
+            >
+              {m.labelAr}
+            </button>
+          ))}
+        </div>
+        <div className="text-[10px] text-text3">
+          {DIET_MODES.find((m) => m.id === dietMode)?.description} — مقترح: {modeMacros.calories} سعرة · {modeMacros.protein}جم بروتين
+        </div>
       </Card>
 
       <Tabs
@@ -263,6 +337,47 @@ export function NutritionView({ yearData, targets, bodyPlan, onEditPlan, onRefre
               color="var(--gold)"
             />
           </Card>
+
+          {mealTemplates.length > 0 && (
+            <Card className="p-4 space-y-2">
+              <div className="text-sm font-bold text-gold2">وجبات مفضّلة</div>
+              <div className="flex flex-wrap gap-2">
+                {mealTemplates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="px-3 py-1.5 rounded-sm border border-border text-xs hover:bg-surface2"
+                    onClick={async () => {
+                      await fetch("/api/nutrition", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          entity: "meal",
+                          payload: {
+                            id: uid(),
+                            date: t,
+                            mealName: tpl.name,
+                            foodName: tpl.name,
+                            calories: tpl.calories,
+                            protein: tpl.protein,
+                            carbs: tpl.carbs,
+                            fats: tpl.fats,
+                          },
+                        }),
+                      });
+                      onRefresh();
+                    }}
+                  >
+                    {tpl.name} · {tpl.calories} سعرة
+                  </button>
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" onClick={saveMealTemplate}>💾 حفظ الوجبة الحالية كقالب</Button>
+            </Card>
+          )}
+          {mealTemplates.length === 0 && (
+            <Button variant="ghost" size="sm" onClick={saveMealTemplate}>💾 حفظ وجبة كقالب مفضّل</Button>
+          )}
 
           <Card className="p-4">
             <div className="font-bold text-sm mb-3">وجبات اليوم ({todayLogs.length})</div>

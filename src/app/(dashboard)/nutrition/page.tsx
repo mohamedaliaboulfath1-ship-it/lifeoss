@@ -21,6 +21,8 @@ export default function NutritionPage() {
             fats: data.profile.fatsTarget ?? 90,
           }}
           bodyPlan={data.profile.bodyPlan}
+          bodyGoal={data.profile.bodyPlan?.bodyGoal}
+          currentWeight={data.profile.currentWeight ?? data.profile.weight ?? undefined}
           onEditPlan={() => { window.location.href = "/body"; }}
           onRefresh={refresh}
         />
