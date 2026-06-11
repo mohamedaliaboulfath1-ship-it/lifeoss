@@ -6,6 +6,7 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
+import { AutoAnimateList } from "@/components/motion/auto-animate-list";
 
 interface NotificationItem {
   id: string;
@@ -101,33 +102,35 @@ export function NotificationsPanel() {
                   لا إشعارات — ستظهر تنبيهات العادات والمهام تلقائياً
                 </div>
               )}
-              {items
-                .filter((n) => {
-                  if (filter === "unread") return !n.readAt;
-                  if (filter === "urgent") return n.priority === "urgent" || n.priority === "high";
-                  return true;
-                })
-                .map((n) => (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => markRead(n.id, n.actionUrl)}
-                  className={`w-full text-right text-sm border-b border-border/50 pb-2 hover:bg-surface2/50 rounded px-1 cursor-pointer ${
-                    !n.readAt ? "font-medium" : "opacity-70"
-                  }`}
-                >
-                  {n.title}
-                  {n.body && <div className="text-[10px] text-text3 mt-0.5">{n.body}</div>}
-                  <div className="flex gap-2 text-[10px] text-text3 mt-0.5">
-                    <span>{n.type}</span>
-                    {n.priority && (
-                      <span className={n.priority === "urgent" ? "text-rose2" : ""}>
-                        · {n.priority}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
+              <AutoAnimateList>
+                {items
+                  .filter((n) => {
+                    if (filter === "unread") return !n.readAt;
+                    if (filter === "urgent") return n.priority === "urgent" || n.priority === "high";
+                    return true;
+                  })
+                  .map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => markRead(n.id, n.actionUrl)}
+                      className={`w-full text-right text-sm border-b border-border/50 pb-2 hover:bg-surface2/50 rounded px-1 cursor-pointer animate-in fade-in-0 slide-in-from-top-1 duration-200 ${
+                        !n.readAt ? "font-medium" : "opacity-70"
+                      }`}
+                    >
+                      {n.title}
+                      {n.body && <div className="text-[10px] text-text3 mt-0.5">{n.body}</div>}
+                      <div className="flex gap-2 text-[10px] text-text3 mt-0.5">
+                        <span>{n.type}</span>
+                        {n.priority && (
+                          <span className={n.priority === "urgent" ? "text-rose2" : ""}>
+                            · {n.priority}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+              </AutoAnimateList>
             </Card>
           </motion.div>
         )}

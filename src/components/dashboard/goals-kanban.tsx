@@ -2,9 +2,11 @@
 
 import { DndContext, type DragEndEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { ProgressRing } from "@/components/ui/progress-ring";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
+import { useGoalExpandOptional } from "@/contexts/goal-expand-context";
 import type { ProGoal } from "@/types/lifeos";
 
 const COLUMNS: { id: ProGoal["status"]; label: string; color: string }[] = [
@@ -17,10 +19,9 @@ const COLUMNS: { id: ProGoal["status"]; label: string; color: string }[] = [
 interface GoalsKanbanProps {
   goals: ProGoal[];
   onStatusChange: (id: string, status: ProGoal["status"]) => void;
-  onOpen: (goal: ProGoal) => void;
 }
 
-export function GoalsKanban({ goals, onStatusChange, onOpen }: GoalsKanbanProps) {
+export function GoalsKanban({ goals, onStatusChange }: GoalsKanbanProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragEnd(event: DragEndEvent) {
@@ -55,7 +56,6 @@ export function GoalsKanban({ goals, onStatusChange, onOpen }: GoalsKanbanProps)
                     key={g.id}
                     goal={g}
                     color={col.color}
-                    onOpen={() => onOpen(g)}
                     onStatusChange={onStatusChange}
                     columnId={col.id}
                   />
@@ -97,16 +97,16 @@ function KanbanColumn({
 function DraggableGoalCard({
   goal,
   color,
-  onOpen,
   onStatusChange,
   columnId,
 }: {
   goal: ProGoal;
   color: string;
-  onOpen: () => void;
   onStatusChange: (id: string, status: ProGoal["status"]) => void;
   columnId: ProGoal["status"];
 }) {
+  const router = useRouter();
+  const expand = useGoalExpandOptional();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: goal.id,
   });
@@ -118,21 +118,33 @@ function DraggableGoalCard({
     ...goal,
     target_date: goal.targetDate ?? goal.due,
   });
+
+  function handleOpen(e: React.MouseEvent<HTMLDivElement>) {
+    if (isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (expand) {
+      expand.expandGoal(goal, rect);
+    } else {
+      router.push(`/goals/${goal.id}`);
+    }
+  }
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
-      className="p-3 cursor-pointer hover:border-gold/40 transition-colors"
-      onClick={onOpen}
+      className="p-3 cursor-pointer hover:border-gold/40 glass-premium transition-all hover:shadow-premium"
+      onClick={handleOpen}
       {...listeners}
       {...attributes}
     >
-      <div className="text-sm font-semibold mb-2 line-clamp-2">{goal.title}</div>
-      {prob && <div className="text-[10px] mb-2 text-text3">{prob.text}</div>}
-      <ProgressBar value={goal.progress ?? 0} color={color} />
-      <div className="flex justify-between mt-2 text-[10px] text-text3">
-        <span>{goal.progress ?? 0}%</span>
-        {goal.level && <span>{levelLabel(goal.level)}</span>}
+      <div className="flex gap-2 items-start">
+        <ProgressRing value={goal.progress ?? 0} size={40} strokeWidth={3} color={color} showValue suffix="%" />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold mb-1 line-clamp-2">{goal.title}</div>
+          {prob && <div className="text-[10px] mb-1 text-text3 line-clamp-1">{prob.text}</div>}
+          {goal.level && <span className="text-[9px] text-text3">{levelLabel(goal.level)}</span>}
+        </div>
       </div>
       {columnId !== "done" && columnId !== "cancelled" && (
         <div className="flex gap-1 mt-2 flex-wrap">

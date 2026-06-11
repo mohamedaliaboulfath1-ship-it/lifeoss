@@ -1,6 +1,8 @@
 "use client";
 
 import { CountUp } from "@/components/ui/count-up";
+import { kpiVariants } from "@/lib/ui/variants";
+import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
   label: string;
@@ -22,7 +24,7 @@ export function KpiCard({
   badge,
 }: KpiCardProps) {
   return (
-    <div className="bg-surface border border-border rounded-[10px] p-[18px] relative overflow-hidden transition-all duration-200 hover:border-border2 hover:shadow-premium hover:-translate-y-0.5 shadow-premium group">
+    <div className={cn(kpiVariants({ animate: true }), "group")}>
       <div
         className="absolute top-0 right-0 left-0 h-0.5 opacity-80 group-hover:opacity-100 transition-opacity"
         style={{ background: color }}

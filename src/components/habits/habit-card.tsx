@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { HabitCheck } from "@/components/motion/habit-check";
 import type { EnrichedHabit } from "@/types/para";
 
 const IMPACT_LABELS = { low: "منخفض", medium: "متوسط", high: "عالي" };
@@ -37,16 +38,13 @@ export function HabitCard({ habit, onToggle, onEdit, pending }: Props) {
           </div>
         </div>
         {habit.dueToday !== false && (
-          <button
-            type="button"
+          <HabitCheck
+            variant="icon"
+            checked={habit.doneToday}
             disabled={pending}
-            onClick={onToggle}
-            className={`w-9 h-9 rounded-xl border-2 shrink-0 flex items-center justify-center transition-all ${
-              habit.doneToday ? "bg-emerald border-emerald text-white" : "border-border2 hover:border-gold/50"
-            } ${pending ? "opacity-60" : ""}`}
-          >
-            {habit.doneToday ? "✓" : ""}
-          </button>
+            onChange={onToggle}
+            label={habit.name}
+          />
         )}
       </div>
 

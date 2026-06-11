@@ -1,13 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/lib/ui/variants";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { buttonHover, buttonTap } from "@/lib/motion/button";
 import { MOTION } from "@/lib/motion";
 import { forwardRef, type ReactNode } from "react";
 import { Loader2, Check } from "lucide-react";
+import type { VariantProps } from "class-variance-authority";
 
-type Variant = "ghost" | "gold" | "danger";
+type Variant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
 
 interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"> {
   variant?: Variant;
@@ -16,14 +18,6 @@ interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"
   success?: boolean;
   children?: ReactNode;
 }
-
-const variants: Record<Variant, string> = {
-  ghost:
-    "bg-transparent text-text2 border border-border hover:bg-surface2 hover:text-text hover:border-border2",
-  gold: "bg-gradient-to-br from-gold via-gold2 to-sky text-[#1a1e26] font-bold hover:opacity-90 border-0 shadow-premium",
-  danger:
-    "bg-rose/15 text-rose2 border border-rose/30 hover:bg-rose/25",
-};
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -49,12 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={isDisabled ? undefined : buttonTap}
         animate={success ? { scale: [1, 1.03, 1] } : { scale: 1 }}
         transition={{ duration: MOTION.duration.normal, ease: MOTION.ease.out }}
-        className={cn(
-          "inline-flex items-center justify-center gap-1.5 rounded-sm font-semibold transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:pointer-events-none focus-ring transform-gpu",
-          size === "sm" ? "px-2.5 py-1 text-[11px]" : "px-3.5 py-1.5 text-xs",
-          variants[variant],
-          className
-        )}
+        className={cn(buttonVariants({ variant, size }), className)}
         {...props}
       >
         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

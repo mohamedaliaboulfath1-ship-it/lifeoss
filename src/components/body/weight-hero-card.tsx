@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { TrendArrow } from "@/components/ui/trend-arrow";
+import { GoalTrajectory, buildWeightForecast } from "@/components/ui/goal-trajectory";
+import { CountUp } from "@/components/ui/count-up";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { BodyAnalytics } from "@/types/para";
@@ -10,11 +13,18 @@ import type { BodyAnalytics } from "@/types/para";
 interface Props {
   analytics: BodyAnalytics;
   weeklyRateTarget: number;
+  weightHistory?: { label: string; value: number }[];
   onAddWeight: () => void;
   onUpdateCurrentWeight?: (weight: number) => Promise<void>;
 }
 
-export function WeightHeroCard({ analytics, weeklyRateTarget, onAddWeight, onUpdateCurrentWeight }: Props) {
+export function WeightHeroCard({
+  analytics,
+  weeklyRateTarget,
+  weightHistory = [],
+  onAddWeight,
+  onUpdateCurrentWeight,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [manualWeight, setManualWeight] = useState("");
   const [saving, setSaving] = useState(false);
@@ -37,6 +47,18 @@ export function WeightHeroCard({ analytics, weeklyRateTarget, onAddWeight, onUpd
   }
 
   const rate = analytics.weeklyGainRate ?? weeklyRateTarget;
+  const trend =
+    rate > 0.1 ? "up" : rate < -0.05 ? "down" : "stable";
+  const forecast = buildWeightForecast(analytics.currentWeight, analytics.targetWeight, rate);
+  const history =
+    weightHistory.length >= 2
+      ? weightHistory
+      : analytics.startWeight
+        ? [
+            { label: "البداية", value: analytics.startWeight },
+            { label: "الآن", value: analytics.currentWeight },
+          ]
+        : [{ label: "الآن", value: analytics.currentWeight }];
 
   async function saveManual() {
     const w = parseFloat(manualWeight);
@@ -48,57 +70,74 @@ export function WeightHeroCard({ analytics, weeklyRateTarget, onAddWeight, onUpd
   }
 
   return (
-    <Card className="p-5 border-gold/20 glass-premium bg-gradient-to-br from-gold/[0.05] to-transparent">
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 text-center mb-4">
-        <div className="p-3 rounded-xl bg-surface/50 border border-border/40">
-          <div className="text-[10px] text-text3 mb-1">الوزن الحالي</div>
-          {editing ? (
-            <div className="space-y-1">
-              <Input type="number" step="0.1" value={manualWeight} onChange={(e) => setManualWeight(e.target.value)} className="text-center h-8" />
-              <div className="flex gap-1 justify-center">
-                <Button variant="gold" size="sm" onClick={saveManual} disabled={saving}>حفظ</Button>
-                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>✕</Button>
+    <Card className="p-5 md:p-6 border-gold/20 glass-premium bg-gradient-to-br from-gold/[0.05] to-sky/[0.03]">
+      <div className="flex flex-col lg:flex-row gap-5">
+        <div className="flex items-start gap-4 flex-1">
+          <ProgressRing
+            value={analytics.progressPct}
+            size={100}
+            color="var(--gold)"
+            label="التقدم"
+          />
+          <div className="flex-1">
+            <p className="text-[10px] uppercase tracking-widest text-text3 mb-1">Body Transformation</p>
+            {editing ? (
+              <div className="space-y-2">
+                <Input type="number" step="0.1" value={manualWeight} onChange={(e) => setManualWeight(e.target.value)} className="max-w-[140px]" />
+                <div className="flex gap-2">
+                  <Button variant="gold" size="sm" onClick={saveManual} disabled={saving}>حفظ</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>✕</Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <div className="text-lg font-black text-gold2">{analytics.currentWeight} كجم</div>
-              {onUpdateCurrentWeight && (
-                <button type="button" className="text-[10px] text-gold2 hover:underline mt-1" onClick={() => { setManualWeight(String(analytics.currentWeight)); setEditing(true); }}>
-                  تعديل يدوي
-                </button>
+            ) : (
+              <>
+                <div className="text-3xl font-black text-gold2 font-mono">
+                  <CountUp value={analytics.currentWeight} decimals={1} suffix=" كجم" />
+                </div>
+                <p className="text-sm text-text3 mt-1">
+                  الهدف <span className="text-emerald2 font-bold">{analytics.targetWeight} كجم</span>
+                  {" · "}متبقي <span className="text-sky2 font-mono">{analytics.difference ?? "—"}</span>
+                </p>
+                {onUpdateCurrentWeight && (
+                  <button type="button" className="text-[10px] text-gold2 hover:underline mt-1" onClick={() => { setManualWeight(String(analytics.currentWeight)); setEditing(true); }}>
+                    تعديل يدوي
+                  </button>
+                )}
+              </>
+            )}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <TrendArrow direction={trend} value={rate} unit=" كجم/أسبوع" label="المعدل" size="sm" />
+              {analytics.bmi != null && (
+                <span className="text-[10px] px-2 py-1 rounded-full bg-surface2 border border-border text-text3">
+                  BMI {analytics.bmi.toFixed(1)} · {analytics.bmiLabel}
+                </span>
               )}
-            </>
-          )}
+              {analytics.forecastDate && (
+                <span className="text-[10px] px-2 py-1 rounded-full bg-emerald/10 border border-emerald/20 text-emerald2">
+                  ETA {analytics.forecastDate}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <Stat label="الهدف" value={`${analytics.targetWeight} كجم`} accent="text-emerald2" />
-        <Stat label="المتبقي" value={`${analytics.difference ?? "—"} كجم`} accent="text-sky2" />
-        <Stat label="BMI" value={analytics.bmi != null ? analytics.bmi.toFixed(1) : "—"} accent="text-purple2" />
-        <Stat label="معدل أسبوعي" value={`${rate} كجم`} accent="text-amber2" />
-        <Stat label="التقدم" value={`${analytics.progressPct}%`} accent="text-gold2" />
+
+        <div className="flex-1 min-w-0">
+          <GoalTrajectory
+            history={history}
+            current={analytics.currentWeight}
+            target={analytics.targetWeight}
+            forecastPoints={forecast}
+            height={130}
+            className="rounded-xl bg-surface2/50 border border-border/40 p-2"
+          />
+        </div>
       </div>
-      <ProgressBar value={analytics.progressPct} color="var(--gold)" className="h-2 mb-2" />
-      {analytics.forecastDate && (
-        <p className="text-xs text-text3 text-center">
-          الوصول المتوقع: <span className="text-gold2 font-medium">{analytics.forecastDate}</span>
-          {analytics.forecastWeeks != null && ` · ~${analytics.forecastWeeks} أسبوع`}
-          {" "}بمعدل {rate} كجم/أسبوع
-        </p>
-      )}
-      <div className="flex justify-center mt-3">
+
+      <div className="flex justify-center mt-4">
         <button type="button" className="text-xs text-gold2 hover:underline" onClick={onAddWeight}>
           + تسجيل وزن جديد
         </button>
       </div>
     </Card>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div className="p-3 rounded-xl bg-surface/50 border border-border/40">
-      <div className="text-[10px] text-text3">{label}</div>
-      <div className={`text-lg font-black ${accent}`}>{value}</div>
-    </div>
   );
 }

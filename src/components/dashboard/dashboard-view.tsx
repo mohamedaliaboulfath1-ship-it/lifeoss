@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { BentoGrid, BentoTile } from "@/components/ui/bento-grid";
 import { CountUp } from "@/components/ui/count-up";
 import { commas } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
@@ -10,10 +13,13 @@ import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import { HabitsToday } from "@/components/dashboard/command-center/habits-today";
 import { MissedHabits } from "@/components/dashboard/command-center/missed-habits";
 import { CareerPanel } from "@/components/dashboard/command-center/career-panel";
+import { WeightVizCard } from "@/components/visual/weight-viz-card";
+import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
 import Link from "next/link";
 import { MiniChart } from "@/components/ui/mini-chart";
 import { StaggerGrid, StaggerItem } from "@/components/motion/stagger";
 import { ProjectCommandCenter } from "@/components/dashboard/project-command-center";
+import { useGoalExpand } from "@/contexts/goal-expand-context";
 
 interface Profile {
   displayName: string;
@@ -34,6 +40,9 @@ export function DashboardView({
   dashboard,
   onRefresh,
 }: DashboardViewProps) {
+  const [scorePulse, setScorePulse] = useState(0);
+  const expand = useGoalExpand();
+
   if (!dashboard) {
     return (
       <div className="space-y-4 animate-pulse">
@@ -51,36 +60,78 @@ export function DashboardView({
   const { weight, nutrition, workouts, finance, scores } = dashboard;
   const lifeScore = scores.lifeScore ?? 0;
 
+  const weightHistory =
+    weight.start && weight.current
+      ? [
+          { label: "البداية", value: weight.start },
+          { label: "الآن", value: weight.current },
+        ]
+      : weight.current
+        ? [{ label: "الآن", value: weight.current }]
+        : [];
+
+  const weightTrend =
+    weight.changeFromStart != null && weight.changeFromStart > 0
+      ? ("up" as const)
+      : weight.changeFromStart != null && weight.changeFromStart < 0
+        ? ("down" as const)
+        : ("stable" as const);
+
   return (
     <StaggerGrid className="space-y-5">
-      {/* ── Header + Life Score ── */}
+      {/* ── Bento Hero ── */}
       <StaggerItem>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-text3 mb-1">Executive Command Center</p>
-          <h2 className="font-display text-[28px] font-black mb-1 tracking-tight">{dashboard.greeting}</h2>
-          <p className="text-text3 text-[13px]">{dashboard.subtitle}</p>
-          <div className="mt-2 flex items-center gap-2 text-[11px]">
-            <span className="text-text3">تقدّم السنة</span>
-            <div className="flex-1 max-w-[140px] h-1.5 bg-surface2 rounded overflow-hidden">
-              <div
-                className="h-full bg-gold rounded"
-                style={{ width: `${dashboard.yearProgress ?? 0}%` }}
-              />
-            </div>
-            <span className="font-mono text-gold2">{dashboard.yearProgress ?? 0}%</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <LifeScoreRing score={lifeScore} />
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-            <ScorePill label="انضباط" value={scores.disciplineScore} color="var(--gold)" />
-            <ScorePill label="صحة" value={scores.healthScore} color="var(--emerald)" />
-            <ScorePill label="مال" value={scores.financeScore} color="var(--amber2)" />
-            <ScorePill label="مهنة" value={scores.careerScore} color="var(--sky)" />
-          </div>
-        </div>
-      </div>
+        <BentoGrid>
+          <BentoTile span="hero" delay={0}>
+            <Card className="h-full p-5 md:p-6 glass-premium border-gold/15 bg-gradient-to-br from-gold/[0.05] via-transparent to-sky/[0.04]">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-text3 mb-2">LifeOS · Today</p>
+              <h2 className="font-display text-2xl md:text-[32px] font-black mb-1 tracking-tight leading-tight">
+                {dashboard.greeting}
+              </h2>
+              <p className="text-text3 text-sm mb-4 max-w-md">{dashboard.subtitle}</p>
+              <div className="flex flex-wrap items-end gap-5">
+                <ProgressRing
+                  key={scorePulse}
+                  value={lifeScore}
+                  size={96}
+                  pulse={scorePulse > 0}
+                  label="Life Score"
+                  color="var(--gold)"
+                />
+                <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-[11px] flex-1 min-w-[160px]">
+                  <ScorePill label="انضباط" value={scores.disciplineScore} color="var(--gold)" />
+                  <ScorePill label="صحة" value={scores.healthScore} color="var(--emerald)" />
+                  <ScorePill label="مال" value={scores.financeScore} color="var(--amber2)" />
+                  <ScorePill label="مهنة" value={scores.careerScore} color="var(--sky)" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-[11px]">
+                <span className="text-text3">تقدّم السنة</span>
+                <div className="flex-1 max-w-[200px] h-1.5 bg-surface2 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-gold to-sky rounded-full transition-all duration-500" style={{ width: `${dashboard.yearProgress ?? 0}%` }} />
+                </div>
+                <span className="font-mono text-gold2"><CountUp value={dashboard.yearProgress ?? 0} suffix="%" /></span>
+              </div>
+            </Card>
+          </BentoTile>
+
+          <BentoTile span="tall" delay={0.05}>
+            <WeightVizCard
+              current={weight.current}
+              target={weight.target ?? 75}
+              progressPct={weight.progressPct}
+              trend={weightTrend}
+              history={weightHistory}
+            />
+          </BentoTile>
+
+          <BentoTile span="2" delay={0.08}>
+            <HabitsToday
+              habits={dashboard.todayHabits}
+              onHabitComplete={() => setScorePulse((n) => n + 1)}
+            />
+          </BentoTile>
+        </BentoGrid>
       </StaggerItem>
 
       {/* ── Alerts badge ── */}
@@ -213,10 +264,9 @@ export function DashboardView({
       </div>
       </StaggerItem>
 
-      {/* ── Habits + Tasks ── */}
+      {/* ── Missed + Tasks ── */}
       <StaggerItem>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        <HabitsToday habits={dashboard.todayHabits} />
         <MissedHabits habits={dashboard.missedHabits ?? []} />
 
         <Card className="h-full glass-premium">
@@ -269,10 +319,17 @@ export function DashboardView({
             {dashboard.atRiskGoals.length === 0 ? (
               <p className="text-text3 text-sm text-center py-2">✨ لا أهداف متأخرة حالياً</p>
             ) : dashboard.atRiskGoals.map((g) => (
-              <Link
+              <button
                 key={g.id}
-                href="/goals"
-                className="flex items-center gap-3 p-3 rounded-sm bg-coral/[0.04] border border-coral/15 hover:border-coral/30"
+                type="button"
+                className="w-full flex items-center gap-3 p-3 rounded-sm bg-coral/[0.04] border border-coral/15 hover:border-coral/30 text-right transition-colors"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  expand.expandGoal(
+                    { id: g.id, title: g.title, area: "career", progress: g.progress },
+                    rect
+                  );
+                }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{g.title}</div>
@@ -284,22 +341,15 @@ export function DashboardView({
                     <div className="text-[10px] text-text3">{g.daysLeft} يوم</div>
                   )}
                 </div>
-              </Link>
+              </button>
             ))}
           </CardBody>
         </Card>
       </StaggerItem>
 
-      {/* ── Body · Nutrition · Workouts · Finance KPIs ── */}
+      {/* ── Nutrition · Workouts · Finance KPIs ── */}
       <StaggerItem>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          label="⚖️ الوزن"
-          value={weight.current ? `${weight.current} كجم` : "لم يُسجّل بعد"}
-          sub={`الهدف: ${weight.target ?? 75} كجم`}
-          color="var(--gold)"
-          badge={weight.progressPct ? `${weight.progressPct}%` : undefined}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <KpiCard
           label="🍽️ السعرات اليوم"
           value={`${Math.round(nutrition.calories)}`}
@@ -407,58 +457,25 @@ export function DashboardView({
         </CardBody>
       </Card>
 
-      {/* Active goals quick view */}
       {(yearData.goals ?? []).length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row justify-between">
-            <CardTitle>🎯 أهداف نشطة</CardTitle>
-            <Link href="/goals" className="text-[11px] text-gold2">عرض الكل</Link>
-          </CardHeader>
-          <CardBody className="space-y-2">
-            {(yearData.goals ?? []).slice(0, 4).map((g) => {
-              const pct = g.done ? 100 : parseInt(g.current ?? "0", 10) || 0;
-              return (
-                <div key={g.id} className="flex items-center gap-3">
-                  <span className="text-sm w-40 truncate">{g.title}</span>
-                  <ProgressBar value={pct} color="var(--gold)" className="flex-1" />
-                  <span className="text-[11px] font-mono text-text3 w-8">{pct}%</span>
-                </div>
-              );
-            })}
-          </CardBody>
-        </Card>
+        <StaggerItem>
+          <Card className="glass-premium">
+            <CardHeader className="flex flex-row justify-between">
+              <CardTitle>🎯 أهداف نشطة</CardTitle>
+              <Link href="/goals" className="text-[11px] text-gold2">عرض الكل</Link>
+            </CardHeader>
+            <CardBody>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(yearData.goals ?? []).slice(0, 4).map((g) => {
+                  const pct = g.done ? 100 : (g.progress ?? (parseInt(g.current ?? "0", 10) || 0));
+                  return <PremiumGoalCard key={g.id} goal={{ ...g, progress: pct }} compact />;
+                })}
+              </div>
+            </CardBody>
+          </Card>
+        </StaggerItem>
       )}
     </StaggerGrid>
-  );
-}
-
-function LifeScoreRing({ score }: { score: number }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
-  return (
-    <div className="relative w-24 h-24 shrink-0">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 88 88">
-        <circle cx="44" cy="44" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
-        <circle
-          cx="44"
-          cy="44"
-          r={r}
-          fill="none"
-          stroke="var(--gold)"
-          strokeWidth="6"
-          strokeDasharray={circ}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-black text-gold2">
-          <CountUp value={score} />
-        </span>
-        <span className="text-[9px] text-text3">Life Score</span>
-      </div>
-    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Input, Label } from "@/components/ui/input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { Tabs } from "@/components/ui/tabs";
 import { GoalsKanban } from "@/components/dashboard/goals-kanban";
-import { areaColor, areaLabel, calcGoalPct } from "@/lib/calculations";
+import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
+import { useGoalExpand } from "@/contexts/goal-expand-context";
+import { areaLabel, calcGoalPct } from "@/lib/calculations";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
 import { resolveDomainId } from "@/lib/domains";
 import type { Goal, GoalArea, GoalLevel, GoalStatus, GoalTask, ProGoal, YearPayload } from "@/types/lifeos";
@@ -40,7 +42,6 @@ interface GoalsViewProps {
 
 export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [detailGoal, setDetailGoal] = useState<Goal | null>(null);
   const [view, setView] = useState<"kanban" | "grid" | "hierarchy" | "analytics" | "timeline">("kanban");
   const [statusFilter, setStatusFilter] = useState<GoalStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -152,7 +153,6 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
   async function deleteGoal(id: string) {
     if (!confirm("حذف هذا الهدف؟")) return;
     await fetch(`/api/goals?id=${id}`, { method: "DELETE" });
-    setDetailGoal(null);
     onRefresh();
   }
 
@@ -161,54 +161,6 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status, done: status === "done", progress: status === "done" ? 100 : undefined }),
-    });
-    onRefresh();
-  }
-
-  async function linkTaskToGoal(goalId: string, taskId: string | null) {
-    if (!taskId) return;
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: taskId, goalId }),
-    });
-    onRefresh();
-  }
-
-  async function unlinkTask(taskId: string) {
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: taskId, goalId: null }),
-    });
-    onRefresh();
-  }
-
-  async function linkHabitToGoal(goalId: string, habitId: string) {
-    const habit = yearData.habits.find((h) => h.id === habitId);
-    if (!habit) return;
-    await fetch("/api/habits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...habit,
-        id: habitId,
-        goalLink: goalId,
-      }),
-    });
-    onRefresh();
-  }
-
-  async function unlinkHabit(habitId: string) {
-    const habit = yearData.habits.find((h) => h.id === habitId);
-    if (!habit) return;
-    await fetch("/api/habits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...habit,
-        goalLink: "",
-      }),
     });
     onRefresh();
   }
@@ -317,19 +269,25 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
         <GoalsKanban
           goals={proGoals}
           onStatusChange={updateStatus}
-          onOpen={setDetailGoal}
         />
       )}
 
       {view === "grid" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((g) => (
-            <GoalCard
+            <PremiumGoalCard
               key={g.id}
               goal={g}
               onDelete={() => deleteGoal(g.id)}
-              onUpdate={onRefresh}
-              onOpen={() => setDetailGoal(g)}
+              onBumpProgress={async () => {
+                const pct = g.progress ?? calcGoalPct(g);
+                await fetch("/api/goals", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ id: g.id, progress: Math.min(100, pct + 5), current: String(Math.min(100, pct + 5)) }),
+                });
+                onRefresh();
+              }}
             />
           ))}
           {!filtered.length && (
@@ -345,7 +303,7 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
               أضف رؤية (Vision) ثم أهداف ومشاريع مرتبطة بها
             </p>
           ) : (
-            hierarchy.map((node) => <HierarchyNode key={node.goal.id} node={node} depth={0} onOpen={setDetailGoal} />)
+            hierarchy.map((node) => <HierarchyNode key={node.goal.id} node={node} depth={0} />)
           )}
         </div>
       )}
@@ -385,18 +343,7 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
           {(filtered.filter((g) => g.targetDate || g.due)).sort((a, b) =>
             String(a.targetDate ?? a.due).localeCompare(String(b.targetDate ?? b.due))
           ).map((g) => (
-            <div
-              key={g.id}
-              className="flex items-center gap-3 border-b border-border/40 pb-2 last:border-0 cursor-pointer"
-              onClick={() => setDetailGoal(g)}
-            >
-              <div className="text-xs font-mono text-sky min-w-[95px]">{g.targetDate ?? g.due}</div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold">{g.title}</div>
-                <div className="text-[11px] text-text3">{areaLabel(g.area)}</div>
-              </div>
-              <div className="text-xs font-mono text-text3">{g.progress ?? calcGoalPct(g)}%</div>
-            </div>
+            <TimelineGoalRow key={g.id} goal={g} />
           ))}
           {!filtered.some((g) => g.targetDate || g.due) && (
             <p className="text-text3 text-center py-6">لا توجد أهداف بتاريخ هدف</p>
@@ -405,19 +352,6 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
       )}
 
       {showModal && <GoalFormModal form={form} setForm={setForm} onClose={() => { setModalOpen(false); onAddClose?.(); }} onSave={saveGoal} goals={goals} />}
-      {detailGoal && (
-        <GoalDetailModal
-          goal={detailGoal}
-          allTasks={yearData.tasks ?? []}
-          allHabits={yearData.habits ?? []}
-          onClose={() => setDetailGoal(null)}
-          onDelete={() => deleteGoal(detailGoal.id)}
-          onTaskLink={linkTaskToGoal}
-          onTaskUnlink={unlinkTask}
-          onHabitLink={linkHabitToGoal}
-          onHabitUnlink={unlinkHabit}
-        />
-      )}
     </div>
   );
 }
@@ -489,85 +423,47 @@ function buildHierarchy(goals: Goal[]) {
 function HierarchyNode({
   node,
   depth,
-  onOpen,
 }: {
   node: { goal: Goal; children: { goal: Goal; children: unknown[] }[] };
   depth: number;
-  onOpen: (g: Goal) => void;
 }) {
   const g = node.goal;
-  const pct = g.progress ?? 0;
   const levelIcon = g.level === "vision" ? "🔭" : g.level === "project" ? "📁" : "🎯";
   return (
     <div style={{ marginRight: depth * 20 }}>
-      <Card
-        className="p-3 mb-2 cursor-pointer hover:border-gold/30"
-        onClick={() => onOpen(g)}
-      >
-        <div className="flex items-center gap-2">
-          <span>{levelIcon}</span>
-          <span className="text-sm font-semibold flex-1">{g.title}</span>
-          <span className="text-xs font-mono text-text3">{pct}%</span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm">{levelIcon}</span>
+        <div className="flex-1">
+          <PremiumGoalCard goal={g} compact />
         </div>
-        <ProgressBar value={pct} color={areaColor(g.area)} className="mt-2" />
-      </Card>
+      </div>
       {node.children.map((c) => (
-        <HierarchyNode key={c.goal.id} node={c as typeof node} depth={depth + 1} onOpen={onOpen} />
+        <HierarchyNode key={c.goal.id} node={c as typeof node} depth={depth + 1} />
       ))}
     </div>
   );
 }
 
-function GoalCard({
-  goal,
-  onDelete,
-  onUpdate,
-  onOpen,
-}: {
-  goal: Goal;
-  onDelete: () => void;
-  onUpdate: () => void;
-  onOpen: () => void;
-}) {
+function TimelineGoalRow({ goal }: { goal: Goal }) {
+  const expand = useGoalExpand();
   const pct = goal.progress ?? calcGoalPct(goal);
-  const prob = calcGoalProbability({
-    progress: pct,
-    target_date: goal.targetDate ?? goal.due,
-    created_at: goal.createdAt,
-    status: goal.status,
-  });
-  const prColors = { high: "var(--rose)", med: "var(--amber2)", low: "var(--emerald)" };
-
-  async function bumpProgress() {
-    const next = Math.min(100, pct + 5);
-    await fetch("/api/goals", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: goal.id, progress: next, current: String(next) }),
-    });
-    onUpdate();
-  }
 
   return (
-    <Card className="p-4 cursor-pointer hover:border-gold/30" onClick={onOpen}>
-      <div className="flex gap-3">
-        <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: prColors[goal.priority] }} />
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm mb-1">{goal.title}</div>
-          {prob && <div className="text-[10px] text-text3 mb-2">{prob.text}</div>}
-          <ProgressBar value={pct} color={areaColor(goal.area)} className="mb-1" />
-          <div className="text-[10px] text-text3 font-mono flex gap-2 items-center">
-            <span>{pct}%</span>
-            <button type="button" className="text-gold2 hover:underline" onClick={(e) => { e.stopPropagation(); bumpProgress(); }}>
-              + تحديث
-            </button>
-          </div>
-        </div>
-        <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-          🗑
-        </Button>
+    <button
+      type="button"
+      className="w-full flex items-center gap-3 border-b border-border/40 pb-2 last:border-0 cursor-pointer hover:bg-surface2/50 rounded-sm px-1 -mx-1 transition-colors text-right"
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        expand.expandGoal({ ...goal, progress: pct }, rect);
+      }}
+    >
+      <div className="text-xs font-mono text-sky min-w-[95px]">{goal.targetDate ?? goal.due}</div>
+      <div className="flex-1">
+        <div className="text-sm font-semibold">{goal.title}</div>
+        <div className="text-[11px] text-text3">{areaLabel(goal.area)}</div>
       </div>
-    </Card>
+      <div className="text-xs font-mono text-text3">{pct}%</div>
+    </button>
   );
 }
 
@@ -654,138 +550,3 @@ function GoalFormModal({
   );
 }
 
-function GoalDetailModal({
-  goal,
-  allTasks,
-  allHabits,
-  onClose,
-  onDelete,
-  onTaskLink,
-  onTaskUnlink,
-  onHabitLink,
-  onHabitUnlink,
-}: {
-  goal: Goal;
-  allTasks: YearPayload["tasks"];
-  allHabits: YearPayload["habits"];
-  onClose: () => void;
-  onDelete: () => void;
-  onTaskLink: (goalId: string, taskId: string | null) => Promise<void>;
-  onTaskUnlink: (taskId: string) => Promise<void>;
-  onHabitLink: (goalId: string, habitId: string) => Promise<void>;
-  onHabitUnlink: (habitId: string) => Promise<void>;
-}) {
-  const pct = goal.progress ?? calcGoalPct(goal);
-  const prob = calcGoalProbability({ progress: pct, target_date: goal.targetDate ?? goal.due, created_at: goal.createdAt, status: goal.status });
-  const linkedTasks = allTasks.filter((t) => t.goalId === goal.id);
-  const linkedTaskIds = linkedTasks.map((t) => t.id);
-  const linkedHabits = allHabits.filter((h) => h.goalLink === goal.id);
-  const linkedHabitIds = linkedHabits.map((h) => h.id);
-  const [taskLink, setTaskLink] = useState("");
-  const [habitLink, setHabitLink] = useState("");
-  useEffect(() => {
-    setTaskLink("");
-    setHabitLink("");
-  }, [goal.id]);
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
-      <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-start gap-2">
-          <h3 className="font-bold text-gold2 text-lg">{goal.title}</h3>
-          <a href={`/goals/${goal.id}`} className="text-xs text-gold2 hover:underline shrink-0">Command Center →</a>
-        </div>
-        {prob && <div className="text-sm text-text2">{prob.text}</div>}
-        <ProgressBar value={pct} color={areaColor(goal.area)} />
-        {goal.why && <div><div className="text-xs text-text3 mb-1">لماذا</div><p className="text-sm">{goal.why}</p></div>}
-        {goal.description && <div><div className="text-xs text-text3 mb-1">الوصف</div><p className="text-sm">{goal.description}</p></div>}
-        {goal.successCriteria && <div><div className="text-xs text-text3 mb-1">معايير النجاح</div><p className="text-sm">{goal.successCriteria}</p></div>}
-        <Card className="p-3 space-y-3">
-          <div className="text-xs text-text3">ربط المهام والعادات</div>
-          <div>
-            <Label>المهام المرتبطة</Label>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {linkedTaskIds.map((id) => {
-                const task = allTasks.find((t) => t.id === id);
-                return (
-                  <button
-                    key={id}
-                    className="text-[10px] px-2 py-1 rounded bg-surface2"
-                    onClick={() => onTaskUnlink(id)}
-                  >
-                    {task?.title ?? id} ×
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={taskLink}
-                onChange={(e) => setTaskLink(e.target.value)}
-              >
-                <option value="">اختر مهمة...</option>
-                {allTasks.filter((t) => !linkedTaskIds.includes(t.id)).map((t) => (
-                  <option key={t.id} value={t.id}>{t.title}</option>
-                ))}
-              </select>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (!taskLink) return;
-                  await onTaskLink(goal.id, taskLink);
-                  setTaskLink("");
-                }}
-              >
-                ربط
-              </Button>
-            </div>
-          </div>
-          <div>
-            <Label>العادات المرتبطة</Label>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {linkedHabitIds.map((id) => {
-                const habit = allHabits.find((h) => h.id === id);
-                return (
-                  <button
-                    key={id}
-                    className="text-[10px] px-2 py-1 rounded bg-surface2"
-                    onClick={() => onHabitUnlink(id)}
-                  >
-                    {habit?.name ?? id} ×
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={habitLink}
-                onChange={(e) => setHabitLink(e.target.value)}
-              >
-                <option value="">اختر عادة...</option>
-                {allHabits.filter((h) => !linkedHabitIds.includes(h.id)).map((h) => (
-                  <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-              </select>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (!habitLink) return;
-                  await onHabitLink(goal.id, habitLink);
-                  setHabitLink("");
-                }}
-              >
-                ربط
-              </Button>
-            </div>
-          </div>
-        </Card>
-        <div className="flex gap-2 justify-end">
-          <Button variant="danger" size="sm" onClick={onDelete}>حذف</Button>
-          <Button variant="ghost" onClick={onClose}>إغلاق</Button>
-        </div>
-      </div>
-    </div>
-  );
-}

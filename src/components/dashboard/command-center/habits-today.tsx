@@ -12,12 +12,14 @@ import { useLifeOS } from "@/contexts/lifeos-context";
 import { useToast } from "@/contexts/toast-context";
 import { motion } from "framer-motion";
 import { MOTION } from "@/lib/motion";
+import { AutoAnimateList } from "@/components/motion/auto-animate-list";
 
 interface HabitsTodayProps {
   habits: DashboardHabitToday[];
+  onHabitComplete?: () => void;
 }
 
-export function HabitsToday({ habits }: HabitsTodayProps) {
+export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
   const { refreshSilent } = useLifeOS();
   const { toast } = useToast();
   const [local, setLocal] = useState(habits);
@@ -78,16 +80,19 @@ export function HabitsToday({ habits }: HabitsTodayProps) {
             </Link>
           </p>
         ) : (
-          local.map((h) => (
-            <HabitCheck
-              key={h.id}
-              checked={h.done}
-              disabled={busy === h.id}
-              onChange={() => toggle(h.id)}
-              label={h.name}
-              meta={h.scheduleLabel ?? h.timeOfDay}
-            />
-          ))
+          <AutoAnimateList className="space-y-2">
+            {local.map((h) => (
+              <HabitCheck
+                key={h.id}
+                checked={h.done}
+                disabled={busy === h.id}
+                onChange={() => toggle(h.id)}
+                onComplete={onHabitComplete}
+                label={h.name}
+                meta={h.scheduleLabel ?? h.timeOfDay}
+              />
+            ))}
+          </AutoAnimateList>
         )}
       </CardBody>
     </Card>

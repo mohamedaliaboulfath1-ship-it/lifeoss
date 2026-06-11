@@ -6,6 +6,7 @@ import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { NavTracker } from "@/components/layout/nav-tracker";
 import { MobileNavProvider, useMobileNav } from "@/contexts/mobile-nav-context";
+import { GoalExpandOverlay } from "@/components/goals/goal-expand-overlay";
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const { data, error, setCurrentYear } = useLifeOS();
@@ -42,6 +43,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <CommandPalette />
+      <GoalExpandOverlay />
     </div>
   );
 }

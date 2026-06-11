@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 /* Semantic tokens — gold · blue · gray blend */
 :root,

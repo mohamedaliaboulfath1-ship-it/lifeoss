@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import { AutoAnimateList } from "@/components/motion/auto-animate-list";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -93,17 +93,11 @@ export function ResourcesView() {
           onAction={() => setShowForm(true)}
         />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {resources.map((r, i) => {
+        <AutoAnimateList className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {resources.map((r) => {
             const domain = SYSTEM_DOMAINS.find((d) => d.id === r.domainId);
             return (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-              >
-                <Card className="p-4 glass-premium hover:shadow-md transition-all group">
+                <Card key={r.id} className="p-4 glass-premium hover:shadow-md transition-all group animate-in fade-in-0 zoom-in-95 duration-300">
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <div className="text-[10px] text-text3">{TYPE_LABELS[r.resourceType] ?? r.resourceType}</div>
@@ -127,10 +121,9 @@ export function ResourcesView() {
                   )}
                   {r.content && <p className="text-xs text-text3 mt-2 line-clamp-2">{r.content}</p>}
                 </Card>
-              </motion.div>
             );
           })}
-        </div>
+        </AutoAnimateList>
       )}
 
       {showForm && (
