@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
@@ -235,7 +236,7 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="✅ المهام"
         subtitle="3 مهام كبيرة فقط في اليوم — الإنجاز خير من القائمة الطويلة"
@@ -243,17 +244,17 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
         onAction={() => setModal(true)}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <KpiCard label="اليوم" value={String(stats.today)} numericValue={stats.today} sub="" color="var(--gold)" />
         <KpiCard label="متأخرة" value={String(stats.overdue)} numericValue={stats.overdue} sub="" color="var(--rose)" />
         <KpiCard label="صندوق الوارد" value={String(stats.inbox)} numericValue={stats.inbox} sub="" color="var(--purple)" />
         <KpiCard label="منجزة اليوم" value={String(stats.doneToday)} numericValue={stats.doneToday} sub="" color="var(--emerald)" />
-      </div>
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+      </ViewShell.Cards>
+      <ViewShell.Cards columns="grid grid-cols-2 xl:grid-cols-3 gap-4">
         <KpiCard label="P1 مفتوحة" value={String(stats.p1Open)} sub="" color="var(--coral)" />
         <KpiCard label="نسبة الإنجاز" value={`${stats.doneRate}%`} numericValue={stats.doneRate} suffix="%" sub="" color="var(--teal)" />
         <KpiCard label="متوسط الوقت" value={`${stats.avgEstimate} د`} sub="" color="var(--sky)" />
-      </div>
+      </ViewShell.Cards>
 
       <Tabs tabs={FILTERS} active={filter} onChange={setFilter} />
       <div className="flex items-center justify-between">
@@ -453,6 +454,6 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
             </div>
           </div>
       </MotionModal>
-    </div>
+    </ViewShell>
   );
 }

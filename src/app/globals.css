@@ -252,23 +252,131 @@
   .area-health { background: linear-gradient(145deg, #134e4a 0%, #0d9488 55%, #10b981 100%); }
   .area-soul { background: linear-gradient(145deg, #581c87 0%, #9d174d 55%, #be185d 100%); }
 
+  /* Light theme — soft harmonious pastels (always win over dark + semantic states) */
+  [data-theme="light"] .layered-card {
+    color: var(--text);
+  }
+
   [data-theme="light"] .gradient-premium-slate,
+  [data-theme="light"] .layered-card.gradient-premium-slate {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2ff 42%, #f5f3ff 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #c7d2fe 55%, var(--border));
+  }
+
   [data-theme="light"] .gradient-indigo,
+  [data-theme="light"] .layered-card.gradient-indigo {
+    background: linear-gradient(145deg, #f8fafc 0%, #e0e7ff 48%, #ede9fe 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #a5b4fc 45%, var(--border));
+  }
+
   [data-theme="light"] .gradient-blue,
+  [data-theme="light"] .layered-card.gradient-blue {
+    background: linear-gradient(145deg, #f0f9ff 0%, #dbeafe 50%, #e0e7ff 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #93c5fd 45%, var(--border));
+  }
+
   [data-theme="light"] .gradient-emerald,
+  [data-theme="light"] .layered-card.gradient-emerald {
+    background: linear-gradient(145deg, #f0fdf4 0%, #ccfbf1 50%, #e0f2fe 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #6ee7b7 40%, var(--border));
+  }
+
   [data-theme="light"] .gradient-orange,
+  [data-theme="light"] .layered-card.gradient-orange {
+    background: linear-gradient(145deg, #fff7ed 0%, #fed7aa 50%, #fce7f3 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #fdba74 45%, var(--border));
+  }
+
   [data-theme="light"] .gradient-purple,
+  [data-theme="light"] .layered-card.gradient-purple {
+    background: linear-gradient(145deg, #faf5ff 0%, #ede9fe 50%, #fce7f3 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #c4b5fd 45%, var(--border));
+  }
+
   [data-theme="light"] .gradient-rose,
+  [data-theme="light"] .layered-card.gradient-rose {
+    background: linear-gradient(145deg, #fff1f2 0%, #fecdd3 50%, #ffedd5 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #fda4af 45%, var(--border));
+  }
+
   [data-theme="light"] .gradient-cyan,
+  [data-theme="light"] .layered-card.gradient-cyan {
+    background: linear-gradient(145deg, #ecfeff 0%, #bae6fd 50%, #ddd6fe 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #67e8f9 40%, var(--border));
+  }
+
   [data-theme="light"] .area-body,
+  [data-theme="light"] .layered-card.area-body {
+    background: linear-gradient(145deg, #ecfdf5 0%, #ccfbf1 55%, #e0f2fe 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #5eead4 40%, var(--border));
+  }
+
   [data-theme="light"] .area-career,
+  [data-theme="light"] .layered-card.area-career {
+    background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 55%, #ede9fe 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #93c5fd 40%, var(--border));
+  }
+
   [data-theme="light"] .area-finance,
+  [data-theme="light"] .layered-card.area-finance {
+    background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 50%, #fef3c7 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #86efac 40%, var(--border));
+  }
+
   [data-theme="light"] .area-learning,
+  [data-theme="light"] .layered-card.area-learning {
+    background: linear-gradient(145deg, #f5f3ff 0%, #ede9fe 55%, #e0e7ff 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #c4b5fd 40%, var(--border));
+  }
+
   [data-theme="light"] .area-books,
+  [data-theme="light"] .layered-card.area-books {
+    background: linear-gradient(145deg, #fff7ed 0%, #fed7aa 55%, #ffedd5 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #fdba74 40%, var(--border));
+  }
+
   [data-theme="light"] .area-health,
-  [data-theme="light"] .area-soul {
-    filter: saturate(0.85) brightness(1.08);
-    opacity: 0.95;
+  [data-theme="light"] .layered-card.area-health {
+    background: linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 55%, #d1fae5 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #5eead4 40%, var(--border));
+  }
+
+  [data-theme="light"] .area-soul,
+  [data-theme="light"] .layered-card.area-soul {
+    background: linear-gradient(145deg, #faf5ff 0%, #fae8ff 55%, #fce7f3 100%) !important;
+    background-image: none !important;
+    border-color: color-mix(in srgb, #e9d5ff 40%, var(--border));
+  }
+
+  [data-theme="light"] .layered-card-glow {
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--sky) 10%, transparent), transparent 70%);
+  }
+
+  [data-theme="light"] .state-critical {
+    background: linear-gradient(145deg, #fff1f2 0%, #ffe4e6 50%, #fff7ed 100%) !important;
+    background-image: none !important;
+  }
+
+  [data-theme="light"] .state-growth {
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--growth) 8%, transparent);
+  }
+
+  [data-theme="light"] .state-warning {
+    animation: none;
   }
 
   /* Layered card system */

@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardReveal, SectionReveal, CardUnfold } from "@/components/motion/unfold-reveal";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,8 @@ export function AreasIntelligenceView() {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <DashboardReveal>
+      <DashboardReveal.Header>
       <PageHeader
         title="Life Areas Intelligence Center"
         subtitle="كل مجال = مركز قيادة — أين أنت؟ ماذا تفعل؟ ما الخطوة التالية؟"
@@ -78,7 +80,9 @@ export function AreasIntelligenceView() {
           <span>{previews.filter((p) => p.needsAttention.length).length} تحتاج انتباه</span>
         </div>
       </PremiumSurface>
+      </DashboardReveal.Header>
 
+      <DashboardReveal.Kpis columns="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -92,8 +96,11 @@ export function AreasIntelligenceView() {
           ))}
         </LayoutAnimateList>
       )}
+      </DashboardReveal.Kpis>
 
+      <SectionReveal index={2}>
       <Button variant="gold" onClick={() => setModal(true)}>+ مجال مخصص</Button>
+      </SectionReveal>
 
       <MotionModal open={modal} onClose={() => setModal(false)}>
         <Card className="w-full max-w-sm p-6 space-y-4 glass-premium">
@@ -106,6 +113,6 @@ export function AreasIntelligenceView() {
           </div>
         </Card>
       </MotionModal>
-    </div>
+    </DashboardReveal>
   );
 }

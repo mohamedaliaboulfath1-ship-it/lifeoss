@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -228,7 +229,7 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="💰 المال والميزانية"
         subtitle={salary ? `الراتب: ${commas(salary)} ر.س` : "تتبع الدخل والمصروف والادخار"}
@@ -236,12 +237,12 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
         onAction={() => setModal(tab === "debts" ? "debt" : tab === "budgets" ? "budget" : "tx")}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard label="دخل الشهر" value={commas(stats.income)} sub="ر.س" color="var(--emerald)" />
-        <KpiCard label="مصروف الشهر" value={commas(stats.expense)} sub="ر.س" color="var(--rose)" />
-        <KpiCard label="صافي التدفق" value={commas(stats.net)} sub="ر.س" color="var(--gold)" />
-        <KpiCard label="الديون المتبقية" value={commas(stats.debtRemaining)} sub="ر.س" color="var(--sky)" />
-      </div>
+      <ViewShell.Cards>
+        <KpiCard label="دخل الشهر" value={commas(stats.income)} numericValue={stats.income} sub="ر.س" color="var(--emerald)" />
+        <KpiCard label="مصروف الشهر" value={commas(stats.expense)} numericValue={stats.expense} sub="ر.س" color="var(--rose)" />
+        <KpiCard label="صافي التدفق" value={commas(stats.net)} numericValue={stats.net} sub="ر.س" color="var(--gold)" />
+        <KpiCard label="الديون المتبقية" value={commas(stats.debtRemaining)} numericValue={stats.debtRemaining} sub="ر.س" color="var(--sky)" />
+      </ViewShell.Cards>
 
       <Tabs
         tabs={[
@@ -255,6 +256,7 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
       />
 
       {tab === "overview" && (
+        <ViewShell.Analytics delay={0.08}>
         <div className="grid md:grid-cols-3 gap-4">
           <Card className="p-4 md:col-span-2">
             <div className="font-bold mb-3 text-gold2">📈 التدفق النقدي (آخر 6 أشهر)</div>
@@ -291,6 +293,7 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
             </ul>
           </Card>
         </div>
+        </ViewShell.Analytics>
       )}
 
       {tab === "transactions" && (
@@ -453,6 +456,6 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

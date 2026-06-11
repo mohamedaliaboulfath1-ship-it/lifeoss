@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { pageMotion } from "@/lib/motion/page";
+import { UNFOLD } from "@/lib/motion/unfold";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 export function PageTransitionShell({ children }: { children: React.ReactNode }) {
@@ -17,10 +17,10 @@ export function PageTransitionShell({ children }: { children: React.ReactNode })
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
-        initial={pageMotion.initial}
-        animate={pageMotion.animate}
-        exit={pageMotion.exit}
-        transition={pageMotion.transition}
+        initial={UNFOLD.page.initial}
+        animate={UNFOLD.page.animate}
+        exit={UNFOLD.page.exit}
+        transition={UNFOLD.page.transition}
         className="flex-1 overflow-hidden flex flex-col min-w-0 will-change-transform"
       >
         {children}

@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -229,7 +230,7 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
     insights.push({ type: "warning", title: "التزام منخفض", msg: `Nutrition Score: ${nutritionScore}% — حاول الوصول لـ 80%+` });
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="🍽️ التغذية"
         subtitle={`الهدف اليومي: ${targetCal} سعرة · ${targetP}جم بروتين`}
@@ -282,7 +283,7 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
         onChange={setTab}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <KpiCard
           label="السعرات"
           value={`${Math.round(totals.cal)}/${targetCal}`}
@@ -307,7 +308,7 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
           sub=""
           color="var(--purple)"
         />
-      </div>
+      </ViewShell.Cards>
 
       {tab === "overview" && (
         <>
@@ -572,6 +573,6 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

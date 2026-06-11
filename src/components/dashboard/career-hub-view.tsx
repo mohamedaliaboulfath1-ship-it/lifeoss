@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -119,18 +120,18 @@ export function CareerHubView({ yearData, onRefresh }: CareerHubViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="📈 Career Hub"
         subtitle="خارطة التحول المهني: محاسب → FA → Senior FA → Finance Manager → CFO"
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <Card className="p-4"><div className="text-xs text-text3">متوسط فجوة المهارات</div><div className="text-xl font-black text-gold2">{analytics.avgGap}%</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">الشهادات المكتملة</div><div className="text-xl font-black text-emerald">{analytics.certificationsDone}</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">طلبات نشطة</div><div className="text-xl font-black text-sky">{analytics.activeApplications}</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">إجمالي العلاقات</div><div className="text-xl font-black text-purple">{contacts.length}</div></Card>
-      </div>
+      </ViewShell.Cards>
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
@@ -223,6 +224,6 @@ export function CareerHubView({ yearData, onRefresh }: CareerHubViewProps) {
           ))}
         </Card>
       )}
-    </div>
+    </ViewShell>
   );
 }

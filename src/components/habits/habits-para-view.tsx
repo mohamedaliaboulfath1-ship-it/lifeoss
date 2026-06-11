@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
@@ -132,7 +133,7 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <Card className="p-4">
           <div className="text-2xl font-black text-emerald2">{todayDone}/{todayHabits.length}</div>
@@ -326,6 +327,6 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -97,18 +98,18 @@ export function LearningHubView({ yearData, onRefresh }: LearningHubViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="🧠 Learning Hub"
         subtitle="مسارات تعلم وشهادات وجلسات دراسة — نظام تعلم متكامل"
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <Card className="p-4"><div className="text-xs text-text3">ساعات الدراسة</div><div className="text-xl font-black text-gold2">{metrics.totalHours}h</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">دورات مكتملة</div><div className="text-xl font-black text-emerald">{metrics.coursesDone}</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">شهادات مكتملة</div><div className="text-xl font-black text-sky">{metrics.certsDone}</div></Card>
         <Card className="p-4"><div className="text-xs text-text3">تقدم المعرفة</div><div className="text-xl font-black text-purple">{metrics.areaProgress}%</div></Card>
-      </div>
+      </ViewShell.Cards>
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Card className="p-4 space-y-3">
@@ -207,6 +208,6 @@ export function LearningHubView({ yearData, onRefresh }: LearningHubViewProps) {
           <Button variant="gold" size="sm" onClick={addArea}>+ مجال</Button>
         </div>
       </Card>
-    </div>
+    </ViewShell>
   );
 }

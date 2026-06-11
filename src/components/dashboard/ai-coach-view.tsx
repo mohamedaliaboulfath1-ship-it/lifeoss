@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -41,7 +42,7 @@ export function AiCoachView({ yearData, dashboard }: AiCoachViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <Card className="p-5 bg-gradient-to-br from-purple/20 to-transparent border-purple/40">
         <h2 className="font-display text-2xl font-black mb-1">🤖 AI Coach</h2>
         <p className="text-sm text-text3">طبقة ذكاء أولية Rule-Based للرؤى والتوجيه التنفيذي اليومي</p>
@@ -70,6 +71,6 @@ export function AiCoachView({ yearData, dashboard }: AiCoachViewProps) {
           </div>
         ))}
       </Card>
-    </div>
+    </ViewShell>
   );
 }

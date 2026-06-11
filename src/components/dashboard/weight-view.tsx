@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -123,7 +124,7 @@ export function WeightView({
 
   if (tab === "plan") {
     return (
-      <div className="space-y-6 animate-fade-up">
+      <ViewShell>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={() => setTab("track")}>← التتبع</Button>
         </div>
@@ -141,12 +142,12 @@ export function WeightView({
           }}
           onSaved={onRefresh}
         />
-      </div>
+      </ViewShell>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="p-4 rounded-[10px] border border-gold/25 bg-gold/5 flex-1 min-w-[240px]">
           <div className="text-xs text-gold2 font-bold mb-1">
@@ -189,7 +190,7 @@ export function WeightView({
       </Card>
 
       {current != null && forecast && (
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <ViewShell.Cards>
           <KpiCard label="الوزن الحالي" value={`${current} كجم`} sub="" color="var(--gold)" />
           <KpiCard
             label="متبقي للهدف"
@@ -209,7 +210,7 @@ export function WeightView({
             sub={forecast.forecastDate ?? `بمعدل ${rateForForecast} كجم/أسبوع`}
             color="var(--purple)"
           />
-        </div>
+        </ViewShell.Cards>
       )}
 
       {current != null && forecast && (
@@ -304,7 +305,7 @@ export function WeightView({
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }
 

@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { LayeredCard } from "@/components/ui/layered-card";
 import { SemanticBadge } from "@/components/ui/semantic-badge";
 import { CountUp } from "@/components/ui/count-up";
 import { AnimatedProgress } from "@/components/motion/animated-progress";
 import { Button } from "@/components/ui/button";
-import { motionV2 } from "@/lib/motion/presets-v2";
+import {
+  DashboardReveal,
+  CardUnfold,
+  SectionReveal,
+} from "@/components/motion/unfold-reveal";
 import { scoreSemanticState, burnoutSemanticState } from "@/lib/design/tokens";
 import { AmbientHeroBg } from "@/components/remotion/ambient-hero-bg";
 import { LifeScoreOrbPlayer } from "@/components/remotion/life-score-orb-player";
@@ -77,21 +80,17 @@ export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
   const highestRoi = topThree[0];
 
   return (
-    <motion.div
-      variants={motionV2.staggerContainer.variants}
-      initial="hidden"
-      animate="show"
-      className="space-y-6"
-    >
-      <motion.div variants={motionV2.staggerItem}>
+    <DashboardReveal>
+      <DashboardReveal.Header>
         <LayeredCard
           gradient="gradient-premium-slate"
           level={3}
           state={lifeState}
+          entrance={false}
           className="p-5 md:p-6 relative overflow-hidden"
           interactive={false}
         >
-          <AmbientHeroBg className="opacity-30" />
+          <AmbientHeroBg className="opacity-25" />
           <div className="relative z-10 flex flex-wrap items-center gap-5">
             <LifeScoreOrbPlayer score={lifeScore} size={88} />
             <div className="flex-1 min-w-[200px]">
@@ -106,77 +105,61 @@ export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
             </div>
           </div>
         </LayeredCard>
-      </motion.div>
+      </DashboardReveal.Header>
 
-      <motion.div variants={motionV2.staggerItem} className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-        {domainCards.map((c, i) => (
-          <motion.div key={c.title} variants={motionV2.staggerItem} custom={i}>
-            <Link href={c.href}>
-              <LayeredCard
-                gradient={c.gradient}
-                state={c.state}
-                level={2}
-                delay={i * 0.04}
-                className="p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="text-[10px] uppercase tracking-wider text-text3">{c.title}</div>
-                  <SemanticBadge state={c.state} />
-                </div>
-                <div className="text-3xl font-black mt-2 tabular-nums">
-                  <CountUp value={c.value} />
-                </div>
-                <AnimatedProgress
-                  value={c.value}
-                  color={c.state === "growth" ? "var(--growth)" : c.state === "critical" ? "var(--critical)" : "var(--gold)"}
-                  height="h-1"
-                  className="mt-3"
-                />
-              </LayeredCard>
-            </Link>
-          </motion.div>
+      <DashboardReveal.Kpis>
+        {domainCards.map((c) => (
+          <Link key={c.title} href={c.href}>
+            <LayeredCard
+              gradient={c.gradient}
+              state={c.state}
+              level={2}
+              entrance={false}
+              className="p-4 h-full"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-[10px] uppercase tracking-wider text-text3">{c.title}</div>
+                <SemanticBadge state={c.state} />
+              </div>
+              <div className="text-3xl font-black mt-2 tabular-nums">
+                <CountUp value={c.value} />
+              </div>
+              <AnimatedProgress
+                value={c.value}
+                color={c.state === "growth" ? "var(--growth)" : c.state === "critical" ? "var(--critical)" : "var(--gold)"}
+                height="h-1"
+                className="mt-3"
+              />
+            </LayeredCard>
+          </Link>
         ))}
-      </motion.div>
+      </DashboardReveal.Kpis>
 
       {timeOs && (
-        <motion.div variants={motionV2.staggerItem} className="grid md:grid-cols-4 gap-4">
-          <TimeKpi
-            label="Time Utilization"
-            value={timeOs.utilizationPct}
-            suffix="%"
-            gradient="gradient-blue"
-            state={timeOs.utilizationPct < 30 ? "warning" : "default"}
-          />
-          <TimeKpi
-            label="Focus Score"
-            value={timeOs.focusScore.score}
-            suffix="%"
-            gradient="gradient-emerald"
-            state={scoreSemanticState(timeOs.focusScore.score)}
-          />
-          <TimeKpi
-            label="Deep Work"
-            value={timeOs.deepWorkHours.week}
-            suffix="س"
-            gradient="area-learning"
-            state={timeOs.deepWorkHours.week >= 10 ? "growth" : "default"}
-          />
-          <LayeredCard
-            gradient="gradient-orange"
-            state={burnoutSemanticState(timeOs.burnoutRisk)}
-            level={2}
-            className="p-4"
-            interactive={false}
-          >
-            <div className="text-[10px] uppercase tracking-wider text-text3">Burnout Risk</div>
-            <div className="text-xl font-bold capitalize mt-2">{timeOs.burnoutRisk}</div>
-            <SemanticBadge state={burnoutSemanticState(timeOs.burnoutRisk)} className="mt-2" />
-          </LayeredCard>
-        </motion.div>
+        <DashboardReveal.Charts>
+          <div className="grid md:grid-cols-4 gap-4">
+            <CardUnfold index={0}>
+              <TimeKpi label="Time Utilization" value={timeOs.utilizationPct} suffix="%" gradient="gradient-blue" state={timeOs.utilizationPct < 30 ? "warning" : "default"} />
+            </CardUnfold>
+            <CardUnfold index={1}>
+              <TimeKpi label="Focus Score" value={timeOs.focusScore.score} suffix="%" gradient="gradient-emerald" state={scoreSemanticState(timeOs.focusScore.score)} />
+            </CardUnfold>
+            <CardUnfold index={2}>
+              <TimeKpi label="Deep Work" value={timeOs.deepWorkHours.week} suffix="س" gradient="area-learning" state={timeOs.deepWorkHours.week >= 10 ? "growth" : "default"} />
+            </CardUnfold>
+            <CardUnfold index={3}>
+              <LayeredCard gradient="gradient-orange" state={burnoutSemanticState(timeOs.burnoutRisk)} level={2} entrance={false} className="p-4" interactive={false}>
+                <div className="text-[10px] uppercase tracking-wider text-text3">Burnout Risk</div>
+                <div className="text-xl font-bold capitalize mt-2">{timeOs.burnoutRisk}</div>
+                <SemanticBadge state={burnoutSemanticState(timeOs.burnoutRisk)} className="mt-2" />
+              </LayeredCard>
+            </CardUnfold>
+          </div>
+        </DashboardReveal.Charts>
       )}
 
-      <motion.div variants={motionV2.staggerItem}>
-        <LayeredCard gradient="gradient-purple" level={3} className="p-5 space-y-4" interactive={false}>
+      <DashboardReveal.Insights>
+        <LayeredCard gradient="gradient-purple" level={3} entrance={false} className="p-5 space-y-4 mb-4" interactive={false}>
           <div className="text-sm font-bold text-gold2">Weekly Executive Briefing</div>
           <p className="text-sm text-text2 leading-relaxed">
             {briefing?.headline ?? `Life Score: ${lifeScore}/100 — ركّز على 3 أولويات هذا الأسبوع`}
@@ -195,36 +178,42 @@ export function ExecutiveView({ dashboard, yearData }: ExecutiveViewProps) {
             ))}
           </ol>
         </LayeredCard>
-      </motion.div>
 
-      <motion.div variants={motionV2.staggerItem} className="grid md:grid-cols-3 gap-4">
-        <LayeredCard gradient="gradient-emerald" state="growth" level={2} className="p-4" interactive={false}>
-          <div className="text-[10px] text-text3 uppercase tracking-wider">Biggest Opportunity</div>
-          <div className="text-sm font-bold mt-2">{biggestOpportunity?.title ?? "زخم جيد — استثمر في تعلم عميق"}</div>
-          <p className="text-xs text-text3 mt-1 leading-relaxed">{biggestOpportunity?.message ?? "—"}</p>
-        </LayeredCard>
-        <LayeredCard gradient="gradient-rose" state="warning" level={2} className="p-4" interactive={false}>
-          <div className="text-[10px] text-text3 uppercase tracking-wider">Biggest Risk</div>
-          <div className="text-sm font-bold mt-2">{biggestRisk?.title ?? "لا مخاطر حرجة"}</div>
-          <p className="text-xs text-text3 mt-1 leading-relaxed">{biggestRisk?.message ?? "—"}</p>
-        </LayeredCard>
-        <LayeredCard gradient="gradient-blue" state="default" level={2} className="p-4" interactive={false}>
-          <div className="text-[10px] text-text3 uppercase tracking-wider">Highest ROI Activity</div>
-          <div className="text-sm font-bold mt-2">{highestRoi?.label ?? "إغلاق مهمة P1"}</div>
-          {highestRoi && (
-            <Button variant="gold" size="sm" className="mt-3" onClick={() => { window.location.href = highestRoi.href; }}>
-              ابدأ الآن →
-            </Button>
-          )}
-        </LayeredCard>
-      </motion.div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <CardUnfold index={0}>
+            <LayeredCard gradient="gradient-emerald" state="growth" level={2} entrance={false} className="p-4 h-full" interactive={false}>
+              <div className="text-[10px] text-text3 uppercase tracking-wider">Biggest Opportunity</div>
+              <div className="text-sm font-bold mt-2">{biggestOpportunity?.title ?? "زخم جيد — استثمر في تعلم عميق"}</div>
+              <p className="text-xs text-text3 mt-1 leading-relaxed">{biggestOpportunity?.message ?? "—"}</p>
+            </LayeredCard>
+          </CardUnfold>
+          <CardUnfold index={1}>
+            <LayeredCard gradient="gradient-rose" state="warning" level={2} entrance={false} className="p-4 h-full" interactive={false}>
+              <div className="text-[10px] text-text3 uppercase tracking-wider">Biggest Risk</div>
+              <div className="text-sm font-bold mt-2">{biggestRisk?.title ?? "لا مخاطر حرجة"}</div>
+              <p className="text-xs text-text3 mt-1 leading-relaxed">{biggestRisk?.message ?? "—"}</p>
+            </LayeredCard>
+          </CardUnfold>
+          <CardUnfold index={2}>
+            <LayeredCard gradient="gradient-blue" state="default" level={2} entrance={false} className="p-4 h-full" interactive={false}>
+              <div className="text-[10px] text-text3 uppercase tracking-wider">Highest ROI Activity</div>
+              <div className="text-sm font-bold mt-2">{highestRoi?.label ?? "إغلاق مهمة P1"}</div>
+              {highestRoi && (
+                <Button variant="gold" size="sm" className="mt-3" onClick={() => { window.location.href = highestRoi.href; }}>
+                  ابدأ الآن →
+                </Button>
+              )}
+            </LayeredCard>
+          </CardUnfold>
+        </div>
 
-      <motion.div variants={motionV2.staggerItem} className="flex flex-wrap gap-2">
-        <Button variant="gold" onClick={() => { window.location.href = "/planner"; }}>📅 Time OS</Button>
-        <Button variant="ghost" onClick={() => { window.location.href = "/life-map"; }}>🗺️ Life Map</Button>
-        <Button variant="ghost" onClick={() => { window.location.href = "/ai"; }}>🤖 AI Coach</Button>
-      </motion.div>
-    </motion.div>
+        <SectionReveal index={4} className="flex flex-wrap gap-2 mt-4">
+          <Button variant="gold" onClick={() => { window.location.href = "/planner"; }}>📅 Time OS</Button>
+          <Button variant="ghost" onClick={() => { window.location.href = "/life-map"; }}>🗺️ Life Map</Button>
+          <Button variant="ghost" onClick={() => { window.location.href = "/ai"; }}>🤖 AI Coach</Button>
+        </SectionReveal>
+      </DashboardReveal.Insights>
+    </DashboardReveal>
   );
 }
 
@@ -242,7 +231,7 @@ function TimeKpi({
   state: ReturnType<typeof scoreSemanticState>;
 }) {
   return (
-    <LayeredCard gradient={gradient} state={state} level={2} className="p-4" interactive={false}>
+    <LayeredCard gradient={gradient} state={state} level={2} entrance={false} className="p-4 h-full" interactive={false}>
       <div className="text-[10px] uppercase tracking-wider text-text3">{label}</div>
       <div className="text-2xl font-black mt-2 tabular-nums">
         <CountUp value={value} suffix={suffix} />

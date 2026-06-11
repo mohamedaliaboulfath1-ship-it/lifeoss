@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
@@ -228,7 +229,7 @@ export function HabitsView({
   const consistency = habits.length ? Math.round((todayDone / habits.length) * 100) : 0;
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <Card className="p-4">
           <div className="text-2xl font-black text-gold2">{pct}%</div>
@@ -440,6 +441,6 @@ export function HabitsView({
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

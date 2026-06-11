@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { cardHover, cardTap } from "@/lib/motion/card";
-import { motionV2 } from "@/lib/motion/presets-v2";
+import { UNFOLD } from "@/lib/motion/unfold";
 import type { SemanticState, SurfaceLevel } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ interface LayeredCardProps {
   interactive?: boolean;
   delay?: number;
   glow?: boolean;
+  entrance?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
 }
@@ -43,18 +44,19 @@ export function LayeredCard({
   interactive = true,
   delay = 0,
   glow = true,
+  entrance = true,
   onClick,
   style,
 }: LayeredCardProps) {
-  const entrance = motionV2.cardEntrance(delay);
+  const unfold = entrance ? UNFOLD.card(0, delay) : null;
 
   return (
     <motion.div
-      {...entrance}
+      {...(unfold ?? {})}
+      style={{ ...(entrance ? UNFOLD.origin : {}), ...style }}
       whileHover={interactive ? cardHover : undefined}
       whileTap={interactive ? cardTap : undefined}
       onClick={onClick}
-      style={style}
       className={cn(
         "layered-card relative rounded-2xl border overflow-hidden",
         LEVEL_CLASS[level],

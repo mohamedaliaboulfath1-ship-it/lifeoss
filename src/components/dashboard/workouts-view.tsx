@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -167,7 +168,7 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
   }, [logs]);
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="🏋️ التمارين"
         subtitle={`${workoutProgram} · ${weekDays} جلسة هذا الأسبوع`}
@@ -175,12 +176,12 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
         onAction={() => setModal(true)}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <KpiCard label="جلسات الأسبوع" value={`${weekDays}/5`} sub="" color="var(--rose)" />
         <KpiCard label="Volume الشهر" value={String(Math.round(monthVolume))} sub="كجم×تكرار" color="var(--gold)" />
         <KpiCard label="إجمالي السجلات" value={String(logs.length)} sub="" color="var(--sky)" />
         <KpiCard label="التمارين" value={String(exercises.length)} sub="" color="var(--emerald)" />
-      </div>
+      </ViewShell.Cards>
 
       <Tabs
         tabs={[
@@ -492,6 +493,6 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
           </div>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

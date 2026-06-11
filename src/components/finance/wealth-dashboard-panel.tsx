@@ -1,5 +1,6 @@
 "use client";
 
+import { CardGrid, AnalyticsReveal } from "@/components/motion/unfold-reveal";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -29,24 +30,25 @@ export function WealthDashboardPanel({ snapshot }: { snapshot: WealthSnapshot })
         </Card>
       )}
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <CardGrid>
         <KpiCard label="💎 صافي الثروة" value={`${commas(snapshot.netWorth)} ﷼`} numericValue={snapshot.netWorth} suffix=" ﷼" sub="أصول − التزامات" color="var(--gold)" />
         <KpiCard label="💵 نقد متاح" value={`${commas(snapshot.cash)} ﷼`} numericValue={snapshot.cash} sub="رصيد نقدي" color="var(--sky)" />
         <KpiCard label="🏦 ادخار" value={`${commas(snapshot.savings)} ﷼`} numericValue={snapshot.savings} sub={`معدل ${snapshot.savingsRate}%`} color="var(--emerald)" />
         <KpiCard label="📈 استثمارات" value={`${commas(snapshot.investments)} ﷼`} numericValue={snapshot.investments} sub={`معدل ${snapshot.investmentRate}%`} color="var(--purple)" />
-      </div>
+      </CardGrid>
 
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+      <CardGrid columns="grid grid-cols-2 xl:grid-cols-3 gap-4" baseDelay={0.2}>
         <KpiCard label="📉 ديون" value={`${commas(snapshot.debts)} ﷼`} numericValue={snapshot.debts} sub="التزامات نشطة" color="var(--rose)" />
         <KpiCard label="💸 تدفق الشهر" value={`${commas(snapshot.monthlyCashFlow)} ﷼`} sub={`دخل ${commas(snapshot.monthlyIncome)} − مصروف ${commas(snapshot.monthlyExpense)}`} color="var(--teal)" />
         <KpiCard label="🎯 الحرية المالية" value={`${snapshot.fiProgress}%`} numericValue={snapshot.fiProgress} suffix="%" sub={`هدف ${commas(snapshot.fiTarget)} ﷼`} color="var(--amber)" />
-      </div>
+      </CardGrid>
 
       <Card className="p-4">
         <div className="text-xs font-bold text-text3 mb-2">تقدّم الاستقلال المالي</div>
         <ProgressBar value={snapshot.fiProgress} color="var(--gold)" />
       </Card>
 
+      <AnalyticsReveal delay={0.15}>
       <div className="grid lg:grid-cols-2 gap-4">
         <Card className="p-4">
           <div className="text-sm font-bold mb-3">تدفق نقدي (6 أشهر)</div>
@@ -69,6 +71,7 @@ export function WealthDashboardPanel({ snapshot }: { snapshot: WealthSnapshot })
           </div>
         </Card>
       </div>
+      </AnalyticsReveal>
     </div>
   );
 }

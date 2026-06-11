@@ -1,8 +1,10 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MotionCard, MotionModal } from "@/components/motion/motion";
 import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { CardUnfold, ShelfReveal } from "@/components/motion/unfold-reveal";
 import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
 import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { BOOK_TYPE_LABELS } from "@/lib/icons";
@@ -409,7 +411,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader
         title="📚 المكتبة"
         subtitle={`هدف السنة: ${goal} كتاب · ${done} مكتمل · سلسلة ${readingStreak} يوم`}
@@ -417,12 +419,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         onAction={() => openBookModal()}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <KpiCard label="مكتمل" value={String(done)} numericValue={done} sub={`/${goal}`} color="var(--emerald)" />
         <KpiCard label="قيد القراءة" value={String(reading)} numericValue={reading} sub="" color="var(--sky)" />
         <KpiCard label="جلسات الشهر" value={String(sessions.filter((s) => s.date.startsWith(new Date().toISOString().slice(0, 7))).length)} sub="" color="var(--gold)" />
         <KpiCard label="التقدم السنوي" value={`${goalProgress}%`} numericValue={goalProgress} sub="" color="var(--purple)" />
-      </div>
+      </ViewShell.Cards>
 
       <Card className="p-4 glass-premium">
         <ProgressJourney
@@ -525,24 +527,25 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => openBookModal()} />
       ) : view === "gallery" ? (
         <LayoutAnimateList className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredBooks.map((b) => (
-            <BookGalleryCard
-              key={b.id}
-              book={b as BookExt}
-              onOpen={openBookWithExpand}
-              onEdit={openBookModal}
-              onProgress={updateProgress}
-              onRemove={removeBook}
-            />
+          {filteredBooks.map((b, i) => (
+            <CardUnfold key={b.id} index={i}>
+              <BookGalleryCard
+                book={b as BookExt}
+                onOpen={openBookWithExpand}
+                onEdit={openBookModal}
+                onProgress={updateProgress}
+                onRemove={removeBook}
+              />
+            </CardUnfold>
           ))}
         </LayoutAnimateList>
       ) : view === "shelf" ? (
         <div className="space-y-6">
-          {["reading", "done", "planned"].map((status) => {
+          {["reading", "done", "planned"].map((status, rowIndex) => {
             const shelfBooks = filteredBooks.filter((b) => b.status === status);
             if (!shelfBooks.length) return null;
             return (
-              <div key={status}>
+              <ShelfReveal key={status} rowIndex={rowIndex}>
                 <div className="text-xs text-text3 mb-2 font-bold uppercase tracking-wider">
                   {status === "reading" ? "قيد القراءة" : status === "done" ? "مكتمل" : "مخطط"}
                 </div>
@@ -567,7 +570,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                     );
                   })}
                 </div>
-              </div>
+              </ShelfReveal>
             );
           })}
         </div>
@@ -741,6 +744,6 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             )}
           </div>
       </MotionModal>
-    </div>
+    </ViewShell>
   );
 }

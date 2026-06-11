@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -151,7 +152,7 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
   const score = d.unifiedScore ?? readiness.score;
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <PageHeader title="📈 Career OS" subtitle={subtitle} />
 
       <Card className="p-5 border-gold/30 bg-gradient-to-br from-gold/[0.06] to-transparent">
@@ -419,7 +420,7 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
           </Card>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }
 

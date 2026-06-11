@@ -1,4 +1,6 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
+import { CardUnfold } from "@/components/motion/unfold-reveal";
 
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -169,13 +171,13 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
   const hierarchy = buildHierarchy(goals);
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <ViewShell>
+      <ViewShell.Cards>
         <KpiCard label="📋 إجمالي" value={String(stats.all)} sub="" color="var(--gold)" />
         <KpiCard label="🟢 نشط" value={String(stats.active)} sub="" color="var(--teal)" />
         <KpiCard label="✅ مكتمل" value={String(stats.done)} sub="" color="var(--emerald)" />
         <KpiCard label="📈 متوسط التقدم" value={`${stats.avg}%`} sub="" color="var(--sky)" />
-      </div>
+      </ViewShell.Cards>
 
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -304,7 +306,9 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
               أضف رؤية (Vision) ثم أهداف ومشاريع مرتبطة بها
             </p>
           ) : (
-            hierarchy.map((node) => <HierarchyNode key={node.goal.id} node={node} depth={0} />)
+            hierarchy.map((node, i) => (
+              <HierarchyNode key={node.goal.id} node={node} depth={0} unfoldIndex={i} />
+            ))
           )}
         </div>
       )}
@@ -353,7 +357,7 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
       )}
 
       <GoalFormModal open={showModal} form={form} setForm={setForm} onClose={() => { setModalOpen(false); onAddClose?.(); }} onSave={saveGoal} goals={goals} />
-    </div>
+    </ViewShell>
   );
 }
 
@@ -424,24 +428,33 @@ function buildHierarchy(goals: Goal[]) {
 function HierarchyNode({
   node,
   depth,
+  unfoldIndex,
 }: {
   node: { goal: Goal; children: { goal: Goal; children: unknown[] }[] };
   depth: number;
+  unfoldIndex: number;
 }) {
   const g = node.goal;
   const levelIcon = g.level === "vision" ? "🔭" : g.level === "project" ? "📁" : "🎯";
   return (
-    <div style={{ marginRight: depth * 20 }}>
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-sm">{levelIcon}</span>
-        <div className="flex-1">
-          <PremiumGoalCard goal={g} compact />
+    <CardUnfold index={unfoldIndex} baseDelay={0.08}>
+      <div style={{ marginRight: depth * 20 }}>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-sm">{levelIcon}</span>
+          <div className="flex-1">
+            <PremiumGoalCard goal={g} compact />
+          </div>
         </div>
+        {node.children.map((c, i) => (
+          <HierarchyNode
+            key={c.goal.id}
+            node={c as typeof node}
+            depth={depth + 1}
+            unfoldIndex={unfoldIndex + i + 1}
+          />
+        ))}
       </div>
-      {node.children.map((c) => (
-        <HierarchyNode key={c.goal.id} node={c as typeof node} depth={depth + 1} />
-      ))}
-    </div>
+    </CardUnfold>
   );
 }
 

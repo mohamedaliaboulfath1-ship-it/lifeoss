@@ -9,7 +9,7 @@ import { PremiumSurface } from "@/components/motion/premium-surface";
 import { AnimatedProgress } from "@/components/motion/animated-progress";
 import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { TrendArrow } from "@/components/ui/trend-arrow";
-import { PageTransition } from "@/components/motion/motion";
+import { DashboardReveal, AnalyticsReveal, SectionReveal } from "@/components/motion/unfold-reveal";
 import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
 import type { FullAnalyticsPayload } from "@/lib/analytics/score-engine";
 import type { YearPayload } from "@/types/lifeos";
@@ -37,13 +37,15 @@ export function AnalyticsView({ yearData: _yearData }: AnalyticsViewProps) {
     wf.trendPerWeek > 0.1 ? "up" : wf.trendPerWeek < -0.05 ? "down" : "stable";
 
   return (
-    <PageTransition>
-      <div className="space-y-6">
+    <DashboardReveal>
+        <DashboardReveal.Header>
         <PageHeader
           title="📊 التحليلات الذكية"
           subtitle="رؤى مستخرجة من بياناتك — سرد بصري حي"
         />
+        </DashboardReveal.Header>
 
+        <DashboardReveal.Charts>
         <BentoGrid>
           <BentoTile span="wide" delay={0}>
             <PremiumSurface variant="gradient-indigo" className="p-5">
@@ -101,7 +103,9 @@ export function AnalyticsView({ yearData: _yearData }: AnalyticsViewProps) {
             </PremiumSurface>
           </BentoTile>
         </BentoGrid>
+        </DashboardReveal.Charts>
 
+        <DashboardReveal.Insights>
         <div className="grid md:grid-cols-2 gap-4">
           <Card className="p-4 glass-premium">
             <div className="font-bold text-gold2 mb-4">🔍 ارتباط العادات</div>
@@ -127,7 +131,7 @@ export function AnalyticsView({ yearData: _yearData }: AnalyticsViewProps) {
             </LayoutAnimateList>
           </Card>
         </div>
-      </div>
-    </PageTransition>
+        </DashboardReveal.Insights>
+    </DashboardReveal>
   );
 }

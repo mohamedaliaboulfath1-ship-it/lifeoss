@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -260,7 +261,7 @@ export function ReviewsView({ yearData }: ReviewsViewProps) {
   };
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       {(tab === "weekly" || tab === "monthly" || tab === "annual") && (
         <RemotionRecapSection data={recapData} />
       )}
@@ -278,7 +279,7 @@ export function ReviewsView({ yearData }: ReviewsViewProps) {
         onChange={(id) => setTab(id as ReviewTab)}
       />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <ViewShell.Cards>
         <Card className="p-4 text-center">
           <div className="text-2xl font-black text-gold2">{summary.totalJournals}</div>
           <div className="text-xs text-text3">يوميات مكتوبة</div>
@@ -295,7 +296,7 @@ export function ReviewsView({ yearData }: ReviewsViewProps) {
           <div className="text-sm font-bold text-purple2">{summary.topPattern}</div>
           <div className="text-xs text-text3">نمط انعكاس</div>
         </Card>
-      </div>
+      </ViewShell.Cards>
 
       <Card className="p-4 space-y-3">
         {tab === "daily" ? (
@@ -388,6 +389,6 @@ export function ReviewsView({ yearData }: ReviewsViewProps) {
       ))}
 
       {loading && <Card className="p-4 text-sm text-text3">جاري تحميل المراجعات...</Card>}
-    </div>
+    </ViewShell>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
@@ -129,7 +130,7 @@ export function BodyCoachView(props: Props) {
   }
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <ViewShell className="space-y-5">
       <Tabs
         tabs={[
           { id: "overview", label: "🏠 نظرة عامة" },
@@ -280,6 +281,6 @@ export function BodyCoachView(props: Props) {
           </Card>
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }

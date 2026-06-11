@@ -1,4 +1,5 @@
 "use client";
+import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -75,7 +76,7 @@ export function ArchiveView({ currentYear, years, onRefresh }: ArchiveViewProps)
       : [];
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <ViewShell>
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <p className="text-text2 text-sm">
           احفظ لقطة كاملة لكل سنة — بياناتك تبقى آمنة للمقارنة طويلة المدى.
@@ -190,6 +191,6 @@ export function ArchiveView({ currentYear, years, onRefresh }: ArchiveViewProps)
         السنوات النشطة: {years.join(" · ")} — التبديل من الشريط الجانبي يغيّر العرض دون حذف
         البيانات.
       </Card>
-    </div>
+    </ViewShell>
   );
 }
