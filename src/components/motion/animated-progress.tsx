@@ -3,6 +3,7 @@
 import { motion, useSpring, useTransform } from "framer-motion";
 import { useEffect } from "react";
 import { MOTION } from "@/lib/motion";
+import { useInViewEnter } from "@/hooks/use-in-view-enter";
 import { cn } from "@/lib/utils";
 
 interface AnimatedProgressProps {
@@ -11,6 +12,8 @@ interface AnimatedProgressProps {
   className?: string;
   height?: string;
   showLabel?: boolean;
+  playOnView?: boolean;
+  playKey?: number;
 }
 
 export function AnimatedProgress({
@@ -19,31 +22,39 @@ export function AnimatedProgress({
   className = "",
   height = "h-1.5",
   showLabel = false,
+  playOnView = true,
+  playKey,
 }: AnimatedProgressProps) {
   const clamped = Math.min(100, Math.max(0, value));
+  const inView = useInViewEnter(0.08);
+  const effectiveKey = playKey ?? (playOnView ? inView.enterCount : 1);
+
   const spring = useSpring(0, { stiffness: 120, damping: 20, mass: 0.4 });
   const width = useTransform(spring, (v) => `${v}%`);
 
   useEffect(() => {
-    spring.set(clamped);
-  }, [clamped, spring]);
+    if (effectiveKey === 0) {
+      spring.jump(clamped);
+      return;
+    }
+    spring.jump(0);
+    const id = requestAnimationFrame(() => spring.set(clamped));
+    return () => cancelAnimationFrame(id);
+  }, [effectiveKey, clamped, spring]);
 
   return (
-    <div className={cn(`${height} bg-surface3 rounded-full overflow-hidden relative`, className)}>
+    <div
+      ref={playOnView && playKey == null ? inView.ref : undefined}
+      className={cn(`${height} bg-surface3 rounded-full overflow-hidden relative`, className)}
+    >
       <motion.div
         className="h-full rounded-full origin-right"
         style={{ width, background: color }}
-        transition={{ duration: MOTION.duration.slow, ease: MOTION.ease.out }}
       />
       {showLabel && (
-        <motion.span
-          key={clamped}
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-text3"
-        >
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-text3">
           {Math.round(clamped)}%
-        </motion.span>
+        </span>
       )}
     </div>
   );

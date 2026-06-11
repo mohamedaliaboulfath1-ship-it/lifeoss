@@ -115,7 +115,8 @@ export function GoalTrajectory({
           strokeDasharray="6 4"
           opacity="0.6"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.6 }}
+          whileInView={{ pathLength: 1, opacity: 0.6 }}
+          viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: MOTION.duration.slow, ease: MOTION.ease.out }}
         />
         <text x={w - pad - 4} y={targetY - 6} textAnchor="end" className="fill-emerald2 text-[9px]">
@@ -130,7 +131,8 @@ export function GoalTrajectory({
           strokeLinecap="round"
           strokeLinejoin="round"
           initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: false, amount: 0.35 }}
           transition={{ duration: MOTION.duration.chart, ease: MOTION.ease.out }}
         />
 
@@ -143,7 +145,8 @@ export function GoalTrajectory({
             strokeDasharray="6 4"
             strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0.4 }}
-            animate={{ pathLength: 1, opacity: 0.85 }}
+            whileInView={{ pathLength: 1, opacity: 0.85 }}
+            viewport={{ once: false, amount: 0.35 }}
             transition={{ duration: MOTION.duration.chart, delay: 0.15, ease: MOTION.ease.out }}
           />
         )}
@@ -156,7 +159,8 @@ export function GoalTrajectory({
             r={c.forecast ? 3 : 4}
             fill={c.forecast ? forecastColor : color}
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: false, amount: 0.35 }}
             transition={{ delay: 0.08 * i, ...MOTION.spring.snappy }}
           />
         ))}
@@ -169,7 +173,8 @@ export function GoalTrajectory({
           stroke="var(--surface)"
           strokeWidth="2"
           initial={{ scale: 0 }}
-          animate={{ scale: [0, 1.2, 1] }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: false, amount: 0.35 }}
           transition={MOTION.spring.snappy}
         />
       </svg>

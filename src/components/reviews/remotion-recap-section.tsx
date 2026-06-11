@@ -45,7 +45,6 @@ export function RemotionRecapSection({ data }: { data: RecapData }) {
               learningHours: data.learningHours,
               lifeScore: data.lifeScore,
             }}
-            loop
             className="rounded-lg overflow-hidden mx-auto max-w-full"
           />
         </PremiumSurface>
@@ -66,7 +65,6 @@ export function RemotionRecapSection({ data }: { data: RecapData }) {
               topRisk: data.topRisk ?? "لا مخاطر حرجة",
               opportunity: data.opportunity ?? "تعزيز التعلم",
             }}
-            loop
             className="rounded-lg overflow-hidden mx-auto"
           />
         </PremiumSurface>
@@ -89,7 +87,6 @@ export function RemotionRecapSection({ data }: { data: RecapData }) {
               savingsTotal: data.savingsTotal,
               lifeScore: data.lifeScore,
             }}
-            loop
             className="rounded-lg overflow-hidden mx-auto"
           />
         </PremiumSurface>

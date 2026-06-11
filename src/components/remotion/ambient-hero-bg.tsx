@@ -13,6 +13,7 @@ export function AmbientHeroBg({ className = "" }: { className?: string }) {
         height={320}
         inputProps={{}}
         loop
+        playOnView={false}
         className="w-full h-full min-h-full [&_video]:object-cover"
       />
     </div>

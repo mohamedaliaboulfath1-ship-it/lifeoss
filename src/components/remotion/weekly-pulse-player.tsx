@@ -23,7 +23,6 @@ export function WeeklyPulsePlayer({
       width={360}
       height={140}
       inputProps={{ habitPct, workoutPct, goalsPct }}
-      loop
       playerKey={`${habitPct}-${workoutPct}-${goalsPct}`}
       className={className}
     />

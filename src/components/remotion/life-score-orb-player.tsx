@@ -31,8 +31,8 @@ export function LifeScoreOrbPlayer({ score, size = 96, pulseKey = 0 }: Props) {
           width={200}
           height={200}
           inputProps={{ score }}
-          loop
           playerKey={`${score}-${pulseKey}`}
+          playOnView={false}
         />
       </div>
     </div>
