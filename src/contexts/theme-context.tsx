@@ -32,11 +32,9 @@ function resolveTheme(mode: ThemeMode): "dark" | "light" {
   return mode === "light" ? "light" : "dark";
 }
 
-function applyTheme(mode: ThemeMode) {
-  const next = resolveTheme(mode);
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem(STORAGE_KEY, mode);
-  return next;
+function applyResolvedTheme(resolved: "dark" | "light") {
+  document.documentElement.setAttribute("data-theme", resolved);
+  document.documentElement.style.colorScheme = resolved;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -45,13 +43,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const hydrated = useRef(false);
   const userChanged = useRef(false);
 
+  const syncTheme = useCallback((mode: ThemeMode, persist = true) => {
+    const next = resolveTheme(mode);
+    setResolved(next);
+    applyResolvedTheme(next);
+    if (persist) localStorage.setItem(STORAGE_KEY, mode);
+    return next;
+  }, []);
+
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
     const initial =
       stored && ["dark", "light", "system"].includes(stored) ? stored : "dark";
-    setThemeState(initial);
-    setResolved(applyTheme(initial));
     hydrated.current = true;
+    setThemeState(initial);
+    syncTheme(initial, false);
 
     fetch("/api/preferences")
       .then((r) => (r.ok ? r.json() : null))
@@ -62,40 +68,38 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           ["dark", "light", "system"].includes(json.theme)
         ) {
           setThemeState(json.theme);
-          setResolved(applyTheme(json.theme));
+          syncTheme(json.theme, false);
         }
       })
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated.current) return;
-    const next = resolveTheme(theme);
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem(STORAGE_KEY, theme);
-    setResolved(next);
-
-    if (userChanged.current) {
-      fetch("/api/preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme }),
-      }).catch(() => {});
-    }
-  }, [theme]);
+  }, [syncTheme]);
 
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const handler = () => setResolved(resolveTheme("system"));
+    const handler = () => {
+      const next = resolveTheme("system");
+      setResolved(next);
+      applyResolvedTheme(next);
+    };
+    handler();
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  const setTheme = useCallback((t: ThemeMode) => {
-    userChanged.current = true;
-    setThemeState(t);
-  }, []);
+  const setTheme = useCallback(
+    (t: ThemeMode) => {
+      userChanged.current = true;
+      setThemeState(t);
+      syncTheme(t);
+      fetch("/api/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme: t }),
+      }).catch(() => {});
+    },
+    [syncTheme]
+  );
 
   const value = useMemo(
     () => ({ theme, resolved, setTheme }),

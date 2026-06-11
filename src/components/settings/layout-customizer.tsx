@@ -27,8 +27,13 @@ export function LayoutCustomizer() {
 
   function setAccent(theme: LayoutPreferences["accentTheme"]) {
     const next = saveLayoutPrefs({ accentTheme: theme });
+    document.documentElement.setAttribute("data-accent", theme);
     setPrefs(next);
   }
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-accent", prefs.accentTheme);
+  }, [prefs.accentTheme]);
 
   return (
     <Card className="p-4 space-y-4 glass-premium">

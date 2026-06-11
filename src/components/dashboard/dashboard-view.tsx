@@ -203,20 +203,20 @@ export function DashboardView({
           </CardHeader>
           <CardBody className="space-y-4">
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+              <div className="p-3 rounded-sm surface-inset border border-border/70">
                 <div className="text-2xl font-black text-emerald">
                   <CountUp value={dashboard.weekSummary.habitPct} suffix="%" />
                 </div>
                 <div className="text-[10px] text-text3 mt-1">انضباط العادات</div>
               </div>
-              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+              <div className="p-3 rounded-sm surface-inset border border-border/70">
                 <div className="text-2xl font-black text-sky">
                   <CountUp value={dashboard.weekSummary.workoutsDays} />
                   <span className="text-sm text-text3">/{dashboard.weekSummary.workoutsTarget}</span>
                 </div>
                 <div className="text-[10px] text-text3 mt-1">أيام تمرين</div>
               </div>
-              <div className="p-3 rounded-sm bg-surface2/60 border border-border">
+              <div className="p-3 rounded-sm surface-inset border border-border/70">
                 <div className="text-2xl font-black text-gold2">
                   <CountUp value={dashboard.weekSummary.goalsAvgProgress} suffix="%" />
                 </div>

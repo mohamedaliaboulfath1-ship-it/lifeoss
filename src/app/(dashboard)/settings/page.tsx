@@ -17,7 +17,7 @@ const THEMES: { id: ThemeMode; label: string }[] = [
 ];
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolved, setTheme } = useTheme();
   const { toast } = useToast();
   const { data } = useLifeOS();
   const [accentColor, setAccentColor] = useState("#fbbf24");
@@ -102,13 +102,27 @@ export default function SettingsPage() {
       <div className="flex-1 overflow-y-auto p-7 space-y-6 animate-fade-up max-w-2xl">
         <Card className="p-5 space-y-4">
           <h2 className="font-bold text-gold2">المظهر</h2>
+          <p className="text-xs text-text3">
+            الوضع الحالي: {resolved === "light" ? "فاتح ☀️" : "داكن 🌙"}
+            {theme === "system" ? " (حسب النظام)" : ""}
+          </p>
           <div className="flex flex-wrap gap-2">
             {THEMES.map((t) => (
               <Button
                 key={t.id}
                 variant={theme === t.id ? "gold" : "ghost"}
                 size="sm"
-                onClick={() => setTheme(t.id)}
+                onClick={() => {
+                  setTheme(t.id);
+                  toast(
+                    t.id === "dark"
+                      ? "تم تفعيل الوضع الداكن"
+                      : t.id === "light"
+                        ? "تم تفعيل الوضع الفاتح"
+                        : "تم تفعيل الوضع التلقائي",
+                    "success"
+                  );
+                }}
               >
                 {t.label}
               </Button>

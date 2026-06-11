@@ -32,13 +32,13 @@
 }
 
 [data-theme="light"] {
-  --bg: #eef0f4;
-  --bg2: #e4e7ed;
-  --surface: #f8f9fb;
-  --surface2: #f0f2f6;
-  --surface3: #e6e9ef;
-  --border: #cdd2db;
-  --border2: #b8bfc9;
+  --bg: #e8ecf3;
+  --bg2: #dfe4ed;
+  --surface: #f2f5fa;
+  --surface2: #e9edf4;
+  --surface3: #dde3ec;
+  --border: #c5cdd8;
+  --border2: #aeb8c6;
   --text: #1e2430;
   --text2: #4a5568;
   --text3: #7a8494;
@@ -94,7 +94,14 @@
 }
 
 [data-theme="light"] body::before {
-  opacity: 0.12;
+  opacity: 0.08;
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 85% 55% at 0% 0%, color-mix(in srgb, var(--sky) 18%, transparent), transparent),
+    radial-gradient(ellipse 75% 50% at 100% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent),
+    radial-gradient(ellipse 65% 45% at 50% 100%, color-mix(in srgb, var(--purple) 12%, transparent), transparent);
 }
 
 @layer base {
@@ -145,11 +152,44 @@
       0 12px 40px color-mix(in srgb, var(--bg) 30%, transparent);
   }
 
+  .card-premium {
+    background: linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--surface3) 28%, var(--surface)) 0%,
+      var(--surface) 48%,
+      color-mix(in srgb, var(--surface2) 85%, var(--surface)) 100%
+    );
+    border-color: color-mix(in srgb, var(--border) 75%, var(--gold) 8%);
+  }
+
+  [data-theme="light"] .card-premium {
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--sky) 14%, var(--surface)) 0%,
+      color-mix(in srgb, var(--surface) 88%, white) 38%,
+      color-mix(in srgb, var(--gold) 10%, var(--surface2)) 72%,
+      color-mix(in srgb, var(--purple) 6%, var(--surface2)) 100%
+    );
+    border-color: color-mix(in srgb, var(--border) 55%, var(--sky) 18%);
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--sky) 8%, transparent),
+      0 6px 20px color-mix(in srgb, var(--bg2) 35%, transparent);
+  }
+
   .glass-premium {
     background: color-mix(in srgb, var(--surface) 68%, color-mix(in srgb, var(--sky) 8%, var(--gold) 4%));
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-color: color-mix(in srgb, var(--border) 50%, var(--gold) 12%);
+  }
+
+  [data-theme="light"] .glass-premium {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sky) 16%, var(--surface)),
+      color-mix(in srgb, var(--gold) 10%, var(--surface2))
+    );
+    border-color: color-mix(in srgb, var(--border) 45%, var(--sky) 22%);
   }
 
   .gradient-indigo {
@@ -209,6 +249,19 @@
     @apply outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
   }
 
+  .surface-inset {
+    background: color-mix(in srgb, var(--surface2) 90%, var(--surface3));
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  }
+
+  [data-theme="light"] .surface-inset {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sky) 8%, var(--surface2)),
+      color-mix(in srgb, var(--gold) 5%, var(--surface2))
+    );
+  }
+
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,
@@ -219,6 +272,24 @@
     background-size: 200% 100%;
     animation: shimmer 1.4s ease-in-out infinite;
   }
+}
+
+[data-accent="indigo"] {
+  --gold: #5b6fc9;
+  --gold2: #7a8dd9;
+  --gold3: #9aa8e8;
+}
+
+[data-accent="emerald"] {
+  --gold: #3d8f74;
+  --gold2: #4a9e82;
+  --gold3: #6eb89a;
+}
+
+[data-accent="sky"] {
+  --gold: #4a7eb5;
+  --gold2: #5b8fc9;
+  --gold3: #7aa8d9;
 }
 
 ::selection {

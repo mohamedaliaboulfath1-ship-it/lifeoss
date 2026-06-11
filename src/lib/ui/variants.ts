@@ -23,7 +23,7 @@ export const buttonVariants = cva(
 );
 
 export const cardVariants = cva(
-  "bg-surface/90 border border-border/60 rounded-2xl overflow-hidden shadow-premium transition-all duration-300 ease-out hover:border-border2/80 hover:shadow-premium-lg hover:-translate-y-px",
+  "card-premium border border-border/60 rounded-2xl overflow-hidden shadow-premium transition-all duration-300 ease-out hover:border-border2/80 hover:shadow-premium-lg hover:-translate-y-px",
   {
     variants: {
       animate: {
@@ -38,7 +38,7 @@ export const cardVariants = cva(
 );
 
 export const kpiVariants = cva(
-  "bg-surface border border-border rounded-[10px] p-[18px] relative overflow-hidden shadow-premium group transition-all duration-200 hover:border-border2 hover:shadow-premium hover:-translate-y-0.5",
+  "card-premium border border-border rounded-[10px] p-[18px] relative overflow-hidden shadow-premium group transition-all duration-200 hover:border-border2 hover:shadow-premium hover:-translate-y-0.5",
   {
     variants: {
       animate: {
