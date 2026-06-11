@@ -185,7 +185,6 @@ export function buildGlobalLifeMap(input: {
       icon: "🔭",
     });
     addEdge(hubId, v.id, "domain", 2);
-    addEdge("hub_goals", v.id, "domain", 1);
   }
 
   for (const g of topGoals) {
@@ -209,7 +208,6 @@ export function buildGlobalLifeMap(input: {
       icon: "🎯",
     });
     addEdge(hubId, g.id, "domain", 2);
-    addEdge("hub_goals", g.id, "domain", 1);
     if (parentVision) addEdge(parentVision.id, g.id, "parent", 3);
   }
 
@@ -233,7 +231,6 @@ export function buildGlobalLifeMap(input: {
       icon: "📁",
     });
     addEdge(hubId, p.id, "domain", 2);
-    addEdge("hub_projects", p.id, "domain", 1);
     if (parent) addEdge(parent.id, p.id, "parent", 3);
   }
 
@@ -251,7 +248,6 @@ export function buildGlobalLifeMap(input: {
       icon: "🔄",
     });
     addEdge(hubId, h.id, "domain", 1);
-    addEdge("hub_habits", h.id, "domain", 1);
 
     const links = new Set<string>();
     if (h.project_id) links.add(h.project_id);
@@ -276,7 +272,6 @@ export function buildGlobalLifeMap(input: {
       icon: "✅",
     });
     addEdge(hubId, t.id, "domain", 1);
-    addEdge("hub_tasks", t.id, "domain", 1);
     if (t.goal_id && seen.has(t.goal_id)) addEdge(t.goal_id, t.id, "linked", 2);
   }
 
@@ -297,7 +292,6 @@ export function buildGlobalLifeMap(input: {
     });
     addEdge("hub_books", b.id, "domain", 2);
     if (b.goal_id && seen.has(b.goal_id)) addEdge(b.goal_id, b.id, "linked", 2);
-    else if (b.domain_id) addEdge(DOMAIN_TO_HUB[b.domain_id] ?? "hub_learning", b.id, "domain", 1);
   }
 
   for (const s of input.skills) {
@@ -371,7 +365,6 @@ export function buildGlobalLifeMap(input: {
       icon: "📦",
     });
     addEdge(hubId, r.id, "domain", 1);
-    addEdge("hub_resources", r.id, "domain", 1);
   }
 
   if (input.weightLogs.length > 0) {
@@ -393,7 +386,6 @@ export function buildGlobalLifeMap(input: {
       icon: "⚖️",
     });
     addEdge("hub_body", "weight_latest", "linked", 2);
-    addEdge("hub_health", "weight_latest", "linked", 1);
 
     const bodyGoals = topGoals.filter((g) => g.domain_id === "domain_body");
     for (const bg of bodyGoals.slice(0, 2)) {

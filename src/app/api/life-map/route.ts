@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { calcAdherence, calcBestStreak } from "@/lib/habits/intelligence";
 import { buildGlobalLifeMap } from "@/lib/life-map/build-global-graph";
-
 export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
 
   const { supabase, userId } = auth;
+  const logSince = new Date();
+  logSince.setDate(logSince.getDate() - 30);
+  const logSinceStr = logSince.toISOString().slice(0, 10);
+
   const [
     goalsRes,
     tasksRes,
@@ -36,7 +39,7 @@ export async function GET() {
       .eq("user_id", userId)
       .in("status", ["inbox", "active", "done"]),
     supabase.from("habits").select("id, name, goal_id, project_id, domain_id, active_days").eq("user_id", userId).eq("active", true),
-    supabase.from("habit_logs").select("habit_id, log_date, done").eq("user_id", userId),
+    supabase.from("habit_logs").select("habit_id, log_date, done").eq("user_id", userId).gte("log_date", logSinceStr),
     supabase
       .from("books")
       .select("id, title, goal_id, domain_id, pages_read, pages_total, status")

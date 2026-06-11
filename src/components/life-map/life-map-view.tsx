@@ -1,145 +1,212 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LifeMapCanvas, type LifeMapCanvasHandle } from "./life-map-canvas";
+import { LifeMapHubSidebar } from "./life-map-hub-sidebar";
 import { LifeMapPanel } from "./life-map-panel";
+import type { LifeMapCanvasHandle } from "./life-map-canvas";
 import type { LifeMapNode, LifeMapPayload } from "@/lib/life-map/types";
-import { PageUnfold } from "@/components/motion/unfold-reveal";
+import {
+  enrichHubCounts,
+  getBranchGraph,
+  getFullGraph,
+  getHubList,
+  getOverviewGraph,
+} from "@/lib/life-map/filter-graph";
+import type { LayoutMode } from "@/lib/life-map/layout";
+
+const LifeMapCanvas = dynamic(
+  () => import("./life-map-canvas").then((m) => m.LifeMapCanvas),
+  {
+    ssr: false,
+    loading: () => <div className="flex-1 skeleton-shimmer min-h-[320px]" />,
+  }
+);
+
+type ViewMode = "overview" | "branch" | "full";
 
 export function LifeMapView() {
   const [data, setData] = useState<LifeMapPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<LifeMapNode | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeHub, setActiveHub] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("overview");
   const [focusId, setFocusId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [showPanel, setShowPanel] = useState(false);
   const canvasRef = useRef<LifeMapCanvasHandle | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/life-map");
     const json = await res.json().catch(() => null);
-    if (json?.nodes) setData(json as LifeMapPayload);
+    if (json?.nodes) setData(enrichHubCounts(json as LifeMapPayload));
     setLoading(false);
   }, []);
 
   useEffect(() => { void load(); }, [load]);
 
+  const hubList = useMemo(() => (data ? getHubList(data) : []), [data]);
+
+  const visibleGraph = useMemo(() => {
+    if (!data) return { nodes: [], edges: [] };
+    if (viewMode === "full") return getFullGraph(data);
+    if (viewMode === "branch" && activeHub) return getBranchGraph(data, activeHub);
+    return getOverviewGraph(data);
+  }, [data, viewMode, activeHub]);
+
+  const layoutMode: LayoutMode =
+    viewMode === "overview" ? "overview" : viewMode === "branch" ? "branch" : "full";
+
   const searchResults = useMemo(() => {
     if (!data || !query.trim()) return [];
     const q = query.trim().toLowerCase();
-    return data.nodes.filter((n) => n.label.toLowerCase().includes(q) || n.type.includes(q)).slice(0, 8);
+    return data.nodes
+      .filter((n) => n.type !== "center" && n.type !== "area")
+      .filter((n) => n.label.toLowerCase().includes(q))
+      .slice(0, 6);
   }, [data, query]);
 
   function focusNode(node: LifeMapNode) {
+    if (node.hubId && viewMode === "overview") {
+      setActiveHub(node.hubId);
+      setViewMode("branch");
+    }
     setSelected(node);
+    setShowPanel(true);
     setFocusId(node.id);
-    window.setTimeout(() => setFocusId(null), 800);
+    window.setTimeout(() => setFocusId(null), 600);
   }
 
+  function openHub(hubId: string) {
+    setActiveHub(hubId);
+    setViewMode("branch");
+    setSelected(null);
+    setShowPanel(false);
+  }
+
+  function backToOverview() {
+    setActiveHub(null);
+    setViewMode("overview");
+    setSelected(null);
+    setShowPanel(false);
+  }
+
+  const activeHubLabel = hubList.find((h) => h.id === activeHub)?.label;
+
   if (loading && !data) {
-    return <div className="h-[calc(100vh-120px)] skeleton-shimmer rounded-2xl" />;
+    return <div className="h-80 skeleton-shimmer rounded-2xl" />;
   }
 
   if (!data) {
     return (
-      <div className="text-center py-20 text-text3">
-        تعذّر تحميل خريطة الحياة —{" "}
-        <button type="button" className="text-gold2 underline" onClick={() => void load()}>إعادة المحاولة</button>
+      <div className="text-center py-16 text-text3">
+        تعذّر التحميل —{" "}
+        <button type="button" className="text-gold2 underline" onClick={() => void load()}>إعادة</button>
       </div>
     );
   }
 
   return (
-    <PageUnfold className="flex flex-col h-[calc(100vh-88px)] min-h-[600px] -mx-4 md:-mx-6">
-      {/* Toolbar */}
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-wrap items-center gap-3 px-4 md:px-6 py-3 border-b border-border/40 glass-premium shrink-0 z-10"
-      >
+    <div className="space-y-4">
+      {/* Compact header */}
+      <div className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="font-display text-xl font-black text-gold2">خريطة الحياة</h1>
-          <p className="text-[10px] text-text3 font-mono">Life Map V2 — Neural Life OS</p>
+          <p className="text-[10px] text-text3">
+            {viewMode === "overview" && "اختر مجالاً للتوسع"}
+            {viewMode === "branch" && activeHubLabel && `عرض: ${activeHubLabel}`}
+            {viewMode === "full" && "الخريطة الكاملة (محدودة)"}
+          </p>
         </div>
 
-        <div className="flex-1 min-w-[200px] max-w-md relative">
+        <div className="flex-1 min-w-[180px] max-w-sm relative">
           <Input
-            placeholder="🔍 ابحث: FMVA، جيم، صندوق طوارئ..."
+            placeholder="🔍 ابحث..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="text-sm"
+            className="text-sm h-9"
           />
           {searchResults.length > 0 && (
-            <div className="absolute top-full mt-1 w-full bg-surface border border-border rounded-xl shadow-premium-lg z-50 overflow-hidden">
+            <div className="absolute top-full mt-1 w-full bg-surface border border-border rounded-xl shadow-lg z-50">
               {searchResults.map((n) => (
                 <button
                   key={n.id}
                   type="button"
                   onClick={() => { setQuery(""); focusNode(n); }}
-                  className="w-full text-right px-3 py-2 text-sm hover:bg-surface2 flex items-center gap-2"
+                  className="w-full text-right px-3 py-2 text-sm hover:bg-surface2 flex gap-2"
                 >
                   <span>{n.icon}</span>
                   <span className="truncate">{n.label}</span>
-                  <span className="text-[10px] text-text3 mr-auto">{n.type}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => canvasRef.current?.fitView()}>
-            ⊞ ملاءمة
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => canvasRef.current?.resetView()}>
-            ⟲ إعادة
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => void load()}>
-            ↻ تحديث
-          </Button>
+        <div className="flex gap-1.5 flex-wrap">
+          {viewMode !== "overview" && (
+            <Button variant="ghost" size="sm" onClick={backToOverview}>← عام</Button>
+          )}
+          {viewMode !== "full" && (
+            <Button variant="ghost" size="sm" onClick={() => { setViewMode("full"); setActiveHub(null); }}>
+              خريطة كاملة
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => canvasRef.current?.fitView()}>⊞</Button>
+          <Button variant="ghost" size="sm" onClick={() => void load()}>↻</Button>
         </div>
+      </div>
 
-        <div className="flex flex-wrap gap-1.5 text-[10px]">
-          {[
-            { label: "أهداف", v: data.stats.goals },
-            { label: "مشاريع", v: data.stats.projects },
-            { label: "عادات", v: data.stats.habits },
-            { label: "مهام", v: data.stats.tasks },
-            { label: "كتب", v: data.stats.books },
-          ].map((s) => (
-            <span key={s.label} className="px-2 py-1 rounded-full bg-surface2 border border-border/40">
-              {s.label} <b className="text-gold2">{s.v}</b>
-            </span>
-          ))}
-        </div>
-      </motion.header>
-
-      {/* Infinite canvas */}
-      <div className="relative flex-1 min-h-0">
-        <LifeMapCanvas
-          data={data}
-          selectedId={selected?.id ?? null}
-          hoveredId={hoveredId}
-          focusId={focusId}
-          onSelect={setSelected}
-          onHover={setHoveredId}
-          canvasRef={canvasRef}
+      {/* Split: sidebar + canvas */}
+      <div className="flex flex-col lg:flex-row-reverse rounded-2xl border border-border/50 overflow-hidden bg-surface/30 min-h-[420px] max-h-[72vh]">
+        <LifeMapHubSidebar
+          hubs={hubList}
+          activeHubId={viewMode === "branch" ? activeHub : null}
+          onSelectHub={(id) => (id ? openHub(id) : backToOverview())}
         />
 
-        {selected && (
-          <LifeMapPanel
-            node={selected}
-            nodes={data.nodes}
-            edges={data.edges}
-            onSelectNode={focusNode}
-            onClose={() => setSelected(null)}
+        <div className="relative flex-1 min-h-[320px] min-w-0">
+          <LifeMapCanvas
+            nodes={visibleGraph.nodes}
+            edges={visibleGraph.edges}
+            layoutMode={layoutMode}
+            selectedId={selected?.id ?? null}
+            focusId={focusId}
+            onSelect={(n) => {
+              setSelected(n);
+              setShowPanel(!!n && n.type !== "area" && n.type !== "center");
+            }}
+            onHubOpen={openHub}
+            canvasRef={canvasRef}
           />
-        )}
+
+          {viewMode === "overview" && (
+            <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-text3 bg-surface/80 px-3 py-1 rounded-full border border-border/40 pointer-events-none">
+              اضغط على مجال لفتح تفاصيله
+            </p>
+          )}
+
+          {showPanel && selected && selected.type !== "area" && selected.type !== "center" && (
+            <div className="absolute inset-y-0 left-0 z-20 w-full sm:w-[300px] shadow-premium-lg">
+              <LifeMapPanel
+                node={selected}
+                nodes={data.nodes}
+                edges={data.edges}
+                onSelectNode={focusNode}
+                onClose={() => { setShowPanel(false); setSelected(null); }}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </PageUnfold>
+
+      <p className="text-[10px] text-text3 text-center">
+        {visibleGraph.nodes.length} عقدة معروضة
+        {viewMode === "full" && data.nodes.length > 120 && ` من ${data.nodes.length}`}
+      </p>
+    </div>
   );
 }
