@@ -40,7 +40,7 @@ function UserAvatar({ name, avatarUrl, size = 34 }: { name: string; avatarUrl?: 
   }
   return (
     <div
-      className="rounded-full shrink-0 bg-gradient-to-br from-gold to-purple flex items-center justify-center font-bold text-white"
+      className="rounded-full shrink-0 bg-gradient-to-br from-gold to-sky flex items-center justify-center font-bold text-white"
       style={{ width: size, height: size, fontSize: size * 0.44 }}
     >
       {name.charAt(0)}
@@ -90,7 +90,7 @@ export function Sidebar({
     <>
       <div className="px-[18px] pt-[22px] pb-4 border-b border-border flex items-start justify-between">
         <div>
-          <div className="font-display text-xl font-black bg-gradient-to-br from-gold to-gold3 bg-clip-text text-transparent">
+          <div className="font-display text-xl font-black bg-gradient-to-br from-gold via-sky2 to-gold3 bg-clip-text text-transparent">
             🏛️ Life OS
           </div>
           <div className="text-[10px] text-text3 tracking-[1px] mt-0.5 font-mono">

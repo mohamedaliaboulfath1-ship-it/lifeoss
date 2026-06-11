@@ -20,7 +20,7 @@ interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"
 const variants: Record<Variant, string> = {
   ghost:
     "bg-transparent text-text2 border border-border hover:bg-surface2 hover:text-text hover:border-border2",
-  gold: "bg-gradient-to-br from-gold to-gold2 text-[#1a1000] font-bold hover:opacity-90 border-0 shadow-premium",
+  gold: "bg-gradient-to-br from-gold via-gold2 to-sky text-[#1a1e26] font-bold hover:opacity-90 border-0 shadow-premium",
   danger:
     "bg-rose/15 text-rose2 border border-rose/30 hover:bg-rose/25",
 };

@@ -103,7 +103,7 @@ export default function AccountProfilePage() {
       <h1 className="text-lg font-bold text-gold2">الملف الشخصي</h1>
 
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold to-purple flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold to-sky flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
           {p.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />

@@ -32,7 +32,7 @@ function Avatar({ name, url, size = 32 }: { name: string; url?: string | null; s
   }
   return (
     <span
-      className="rounded-full bg-gradient-to-br from-gold to-purple flex items-center justify-center font-bold text-white shrink-0"
+      className="rounded-full bg-gradient-to-br from-gold to-sky flex items-center justify-center font-bold text-white shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.charAt(0)}

@@ -1,61 +1,61 @@
 @import "tailwindcss";
 
-/* Semantic tokens — switched by [data-theme] on <html> */
+/* Semantic tokens — gold · blue · gray blend */
 :root,
 [data-theme="dark"] {
-  --bg: #080810;
-  --bg2: #0d0d18;
-  --surface: #111120;
-  --surface2: #16162a;
-  --surface3: #1c1c35;
-  --border: #22223a;
-  --border2: #2d2d50;
-  --text: #e8e8f5;
-  --text2: #9090b0;
-  --text3: #50507a;
-  --gold: #c8963c;
-  --gold2: #e8b86d;
-  --gold3: #ffd085;
-  --emerald: #2ab574;
-  --emerald2: #3dd68c;
-  --rose: #d94f6a;
-  --rose2: #f0708a;
-  --sky: #3a8fd4;
-  --sky2: #5aaaf0;
-  --purple: #7c5cbf;
-  --purple2: #a07de8;
-  --amber: #d4842a;
-  --amber2: #f0a850;
-  --teal: #1a9b8a;
-  --teal2: #2cc4b0;
+  --bg: #13161c;
+  --bg2: #181c24;
+  --surface: #1e232b;
+  --surface2: #252b35;
+  --surface3: #2d3440;
+  --border: #3a424f;
+  --border2: #4a5568;
+  --text: #e8ecf2;
+  --text2: #9aa5b5;
+  --text3: #6b7585;
+  --gold: #c9a45c;
+  --gold2: #dfc07a;
+  --gold3: #edd9a0;
+  --emerald: #4a9e82;
+  --emerald2: #5eb89a;
+  --rose: #c96b7a;
+  --rose2: #db8492;
+  --sky: #5b8fc9;
+  --sky2: #7aa8d9;
+  --purple: #6b7d94;
+  --purple2: #8494a8;
+  --amber: #c9a45c;
+  --amber2: #dfc07a;
+  --teal: #5a8f9e;
+  --teal2: #72a5b3;
 }
 
 [data-theme="light"] {
-  --bg: #f4f4f8;
-  --bg2: #ebebf2;
-  --surface: #ffffff;
-  --surface2: #f0f0f6;
-  --surface3: #e8e8f0;
-  --border: #d8d8e8;
-  --border2: #c4c4d8;
-  --text: #1a1a2e;
-  --text2: #4a4a6a;
-  --text3: #7a7a9a;
+  --bg: #eef0f4;
+  --bg2: #e4e7ed;
+  --surface: #f8f9fb;
+  --surface2: #f0f2f6;
+  --surface3: #e6e9ef;
+  --border: #cdd2db;
+  --border2: #b8bfc9;
+  --text: #1e2430;
+  --text2: #4a5568;
+  --text3: #7a8494;
   --gold: #a67c28;
-  --gold2: #c8963c;
-  --gold3: #e8b86d;
-  --emerald: #1d9660;
-  --emerald2: #2ab574;
-  --rose: #c43d56;
-  --rose2: #d94f6a;
-  --sky: #2a7ab8;
-  --sky2: #3a8fd4;
-  --purple: #6344a0;
-  --purple2: #7c5cbf;
-  --amber: #b86e20;
-  --amber2: #d4842a;
-  --teal: #158a7a;
-  --teal2: #1a9b8a;
+  --gold2: #c9a45c;
+  --gold3: #dfc07a;
+  --emerald: #3d8f74;
+  --emerald2: #4a9e82;
+  --rose: #b85a6a;
+  --rose2: #c96b7a;
+  --sky: #4a7eb5;
+  --sky2: #5b8fc9;
+  --purple: #5a6d82;
+  --purple2: #6b7d94;
+  --amber: #a67c28;
+  --amber2: #c9a45c;
+  --teal: #4a7e8e;
+  --teal2: #5a8f9e;
 }
 
 @theme inline {
@@ -104,17 +104,22 @@
   body {
     @apply bg-bg text-text font-sans text-sm leading-relaxed antialiased;
     min-height: 100vh;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 0% 0%, color-mix(in srgb, var(--gold) 6%, transparent), transparent),
+      radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--sky) 7%, transparent), transparent),
+      radial-gradient(ellipse 60% 40% at 50% 100%, color-mix(in srgb, var(--purple) 5%, transparent), transparent);
+    background-attachment: fixed;
   }
 
   body::before {
     content: "";
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 9999;
-    opacity: 0.4;
+    opacity: 0.35;
   }
 }
 
@@ -140,35 +145,35 @@
   }
 
   .glass-premium {
-    background: color-mix(in srgb, var(--surface) 72%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-color: color-mix(in srgb, var(--border) 55%, transparent);
+    background: color-mix(in srgb, var(--surface) 68%, color-mix(in srgb, var(--sky) 8%, var(--gold) 4%));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: color-mix(in srgb, var(--border) 50%, var(--gold) 12%);
   }
 
   .gradient-indigo {
-    background: linear-gradient(135deg, color-mix(in srgb, #6366f1 12%, var(--surface)), color-mix(in srgb, #a855f7 8%, var(--surface)));
-    border-color: color-mix(in srgb, #a855f7 25%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 14%, var(--surface)), color-mix(in srgb, var(--sky) 10%, var(--surface)));
+    border-color: color-mix(in srgb, var(--gold) 22%, var(--border));
   }
 
   .gradient-blue {
-    background: linear-gradient(135deg, color-mix(in srgb, #3b82f6 12%, var(--surface)), color-mix(in srgb, #06b6d4 8%, var(--surface)));
-    border-color: color-mix(in srgb, #06b6d4 25%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sky) 14%, var(--surface)), color-mix(in srgb, var(--purple) 10%, var(--surface)));
+    border-color: color-mix(in srgb, var(--sky) 25%, var(--border));
   }
 
   .gradient-emerald {
-    background: linear-gradient(135deg, color-mix(in srgb, #10b981 12%, var(--surface)), color-mix(in srgb, #14b8a6 8%, var(--surface)));
-    border-color: color-mix(in srgb, #14b8a6 25%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--teal) 12%, var(--surface)), color-mix(in srgb, var(--sky) 8%, var(--surface)));
+    border-color: color-mix(in srgb, var(--teal) 22%, var(--border));
   }
 
   .gradient-orange {
-    background: linear-gradient(135deg, color-mix(in srgb, #f97316 12%, var(--surface)), color-mix(in srgb, #ef4444 8%, var(--surface)));
-    border-color: color-mix(in srgb, #f97316 25%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 16%, var(--surface)), color-mix(in srgb, var(--rose) 8%, var(--surface)));
+    border-color: color-mix(in srgb, var(--gold) 28%, var(--border));
   }
 
   .gradient-purple {
-    background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 12%, var(--surface)), color-mix(in srgb, #6366f1 8%, var(--surface)));
-    border-color: color-mix(in srgb, #8b5cf6 25%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--purple) 14%, var(--surface)), color-mix(in srgb, var(--sky) 10%, var(--gold) 6%));
+    border-color: color-mix(in srgb, var(--purple) 25%, var(--border));
   }
 
   .floating-panel {
@@ -194,7 +199,7 @@
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--gold) 35%, transparent);
+  background: color-mix(in srgb, var(--gold) 28%, color-mix(in srgb, var(--sky) 18%, transparent));
   color: var(--text);
 }
 
