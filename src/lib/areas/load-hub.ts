@@ -10,6 +10,7 @@ import { getWeekDates, today } from "@/lib/utils";
 import type {
   AreaHubPayload,
   AreaPreview,
+  AreasOverviewStats,
   GoalDrillDown,
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
@@ -249,7 +250,10 @@ export async function loadAreaHub(
   };
 }
 
-export async function loadAreasOverview(db: SupabaseClient, userId: string): Promise<AreaPreview[]> {
+export async function loadAreasOverview(
+  db: SupabaseClient,
+  userId: string
+): Promise<{ previews: AreaPreview[]; stats: AreasOverviewStats }> {
   const { data: domains } = await db
     .from("life_domains")
     .select("id, slug, name_ar, icon, color")
@@ -259,8 +263,9 @@ export async function loadAreasOverview(db: SupabaseClient, userId: string): Pro
 
   const areas = domains ?? [];
   const hubs = await Promise.all(areas.map((d) => loadAreaHub(db, userId, d.id, d)));
+  const weekEnd = getWeekDates(0)[6];
 
-  return areas.map((d, i) => {
+  const previews = areas.map((d, i) => {
     const hub = hubs[i];
     return {
       id: d.id,
@@ -277,8 +282,52 @@ export async function loadAreasOverview(db: SupabaseClient, userId: string): Pro
       projects: hub.counts.projects,
       highlights: buildPreviewHighlights(d.id, hub),
       needsAttention: hub.coach.filter((c) => c.priority === "high").map((c) => c.message),
+      currentFocus: buildCurrentFocus(hub),
+      nextAction: buildNextAction(hub),
     };
   });
+
+  const tasksThisWeek = hubs.reduce((sum, hub) => {
+    const weekTasks = hub.tasks.filter(
+      (t) =>
+        t.status !== "done" &&
+        t.dueDate &&
+        t.dueDate >= getWeekDates(0)[0] &&
+        t.dueDate <= weekEnd
+    );
+    return sum + weekTasks.length;
+  }, 0);
+
+  const stats: AreasOverviewStats = {
+    lifeScore: previews.length
+      ? Math.round(previews.reduce((s, p) => s + p.healthScore, 0) / previews.length)
+      : 0,
+    activeGoals: previews.reduce((s, p) => s + p.activeGoals, 0),
+    activeProjects: previews.reduce((s, p) => s + p.projects, 0),
+    habits: previews.reduce((s, p) => s + p.habits, 0),
+    tasksThisWeek,
+    areasNeedingAttention: previews.filter((p) => p.needsAttention.length > 0).length,
+  };
+
+  return { previews, stats };
+}
+
+function buildCurrentFocus(hub: AreaHubPayload): string {
+  if (hub.goals[0]) return hub.goals[0].title;
+  if (hub.projects[0]) return hub.projects[0].title;
+  if (hub.metrics[0]) return `${hub.metrics[0].label}: ${hub.metrics[0].value}`;
+  if (hub.books.current[0]) return hub.books.current[0].title;
+  return "حدد تركيزك القادم";
+}
+
+function buildNextAction(hub: AreaHubPayload): string {
+  const highCoach = hub.coach.find((c) => c.priority === "high");
+  if (highCoach?.action) return highCoach.action;
+  if (highCoach?.message) return highCoach.message;
+  if (hub.tasksDueToday[0]) return hub.tasksDueToday[0].title;
+  if (hub.tasksOverdue[0]) return hub.tasksOverdue[0].title;
+  if (hub.coach[0]?.message) return hub.coach[0].message;
+  return "راجع المجال وحدّث خطتك";
 }
 
 export function loadGoalDrillDown(hub: AreaHubPayload, goalId: string): GoalDrillDown | null {

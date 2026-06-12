@@ -1,19 +1,34 @@
 "use client";
 
-import { DashboardReveal, SectionReveal, CardUnfold } from "@/components/motion/unfold-reveal";
-import { useCallback, useEffect, useState } from "react";
-import { PageHeader } from "@/components/ui/page-header";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { PageUnfold, SectionReveal } from "@/components/motion/unfold-reveal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
-import { AreaPreviewCard } from "@/components/areas/area-preview-card";
-import { PremiumSurface } from "@/components/motion/premium-surface";
-import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { AreasHero } from "@/components/areas/areas-hero";
+import { AreaPremiumCard } from "@/components/areas/area-premium-card";
 import { MotionModal } from "@/components/motion/motion";
-import type { AreaPreview } from "@/types/areas";
+import { buildOverviewParaGraph } from "@/lib/areas/para-graph";
+import type { AreaPreview, AreasOverviewStats } from "@/types/areas";
+
+const AreaParaFlow = dynamic(
+  () => import("@/components/areas/area-para-flow").then((m) => m.AreaParaFlow),
+  { ssr: false, loading: () => <div className="h-[380px] skeleton-shimmer rounded-xl" /> }
+);
+
+const EMPTY_STATS: AreasOverviewStats = {
+  lifeScore: 0,
+  activeGoals: 0,
+  activeProjects: 0,
+  habits: 0,
+  tasksThisWeek: 0,
+  areasNeedingAttention: 0,
+};
 
 export function AreasIntelligenceView() {
   const [previews, setPreviews] = useState<AreaPreview[]>([]);
+  const [stats, setStats] = useState<AreasOverviewStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
@@ -23,6 +38,7 @@ export function AreasIntelligenceView() {
     const res = await fetch("/api/areas/overview");
     const json = await res.json().catch(() => null);
     setPreviews(json?.previews ?? []);
+    setStats(json?.stats ?? EMPTY_STATS);
     setLoading(false);
   }, []);
 
@@ -56,50 +72,55 @@ export function AreasIntelligenceView() {
     await load();
   }
 
-  const avgScore = previews.length
-    ? Math.round(previews.reduce((s, p) => s + p.healthScore, 0) / previews.length)
-    : 0;
+  const paraGraph = useMemo(
+    () => buildOverviewParaGraph(previews),
+    [previews]
+  );
 
   return (
-    <DashboardReveal>
-      <DashboardReveal.Header>
-      <PageHeader
-        title="Life Areas Intelligence Center"
-        subtitle="كل مجال = مركز قيادة — أين أنت؟ ماذا تفعل؟ ما الخطوة التالية؟"
-      />
+    <PageUnfold className="space-y-8 pb-10 max-w-[1600px] mx-auto">
+      <AreasHero stats={stats} loading={loading} />
 
-      <PremiumSurface variant="gradient-indigo" className="p-5 flex flex-wrap gap-6 items-center justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-text3 mb-1">Life Areas Intelligence</p>
-          <div className="text-3xl font-black text-gold2">{avgScore}%</div>
-          <div className="text-xs text-text3">متوسط صحة الحياة</div>
+      <SectionReveal index={1}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="font-display text-lg font-bold">مجالات الحياة</h2>
+            <p className="text-xs text-text3 mt-0.5">انقر على أي مجال لفتح مركز القيادة</p>
+          </div>
+          <Button variant="gold" size="sm" onClick={() => setModal(true)}>
+            + مجال مخصص
+          </Button>
         </div>
-        <div className="flex gap-4 text-sm text-text3">
-          <span>{previews.length} مجالات</span>
-          <span>{previews.reduce((s, p) => s + p.activeGoals, 0)} أهداف نشطة</span>
-          <span>{previews.filter((p) => p.needsAttention.length).length} تحتاج انتباه</span>
-        </div>
-      </PremiumSurface>
-      </DashboardReveal.Header>
-
-      <DashboardReveal.Kpis columns="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-48 skeleton-shimmer rounded-[10px]" />
-          ))}
-        </div>
-      ) : (
-        <LayoutAnimateList className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {previews.map((p) => (
-            <AreaPreviewCard key={p.id} preview={p} />
-          ))}
-        </LayoutAnimateList>
-      )}
-      </DashboardReveal.Kpis>
+      </SectionReveal>
 
       <SectionReveal index={2}>
-      <Button variant="gold" onClick={() => setModal(true)}>+ مجال مخصص</Button>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-[280px] skeleton-shimmer rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {previews.map((p, i) => (
+              <AreaPremiumCard key={p.id} preview={p} index={i} />
+            ))}
+          </div>
+        )}
+      </SectionReveal>
+
+      <SectionReveal index={3}>
+        <div className="space-y-3">
+          <div>
+            <h2 className="font-display text-lg font-bold">خريطة PARA</h2>
+            <p className="text-xs text-text3 mt-0.5">
+              Area → Goals → Projects → Tasks → Habits → Resources
+            </p>
+          </div>
+          {!loading && previews.length > 0 && (
+            <AreaParaFlow nodes={paraGraph.nodes} edges={paraGraph.edges} height={420} />
+          )}
+        </div>
       </SectionReveal>
 
       <MotionModal open={modal} onClose={() => setModal(false)}>
@@ -113,6 +134,6 @@ export function AreasIntelligenceView() {
           </div>
         </Card>
       </MotionModal>
-    </DashboardReveal>
+    </PageUnfold>
   );
 }

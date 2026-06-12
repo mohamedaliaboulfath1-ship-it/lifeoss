@@ -15,6 +15,22 @@ export interface AreaPreview {
   projects: number;
   highlights: { label: string; value: string }[];
   needsAttention: string[];
+  currentFocus: string;
+  nextAction: string;
+}
+
+export interface AreasOverviewStats {
+  lifeScore: number;
+  activeGoals: number;
+  activeProjects: number;
+  habits: number;
+  tasksThisWeek: number;
+  areasNeedingAttention: number;
+}
+
+export interface AreasOverviewResponse {
+  previews: AreaPreview[];
+  stats: AreasOverviewStats;
 }
 
 export interface AreaGoalItem {

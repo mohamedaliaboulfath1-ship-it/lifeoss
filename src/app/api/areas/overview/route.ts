@@ -6,6 +6,6 @@ export async function GET() {
   const authResult = await requireSession();
   if ("error" in authResult) return authResult.error;
 
-  const previews = await loadAreasOverview(authResult.supabase, authResult.userId);
-  return NextResponse.json({ previews });
+  const data = await loadAreasOverview(authResult.supabase, authResult.userId);
+  return NextResponse.json(data);
 }

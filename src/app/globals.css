@@ -624,7 +624,86 @@
   animation: check-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Life Areas — premium redesign */
+.areas-hero-shell {
+  min-height: 200px;
+}
+
+.areas-hero-gradient {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--sky) 18%, var(--surface)) 0%,
+    color-mix(in srgb, var(--purple) 12%, var(--surface2)) 45%,
+    color-mix(in srgb, var(--gold) 10%, var(--surface)) 100%
+  );
+}
+
+[data-theme="light"] .areas-hero-gradient {
+  background: linear-gradient(
+    145deg,
+    #f0f9ff 0%,
+    #eef2ff 40%,
+    #faf5ff 70%,
+    #fffbeb 100%
+  );
+}
+
+.areas-hero-score {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--gold) 15%, transparent);
+}
+
+.areas-kpi-tile {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.areas-kpi-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--bg) 25%, transparent);
+}
+
+.area-premium-card-inner {
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+[data-theme="light"] .area-premium-card-inner {
+  background: color-mix(in srgb, white 82%, var(--surface));
+}
+
+.area-card-shine {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    color-mix(in srgb, white 12%, transparent) 45%,
+    color-mix(in srgb, white 20%, transparent) 50%,
+    transparent 55%
+  );
+  transform: translateX(-100%);
+  animation: area-card-shine 4s ease-in-out infinite;
+}
+
+.area-premium-card:hover .area-card-shine {
+  animation-duration: 2.5s;
+}
+
+@keyframes area-card-shine {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  50% { transform: translateX(100%); opacity: 1; }
+}
+
+.area-premium-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.area-premium-card:hover {
+  filter: brightness(1.05);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .area-card-shine {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {

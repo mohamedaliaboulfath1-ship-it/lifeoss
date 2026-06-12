@@ -7,7 +7,7 @@ export default function AreasPage() {
   return (
     <>
       <Topbar />
-      <div className="flex-1 overflow-y-auto p-7">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-5 md:p-7">
         <AreasIntelligenceView />
       </div>
     </>
