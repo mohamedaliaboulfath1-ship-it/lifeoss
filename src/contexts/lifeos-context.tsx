@@ -4,14 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BodyGoal } from "@/components/body/body-plan-panel";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
+import { queryKeys } from "@/lib/query/keys";
 
 interface Profile {
   displayName: string;
@@ -44,7 +44,7 @@ interface Profile {
   bio?: string | null;
 }
 
-interface LifeOSData {
+export interface LifeOSData {
   profile: Profile;
   years: string[];
   currentYear: string;
@@ -52,69 +52,69 @@ interface LifeOSData {
   dashboard?: DashboardSnapshot | null;
 }
 
-interface LifeOSContextValue {
-  data: LifeOSData | null;
-  loading: boolean;
-  error: string | null;
+interface LifeOSActions {
   refresh: () => Promise<void>;
-  /** Reload data without skeleton flash */
   refreshSilent: () => Promise<void>;
-  /** Patch in-memory year data (optimistic UI) */
   patchYearData: (updater: (year: YearPayload) => YearPayload) => void;
-  /** @deprecated Phase 0.5 — use entity APIs + refresh() */
   saveYear: (yearData: YearPayload, year?: string) => Promise<void>;
   setCurrentYear: (year: string) => Promise<void>;
 }
 
-const LifeOSContext = createContext<LifeOSContextValue | null>(null);
+interface LifeOSDataState {
+  data: LifeOSData | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const LifeOSDataContext = createContext<LifeOSDataState | null>(null);
+const LifeOSActionsContext = createContext<LifeOSActions | null>(null);
+
+async function fetchLifeOSData(): Promise<LifeOSData> {
+  const res = await fetch("/api/data");
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof json.error === "string" ? json.error : "فشل تحميل البيانات");
+  }
+  return json as LifeOSData;
+}
 
 export function LifeOSProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<LifeOSData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchData = useCallback(async (withLoading: boolean) => {
-    if (withLoading) {
-      setLoading(true);
-      setError(null);
-    }
-    try {
-      const res = await fetch("/api/data");
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(
-          typeof json.error === "string" ? json.error : "فشل تحميل البيانات"
-        );
-      }
-      setData(json);
-    } catch (e) {
-      if (withLoading) {
-        setError(e instanceof Error ? e.message : "تعذّر الاتصال بالخادم");
-      }
-    } finally {
-      if (withLoading) setLoading(false);
-    }
-  }, []);
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: queryKeys.lifeos,
+    queryFn: fetchLifeOSData,
+    staleTime: 45_000,
+    gcTime: 10 * 60_000,
+    placeholderData: (prev) => prev,
+    refetchOnMount: false,
+  });
 
-  const refresh = useCallback(() => fetchData(true), [fetchData]);
-  const refreshSilent = useCallback(() => fetchData(false), [fetchData]);
+  const refresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const refreshSilent = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.lifeos, refetchType: "none" });
+    await queryClient.fetchQuery({
+      queryKey: queryKeys.lifeos,
+      queryFn: fetchLifeOSData,
+      staleTime: 0,
+    });
+  }, [queryClient]);
 
   const patchYearData = useCallback(
     (updater: (year: YearPayload) => YearPayload) => {
-      setData((prev) => {
+      queryClient.setQueryData<LifeOSData>(queryKeys.lifeos, (prev) => {
         if (!prev) return prev;
         return { ...prev, yearData: updater(prev.yearData) };
       });
     },
-    []
+    [queryClient]
   );
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
   const saveYear = useCallback(async () => {
-    throw new Error("saveYear deprecated — use entity APIs (/api/tasks, /api/body, etc.) then refresh()");
+    throw new Error("saveYear deprecated — use entity APIs then refresh()");
   }, []);
 
   const setCurrentYear = useCallback(
@@ -129,29 +129,58 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
     [refreshSilent]
   );
 
-  const value = useMemo(
+  const dataState = useMemo<LifeOSDataState>(
     () => ({
-      data,
-      loading,
-      error,
+      data: data ?? null,
+      loading: isLoading && !data,
+      error: error instanceof Error ? error.message : error ? String(error) : null,
+    }),
+    [data, isLoading, error]
+  );
+
+  const actions = useMemo<LifeOSActions>(
+    () => ({
       refresh,
       refreshSilent,
       patchYearData,
       saveYear,
       setCurrentYear,
     }),
-    [data, loading, error, refresh, refreshSilent, patchYearData, saveYear, setCurrentYear]
+    [refresh, refreshSilent, patchYearData, saveYear, setCurrentYear]
   );
 
   return (
-    <LifeOSContext.Provider value={value}>{children}</LifeOSContext.Provider>
+    <LifeOSActionsContext.Provider value={actions}>
+      <LifeOSDataContext.Provider value={dataState}>
+        {children}
+        {isFetching && data ? (
+          <span className="sr-only" aria-live="polite">
+            جاري تحديث البيانات
+          </span>
+        ) : null}
+      </LifeOSDataContext.Provider>
+    </LifeOSActionsContext.Provider>
   );
 }
 
-export function useLifeOS() {
-  const ctx = useContext(LifeOSContext);
-  if (!ctx) {
-    throw new Error("useLifeOS must be used within LifeOSProvider");
-  }
+export function useLifeOSData() {
+  const ctx = useContext(LifeOSDataContext);
+  if (!ctx) throw new Error("useLifeOSData must be used within LifeOSProvider");
   return ctx;
+}
+
+export function useLifeOSActions() {
+  const ctx = useContext(LifeOSActionsContext);
+  if (!ctx) throw new Error("useLifeOSActions must be used within LifeOSProvider");
+  return ctx;
+}
+
+/** @deprecated Prefer useLifeOSData + useLifeOSActions for fewer rerenders */
+export function useLifeOS() {
+  const { data, loading, error } = useLifeOSData();
+  const actions = useLifeOSActions();
+  return useMemo(
+    () => ({ data, loading, error, ...actions }),
+    [data, loading, error, actions]
+  );
 }

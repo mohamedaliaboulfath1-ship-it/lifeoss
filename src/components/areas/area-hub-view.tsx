@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { PageUnfold, SectionReveal } from "@/components/motion/unfold-reveal";
@@ -14,15 +13,12 @@ import { ParticlesBackground } from "@/components/motion/particles-background";
 import { AreaOverviewCommand } from "@/components/areas/area-overview-command";
 import { AreaIntelligencePanel } from "@/components/areas/area-intelligence-panel";
 import { GoalDrillDownPanel } from "@/components/areas/goal-drill-down-panel";
+import { AreasParaSection } from "@/components/areas/areas-para-section";
+import { useAreaHub } from "@/hooks/queries/use-area-hub";
 import { getAreaGradient } from "@/lib/areas/gradients";
 import { buildAreaParaGraph } from "@/lib/areas/para-graph";
-import type { AreaHubPayload, GoalDrillDown } from "@/types/areas";
+import type { GoalDrillDown } from "@/types/areas";
 import { cn } from "@/lib/utils";
-
-const AreaParaFlow = dynamic(
-  () => import("@/components/areas/area-para-flow").then((m) => m.AreaParaFlow),
-  { ssr: false, loading: () => <div className="h-[360px] skeleton-shimmer rounded-xl" /> }
-);
 
 const TABS = [
   { id: "overview", label: "نظرة", icon: "🏠" },
@@ -40,20 +36,9 @@ interface Props {
 }
 
 export function AreaHubView({ slug }: Props) {
-  const [hub, setHub] = useState<AreaHubPayload | null>(null);
+  const { data: hub, isLoading, isFetching } = useAreaHub(slug);
   const [tab, setTab] = useState("overview");
-  const [loading, setLoading] = useState(true);
   const [drillDown, setDrillDown] = useState<GoalDrillDown | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch(`/api/areas/${slug}`);
-    const json = await res.json().catch(() => null);
-    if (json?.area) setHub(json as AreaHubPayload);
-    setLoading(false);
-  }, [slug]);
-
-  useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -65,21 +50,6 @@ export function AreaHubView({ slug }: Props) {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-
-  useEffect(() => {
-    const refresh = () => void load();
-    window.addEventListener("focus", refresh);
-    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVis);
-    const poll = setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
-    }, 30_000);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", onVis);
-      clearInterval(poll);
-    };
-  }, [load]);
 
   async function openGoal(goalId: string) {
     const res = await fetch(`/api/areas/${slug}?goalId=${goalId}`);
@@ -95,7 +65,7 @@ export function AreaHubView({ slug }: Props) {
     [hub]
   );
 
-  if (loading && !hub) {
+  if (isLoading && !hub) {
     return (
       <div className="space-y-4 pb-10">
         <div className="h-40 skeleton-shimmer rounded-2xl" />
@@ -141,7 +111,9 @@ export function AreaHubView({ slug }: Props) {
                   <h1 className="font-display text-2xl md:text-3xl font-black text-white">
                     {a.nameAr} Command Center
                   </h1>
-                  <p className="text-sm text-white/70 mt-0.5">مركز قيادة المجال</p>
+                  <p className="text-sm text-white/70 mt-0.5">
+                    مركز قيادة المجال{isFetching && hub ? " · يتم التحديث…" : ""}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -322,7 +294,7 @@ export function AreaHubView({ slug }: Props) {
             <p className="text-xs text-text3">
               خريطة PARA المتصلة — Area → Goals → Projects → Tasks → Habits → Resources
             </p>
-            <AreaParaFlow nodes={paraGraph.nodes} edges={paraGraph.edges} height={400} />
+            <AreasParaSection nodes={paraGraph.nodes} edges={paraGraph.edges} height={400} />
           </div>
         )}
 

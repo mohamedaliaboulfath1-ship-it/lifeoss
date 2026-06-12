@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { MOTION } from "@/lib/motion";
 import { chartBarGrow, chartPointPop } from "@/lib/motion/chart";
@@ -17,7 +18,7 @@ interface MiniChartProps {
   className?: string;
 }
 
-export function MiniChart({
+function MiniChartInner({
   data,
   type = "bar",
   color = "var(--gold)",
@@ -152,3 +153,5 @@ export function MiniChart({
     </div>
   );
 }
+
+export const MiniChart = memo(MiniChartInner);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { LifeOSProvider } from "@/contexts/lifeos-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { loadLayoutPrefs } from "@/lib/preferences/layout";
@@ -23,6 +24,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <AccentBootstrap />
+      <QueryProvider>
       <ToastProvider>
         <LifeOSProvider>
           <AchievementProvider>
@@ -33,6 +35,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           </AchievementProvider>
         </LifeOSProvider>
       </ToastProvider>
+      </QueryProvider>
     </ThemeProvider>
   );
 }

@@ -1,12 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { LifeScoreOrbPlayer } from "@/components/remotion/life-score-orb-player";
-import { AmbientHeroBg } from "@/components/remotion/ambient-hero-bg";
-import { WeeklyPulsePlayer } from "@/components/remotion/weekly-pulse-player";
+
+const LifeScoreOrbPlayer = dynamic(
+  () => import("@/components/remotion/life-score-orb-player").then((m) => m.LifeScoreOrbPlayer),
+  { ssr: false, loading: () => <div className="w-24 h-24 rounded-full skeleton-shimmer" /> }
+);
+const AmbientHeroBg = dynamic(
+  () => import("@/components/remotion/ambient-hero-bg").then((m) => m.AmbientHeroBg),
+  { ssr: false }
+);
+const WeeklyPulsePlayer = dynamic(
+  () => import("@/components/remotion/weekly-pulse-player").then((m) => m.WeeklyPulsePlayer),
+  { ssr: false, loading: () => <div className="h-32 skeleton-shimmer rounded-[10px]" /> }
+);
 import { BentoGrid, BentoTile } from "@/components/ui/bento-grid";
 import { CountUp } from "@/components/ui/count-up";
 import { commas } from "@/lib/utils";

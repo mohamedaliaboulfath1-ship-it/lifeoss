@@ -8,7 +8,6 @@ import { CountUp } from "@/components/ui/count-up";
 import { today } from "@/lib/utils";
 import type { DashboardHabitToday } from "@/types/lifeos-pro";
 import Link from "next/link";
-import { useLifeOS } from "@/contexts/lifeos-context";
 import { useToast } from "@/contexts/toast-context";
 import { motion } from "framer-motion";
 import { MOTION } from "@/lib/motion";
@@ -21,7 +20,6 @@ interface HabitsTodayProps {
 }
 
 export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
-  const { refreshSilent } = useLifeOS();
   const { toast } = useToast();
   const celebrate = useAchievementOptional()?.celebrate;
   const [local, setLocal] = useState(habits);
@@ -54,7 +52,7 @@ export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
           subtitle: "استمر — أنت تبني زخمك",
         });
       }
-      void refreshSilent();
+      /* Optimistic local state only — avoids full /api/data reload */
     } catch {
       setLocal((list) =>
         list.map((h) => (h.id === habitId ? { ...h, done: prev } : h))

@@ -1,23 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageUnfold, SectionReveal } from "@/components/motion/unfold-reveal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { AreasHero } from "@/components/areas/areas-hero";
 import { AreaPremiumCard } from "@/components/areas/area-premium-card";
+import { AreasParaSection } from "@/components/areas/areas-para-section";
 import { MotionModal } from "@/components/motion/motion";
+import { useAreasOverview } from "@/hooks/queries/use-areas-overview";
+import { queryKeys } from "@/lib/query/keys";
 import { buildOverviewParaGraph } from "@/lib/areas/para-graph";
-import type { AreaPreview, AreasOverviewStats } from "@/types/areas";
 
-const AreaParaFlow = dynamic(
-  () => import("@/components/areas/area-para-flow").then((m) => m.AreaParaFlow),
-  { ssr: false, loading: () => <div className="h-[380px] skeleton-shimmer rounded-xl" /> }
-);
-
-const EMPTY_STATS: AreasOverviewStats = {
+const EMPTY_STATS = {
   lifeScore: 0,
   activeGoals: 0,
   activeProjects: 0,
@@ -27,37 +24,14 @@ const EMPTY_STATS: AreasOverviewStats = {
 };
 
 export function AreasIntelligenceView() {
-  const [previews, setPreviews] = useState<AreaPreview[]>([]);
-  const [stats, setStats] = useState<AreasOverviewStats>(EMPTY_STATS);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isFetching } = useAreasOverview();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/areas/overview");
-    const json = await res.json().catch(() => null);
-    setPreviews(json?.previews ?? []);
-    setStats(json?.stats ?? EMPTY_STATS);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { void load(); }, [load]);
-
-  useEffect(() => {
-    const refresh = () => void load();
-    window.addEventListener("focus", refresh);
-    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVis);
-    const poll = setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
-    }, 30_000);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", onVis);
-      clearInterval(poll);
-    };
-  }, [load]);
+  const previews = data?.previews ?? [];
+  const stats = data?.stats ?? EMPTY_STATS;
+  const loading = isLoading && !data;
 
   async function addArea() {
     if (!form.nameAr.trim()) return;
@@ -69,13 +43,10 @@ export function AreasIntelligenceView() {
     });
     setModal(false);
     setForm({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
-    await load();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.areasOverview });
   }
 
-  const paraGraph = useMemo(
-    () => buildOverviewParaGraph(previews),
-    [previews]
-  );
+  const paraGraph = useMemo(() => buildOverviewParaGraph(previews), [previews]);
 
   return (
     <PageUnfold className="space-y-8 pb-10 max-w-[1600px] mx-auto">
@@ -85,7 +56,10 @@ export function AreasIntelligenceView() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h2 className="font-display text-lg font-bold">مجالات الحياة</h2>
-            <p className="text-xs text-text3 mt-0.5">انقر على أي مجال لفتح مركز القيادة</p>
+            <p className="text-xs text-text3 mt-0.5">
+              انقر على أي مجال لفتح مركز القيادة
+              {isFetching && data ? " · يتم التحديث…" : ""}
+            </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setModal(true)}>
             + مجال مخصص
@@ -117,8 +91,8 @@ export function AreasIntelligenceView() {
               Area → Goals → Projects → Tasks → Habits → Resources
             </p>
           </div>
-          {!loading && previews.length > 0 && (
-            <AreaParaFlow nodes={paraGraph.nodes} edges={paraGraph.edges} height={420} />
+          {previews.length > 0 && (
+            <AreasParaSection nodes={paraGraph.nodes} edges={paraGraph.edges} height={420} />
           )}
         </div>
       </SectionReveal>
