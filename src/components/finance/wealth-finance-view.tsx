@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MotionModal } from "@/components/motion/motion";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { MiniChart } from "@/components/ui/mini-chart";
 import { WealthDashboardPanel } from "@/components/finance/wealth-dashboard-panel";
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export function WealthFinanceView({ yearData, salary }: Props) {
+  const { toast } = useToast();
   const [tab, setTab] = useState("wealth");
   const [loading, setLoading] = useState(true);
   const [migrationRequired, setMigrationRequired] = useState(false);
@@ -91,7 +93,33 @@ export function WealthFinanceView({ yearData, salary }: Props) {
     setModal(null);
     setForm({});
     await reload();
+    toast("تم الحفظ", "success");
   }
+
+  function handleModalSave() {
+    if (modal === "sub") {
+      void save("subscription", { name: form.name, price: parseFloat(form.price), billingCycle: form.billingCycle, renewalDate: form.renewalDate, category: form.category ?? "اشتراكات" });
+    } else if (modal === "debt") {
+      void save("debt", { name: form.name, lender: form.lender, total: parseFloat(form.total ?? "0"), paid: parseFloat(form.paid ?? "0"), monthlyPayment: parseFloat(form.monthlyPayment ?? "0"), interestRate: parseFloat(form.interestRate ?? "0"), debtType: "installment" });
+    } else if (modal === "inv") {
+      void save("investment", { name: form.name, assetType: form.assetType ?? "etf", investedAmount: parseFloat(form.investedAmount ?? "0"), currentValue: parseFloat(form.currentValue ?? form.investedAmount ?? "0"), riskLevel: form.riskLevel ?? "medium" });
+    } else if (modal === "goal") {
+      void save("savings_goal", { name: form.name, goalType: form.goalType, targetAmount: parseFloat(form.targetAmount ?? "0"), monthlyContribution: parseFloat(form.monthlyContribution ?? "0") });
+    } else if (modal === "cat") {
+      void save("category", { id: form.id, name: form.name, monthlyBudget: parseFloat(form.monthlyBudget ?? "0") });
+    } else if (modal === "tx") {
+      void save("transaction", { date: form.date ?? today(), type: form.type, amount: parseFloat(form.amount ?? "0"), cat: form.cat });
+    }
+  }
+
+  const modalTitle =
+    modal === "sub" ? "اشتراك جديد"
+      : modal === "debt" ? "قرض / قسط"
+        : modal === "inv" ? "استثمار"
+          : modal === "goal" ? "هدف ادخار"
+            : modal === "cat" ? "فئة مصروف"
+              : modal === "tx" ? "معاملة"
+                : "";
 
   if (loading && !wealth) {
     return <div className="space-y-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 skeleton-shimmer rounded-[10px]" />)}</div>;
@@ -310,85 +338,78 @@ export function WealthFinanceView({ yearData, salary }: Props) {
         </div>
       )}
 
-      <MotionModal open={!!modal} onClose={() => setModal(null)}>
-        <div className="bg-surface border border-border2 rounded-[10px] p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-          {modal === "sub" && (
-            <>
-              <h3 className="font-bold text-gold2">اشتراك جديد</h3>
-              <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>السعر</Label><Input type="number" value={form.price ?? ""} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-                <div><Label>التجديد</Label><Input type="date" value={form.renewalDate ?? ""} onChange={(e) => setForm({ ...form, renewalDate: e.target.value })} /></div>
-              </div>
-              <div><Label>الدورة</Label>
-                <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.billingCycle ?? "monthly"} onChange={(e) => setForm({ ...form, billingCycle: e.target.value })}>
-                  {CYCLES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+      <AppModal
+        open={!!modal}
+        onClose={() => setModal(null)}
+        title={modalTitle}
+        icon="💰"
+        size="md"
+        onSave={handleModalSave}
+      >
+        {modal === "sub" && (
+          <>
+            <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>السعر</Label><Input type="number" value={form.price ?? ""} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
+              <div><Label>التجديد</Label><Input type="date" value={form.renewalDate ?? ""} onChange={(e) => setForm({ ...form, renewalDate: e.target.value })} /></div>
+            </div>
+            <div><Label>الدورة</Label>
+              <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.billingCycle ?? "monthly"} onChange={(e) => setForm({ ...form, billingCycle: e.target.value })}>
+                {CYCLES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        {modal === "debt" && (
+          <>
+            <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div><Label>الجهة</Label><Input value={form.lender ?? ""} onChange={(e) => setForm({ ...form, lender: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>الإجمالي</Label><Input type="number" value={form.total ?? ""} onChange={(e) => setForm({ ...form, total: e.target.value })} /></div>
+              <div><Label>المدفوع</Label><Input type="number" value={form.paid ?? "0"} onChange={(e) => setForm({ ...form, paid: e.target.value })} /></div>
+              <div><Label>قسط شهري</Label><Input type="number" value={form.monthlyPayment ?? ""} onChange={(e) => setForm({ ...form, monthlyPayment: e.target.value })} /></div>
+              <div><Label>فائدة %</Label><Input type="number" value={form.interestRate ?? "0"} onChange={(e) => setForm({ ...form, interestRate: e.target.value })} /></div>
+            </div>
+          </>
+        )}
+        {modal === "inv" && (
+          <>
+            <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>المبلغ</Label><Input type="number" value={form.investedAmount ?? ""} onChange={(e) => setForm({ ...form, investedAmount: e.target.value })} /></div>
+              <div><Label>القيمة الحالية</Label><Input type="number" value={form.currentValue ?? ""} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} /></div>
+            </div>
+          </>
+        )}
+        {modal === "goal" && (
+          <>
+            <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>المستهدف</Label><Input type="number" value={form.targetAmount ?? ""} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })} /></div>
+              <div><Label>شهري</Label><Input type="number" value={form.monthlyContribution ?? ""} onChange={(e) => setForm({ ...form, monthlyContribution: e.target.value })} /></div>
+            </div>
+          </>
+        )}
+        {modal === "cat" && (
+          <>
+            <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div><Label>ميزانية شهرية</Label><Input type="number" value={form.monthlyBudget ?? ""} onChange={(e) => setForm({ ...form, monthlyBudget: e.target.value })} /></div>
+          </>
+        )}
+        {modal === "tx" && (
+          <>
+            <div><Label>الفئة</Label><Input value={form.cat ?? ""} onChange={(e) => setForm({ ...form, cat: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>المبلغ</Label><Input type="number" value={form.amount ?? ""} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
+              <div><Label>النوع</Label>
+                <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.type ?? "expense"} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                  <option value="expense">مصروف</option><option value="income">دخل</option><option value="saving">ادخار</option>
                 </select>
               </div>
-              <Button variant="gold" onClick={() => save("subscription", { name: form.name, price: parseFloat(form.price), billingCycle: form.billingCycle, renewalDate: form.renewalDate, category: form.category ?? "اشتراكات" })}>حفظ</Button>
-            </>
-          )}
-          {modal === "debt" && (
-            <>
-              <h3 className="font-bold text-gold2">قرض / قسط</h3>
-              <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>الجهة</Label><Input value={form.lender ?? ""} onChange={(e) => setForm({ ...form, lender: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>الإجمالي</Label><Input type="number" value={form.total ?? ""} onChange={(e) => setForm({ ...form, total: e.target.value })} /></div>
-                <div><Label>المدفوع</Label><Input type="number" value={form.paid ?? "0"} onChange={(e) => setForm({ ...form, paid: e.target.value })} /></div>
-                <div><Label>قسط شهري</Label><Input type="number" value={form.monthlyPayment ?? ""} onChange={(e) => setForm({ ...form, monthlyPayment: e.target.value })} /></div>
-                <div><Label>فائدة %</Label><Input type="number" value={form.interestRate ?? "0"} onChange={(e) => setForm({ ...form, interestRate: e.target.value })} /></div>
-              </div>
-              <Button variant="gold" onClick={() => save("debt", { name: form.name, lender: form.lender, total: parseFloat(form.total ?? "0"), paid: parseFloat(form.paid ?? "0"), monthlyPayment: parseFloat(form.monthlyPayment ?? "0"), interestRate: parseFloat(form.interestRate ?? "0"), debtType: "installment" })}>حفظ</Button>
-            </>
-          )}
-          {modal === "inv" && (
-            <>
-              <h3 className="font-bold text-gold2">استثمار</h3>
-              <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>المبلغ</Label><Input type="number" value={form.investedAmount ?? ""} onChange={(e) => setForm({ ...form, investedAmount: e.target.value })} /></div>
-                <div><Label>القيمة الحالية</Label><Input type="number" value={form.currentValue ?? ""} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} /></div>
-              </div>
-              <Button variant="gold" onClick={() => save("investment", { name: form.name, assetType: form.assetType ?? "etf", investedAmount: parseFloat(form.investedAmount ?? "0"), currentValue: parseFloat(form.currentValue ?? form.investedAmount ?? "0"), riskLevel: form.riskLevel ?? "medium" })}>حفظ</Button>
-            </>
-          )}
-          {modal === "goal" && (
-            <>
-              <h3 className="font-bold text-gold2">هدف ادخار</h3>
-              <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>المستهدف</Label><Input type="number" value={form.targetAmount ?? ""} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })} /></div>
-                <div><Label>شهري</Label><Input type="number" value={form.monthlyContribution ?? ""} onChange={(e) => setForm({ ...form, monthlyContribution: e.target.value })} /></div>
-              </div>
-              <Button variant="gold" onClick={() => save("savings_goal", { name: form.name, goalType: form.goalType, targetAmount: parseFloat(form.targetAmount ?? "0"), monthlyContribution: parseFloat(form.monthlyContribution ?? "0") })}>حفظ</Button>
-            </>
-          )}
-          {modal === "cat" && (
-            <>
-              <h3 className="font-bold text-gold2">فئة مصروف</h3>
-              <div><Label>الاسم</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>ميزانية شهرية</Label><Input type="number" value={form.monthlyBudget ?? ""} onChange={(e) => setForm({ ...form, monthlyBudget: e.target.value })} /></div>
-              <Button variant="gold" onClick={() => save("category", { id: form.id, name: form.name, monthlyBudget: parseFloat(form.monthlyBudget ?? "0") })}>حفظ</Button>
-            </>
-          )}
-          {modal === "tx" && (
-            <>
-              <h3 className="font-bold text-gold2">معاملة</h3>
-              <div><Label>الفئة</Label><Input value={form.cat ?? ""} onChange={(e) => setForm({ ...form, cat: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>المبلغ</Label><Input type="number" value={form.amount ?? ""} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
-                <div><Label>النوع</Label>
-                  <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.type ?? "expense"} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    <option value="expense">مصروف</option><option value="income">دخل</option><option value="saving">ادخار</option>
-                  </select>
-                </div>
-              </div>
-              <Button variant="gold" onClick={() => save("transaction", { date: form.date ?? today(), type: form.type, amount: parseFloat(form.amount ?? "0"), cat: form.cat })}>حفظ</Button>
-            </>
-          )}
-        </div>
-      </MotionModal>
+            </div>
+          </>
+        )}
+      </AppModal>
     </div>
   );
 }

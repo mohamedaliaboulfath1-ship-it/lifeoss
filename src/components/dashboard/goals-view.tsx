@@ -11,7 +11,8 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { Tabs } from "@/components/ui/tabs";
 import { GoalsKanban } from "@/components/dashboard/goals-kanban";
 import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
-import { MotionModal } from "@/components/motion/motion";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { useGoalExpand } from "@/contexts/goal-expand-context";
 import { areaLabel, calcGoalPct } from "@/lib/calculations";
 import { calcGoalProbability } from "@/lib/dashboard/goal-probability";
@@ -44,6 +45,7 @@ interface GoalsViewProps {
 }
 
 export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsViewProps) {
+  const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [view, setView] = useState<"kanban" | "grid" | "hierarchy" | "analytics" | "timeline">("kanban");
   const [statusFilter, setStatusFilter] = useState<GoalStatus | "all">("all");
@@ -130,6 +132,7 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
     onAddClose?.();
     setForm({ title: "", area: "career", priority: "high", level: "goal", description: "", why: "", due: "", progress: 0, parentId: "" });
     onRefresh();
+    toast("تم حفظ الهدف", "success");
   }
 
   async function quickAddGoal() {
@@ -497,72 +500,73 @@ function GoalFormModal({
   goals: Goal[];
 }) {
   return (
-    <MotionModal open={open} onClose={onClose}>
-      <div className="bg-surface border border-border2 rounded-[10px] w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto glass-premium">
-        <h3 className="font-bold text-gold2">🎯 هدف جديد</h3>
+    <AppModal
+      open={open}
+      onClose={onClose}
+      title="هدف جديد"
+      icon="🎯"
+      size="lg"
+      onSave={onSave}
+      saveDisabled={!form.title.trim()}
+    >
+      <div>
+        <Label>العنوان</Label>
+        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>العنوان</Label>
-          <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>المستوى</Label>
-            <select
-              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-              value={form.level}
-              onChange={(e) => setForm({ ...form, level: e.target.value as GoalLevel })}
-            >
-              <option value="vision">رؤية (Vision)</option>
-              <option value="goal">هدف (Goal)</option>
-              <option value="project">مشروع (Project)</option>
-            </select>
-          </div>
-          <div>
-            <Label>المنطقة</Label>
-            <select
-              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-              value={form.area}
-              onChange={(e) => setForm({ ...form, area: e.target.value as GoalArea })}
-            >
-              {AREAS.map((a) => (
-                <option key={a} value={a}>{areaLabel(a)}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div>
-          <Label>الهدف الأب (اختياري)</Label>
+          <Label>المستوى</Label>
           <select
             className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-            value={(form as { parentId?: string }).parentId ?? ""}
-            onChange={(e) => setForm({ ...form, parentId: e.target.value } as typeof form)}
+            value={form.level}
+            onChange={(e) => setForm({ ...form, level: e.target.value as GoalLevel })}
           >
-            <option value="">بدون</option>
-            {goals.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.title}
-              </option>
-            ))}
+            <option value="vision">رؤية (Vision)</option>
+            <option value="goal">هدف (Goal)</option>
+            <option value="project">مشروع (Project)</option>
           </select>
         </div>
         <div>
-          <Label>لماذا؟</Label>
-          <Input value={form.why} onChange={(e) => setForm({ ...form, why: e.target.value })} />
-        </div>
-        <div>
-          <Label>الوصف</Label>
-          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </div>
-        <div>
-          <Label>تاريخ الهدف</Label>
-          <Input type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
-        </div>
-        <div className="flex gap-2 justify-end">
-          <Button variant="ghost" onClick={onClose}>إلغاء</Button>
-          <Button variant="gold" onClick={onSave}>حفظ</Button>
+          <Label>المنطقة</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={form.area}
+            onChange={(e) => setForm({ ...form, area: e.target.value as GoalArea })}
+          >
+            {AREAS.map((a) => (
+              <option key={a} value={a}>{areaLabel(a)}</option>
+            ))}
+          </select>
         </div>
       </div>
-    </MotionModal>
+      <div>
+        <Label>الهدف الأب (اختياري)</Label>
+        <select
+          className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+          value={(form as { parentId?: string }).parentId ?? ""}
+          onChange={(e) => setForm({ ...form, parentId: e.target.value } as typeof form)}
+        >
+          <option value="">بدون</option>
+          {goals.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <Label>لماذا؟</Label>
+        <Input value={form.why} onChange={(e) => setForm({ ...form, why: e.target.value })} />
+      </div>
+      <div>
+        <Label>الوصف</Label>
+        <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      </div>
+      <div>
+        <Label>تاريخ الهدف</Label>
+        <Input type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
+      </div>
+    </AppModal>
   );
 }
 

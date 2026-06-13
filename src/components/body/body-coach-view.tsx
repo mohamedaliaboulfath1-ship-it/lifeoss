@@ -3,6 +3,8 @@ import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { Tabs } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,7 @@ interface Props {
 
 export function BodyCoachView(props: Props) {
   const { patchYearData, refreshSilent } = useLifeOS();
+  const { toast } = useToast();
   const [tab, setTab] = useState("overview");
   const [weightModal, setWeightModal] = useState(false);
   const [localLogs, setLocalLogs] = useState<WeightLog[]>(
@@ -107,6 +110,7 @@ export function BodyCoachView(props: Props) {
       body: JSON.stringify({ date: entry.date, weight: w, note: entry.note }),
     });
     void refreshSilent();
+    toast("تم حفظ الوزن", "success");
   }
 
   async function saveMeasurement() {
@@ -258,29 +262,27 @@ export function BodyCoachView(props: Props) {
         </Card>
       )}
 
-      {weightModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">إضافة وزن جديد</h3>
-            <div>
-              <Label>التاريخ</Label>
-              <Input type="date" dir="ltr" value={weightForm.date} onChange={(e) => setWeightForm({ ...weightForm, date: e.target.value })} />
-            </div>
-            <div>
-              <Label>الوزن (كجم)</Label>
-              <Input type="number" step="0.1" placeholder="62" value={weightForm.weight} onChange={(e) => setWeightForm({ ...weightForm, weight: e.target.value })} />
-            </div>
-            <div>
-              <Label>ملاحظات</Label>
-              <Input value={weightForm.notes} onChange={(e) => setWeightForm({ ...weightForm, notes: e.target.value })} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setWeightModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={saveWeight}>حفظ</Button>
-            </div>
-          </Card>
+      <AppModal
+        open={weightModal}
+        onClose={() => setWeightModal(false)}
+        title="إضافة وزن جديد"
+        icon="⚖️"
+        size="md"
+        onSave={saveWeight}
+      >
+        <div>
+          <Label>التاريخ</Label>
+          <Input type="date" dir="ltr" value={weightForm.date} onChange={(e) => setWeightForm({ ...weightForm, date: e.target.value })} />
         </div>
-      )}
+        <div>
+          <Label>الوزن (كجم)</Label>
+          <Input type="number" step="0.1" placeholder="62" value={weightForm.weight} onChange={(e) => setWeightForm({ ...weightForm, weight: e.target.value })} />
+        </div>
+        <div>
+          <Label>ملاحظات</Label>
+          <Input value={weightForm.notes} onChange={(e) => setWeightForm({ ...weightForm, notes: e.target.value })} />
+        </div>
+      </AppModal>
     </ViewShell>
   );
 }

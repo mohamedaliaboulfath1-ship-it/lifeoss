@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
-import { modalBackdrop, modalPanel } from "@/lib/motion/modal";
+import { AppModal, type AppModalProps } from "@/components/ui/app-modal";
 import { cardEnter, cardHover } from "@/lib/motion/card";
 import { MOTION } from "@/lib/motion";
 
@@ -38,33 +38,24 @@ export function MotionCard({
   );
 }
 
+/** @deprecated Prefer AppModal — kept for backward compatibility */
 export function MotionModal({
   open,
   children,
   onClose,
+  title,
+  size = "md",
 }: {
   open: boolean;
   children: React.ReactNode;
   onClose?: () => void;
+  title?: string;
+  size?: AppModalProps["size"];
 }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-md bg-black/55"
-          {...modalBackdrop}
-          onClick={onClose}
-        >
-          <motion.div
-            {...modalPanel}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg"
-          >
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <AppModal open={open} onClose={onClose ?? (() => {})} title={title} size={size} lazy={false}>
+      {children}
+    </AppModal>
   );
 }
 

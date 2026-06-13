@@ -2,7 +2,10 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MotionCard, MotionModal } from "@/components/motion/motion";
+import { MotionCard } from "@/components/motion/motion";
+import { AppModal } from "@/components/ui/app-modal";
+import { FormSection } from "@/components/ui/form-section";
+import { BookCoverPicker } from "@/components/ui/book-cover-picker";
 import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
 import { CardUnfold } from "@/components/motion/unfold-reveal";
 import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
@@ -61,6 +64,8 @@ function BookGalleryCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const pct = book.pages ? Math.round(((book.curPage ?? 0) / book.pages) * 100) : 0;
+  const statusLabel =
+    book.status === "done" ? "مكتمل" : book.status === "reading" ? "قيد القراءة" : "مخطط";
 
   function handleOpen() {
     const rect = ref.current?.getBoundingClientRect();
@@ -77,12 +82,17 @@ function BookGalleryCard({
       <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center overflow-hidden">
         <BookCover title={book.title} coverUrl={book.coverUrl} coverPath={book.coverPath} />
       </div>
-      <div className="p-3 space-y-1">
-        <div className="font-bold text-sm truncate">{book.title}</div>
-        <div className="text-[10px] text-text3">
-          {BOOK_TYPE_LABELS[book.bookType ?? "physical"] ?? "كتاب"} · {book.status}
+      <div className="p-3 space-y-2">
+        <div className="font-bold text-sm line-clamp-2 leading-snug">{book.title}</div>
+        {book.author && (
+          <div className="text-[11px] text-text3 truncate">{book.author}</div>
+        )}
+        <div className="flex justify-between text-[10px] text-text3">
+          <span>{book.pages ? `${book.pages} صفحة` : "—"}</span>
+          <span>{statusLabel}</span>
         </div>
         <ProgressBar value={pct} color="var(--sky)" />
+        <div className="text-[10px] text-text3">{pct}% · {book.curPage ?? 0}/{book.pages ?? "—"}</div>
         <div className="flex gap-1 pt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="sm" onClick={() => onEdit(book)}>✏️</Button>
           <Button variant="ghost" size="sm" onClick={() => onProgress(book.id, 10)}>+10</Button>
@@ -130,6 +140,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     highlightsText: "",
   });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const loadBooks = useCallback(async () => {
     try {
@@ -343,7 +354,11 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   }
 
   async function addOrUpdateBook() {
-    if (!form.title.trim()) return;
+    if (!form.title.trim()) {
+      toast("أدخل عنوان الكتاب", "error");
+      return;
+    }
+    setSaving(true);
     const id = form.id || uid();
     const pages = parseInt(form.pages, 10) || 200;
     const curPage = parseInt(form.curPage, 10) || 0;
@@ -390,6 +405,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         });
     if (!res.ok) {
       toast("فشل حفظ الكتاب", "error");
+      setSaving(false);
       return;
     }
     setForm({
@@ -421,6 +437,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     await loadBooks();
     onRefresh();
     toast("تم حفظ الكتاب", "success");
+    setSaving(false);
   }
 
   async function updateProgress(id: string, delta: number) {
@@ -653,213 +670,181 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         </div>
       )}
 
-      <MotionModal open={!!modal} onClose={() => setModal(null)}>
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            {modal === "book" && (
-              <>
-                <h3 className="font-bold text-gold2">{form.id ? "تعديل كتاب" : "كتاب جديد"}</h3>
-                <div>
-                  <Label>العنوان</Label>
-                  <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                </div>
-                <div>
-                  <Label>المؤلف</Label>
-                  <Input value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>عدد الصفحات</Label>
-                    <Input value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>الصفحة الحالية</Label>
-                    <Input value={form.curPage} onChange={(e) => setForm({ ...form, curPage: e.target.value })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>الحالة</Label>
-                    <select
-                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                      value={form.status}
-                      onChange={(e) => setForm({ ...form, status: e.target.value as Book["status"] })}
-                    >
-                      <option value="planned">مخطط</option>
-                      <option value="reading">قيد القراءة</option>
-                      <option value="done">مكتمل</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label>الأولوية</Label>
-                    <select
-                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                      value={form.priority}
-                      onChange={(e) => setForm({ ...form, priority: e.target.value as Book["priority"] })}
-                    >
-                      <option value="high">عالي</option>
-                      <option value="med">متوسط</option>
-                      <option value="low">منخفض</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>نوع الكتاب</Label>
-                    <select
-                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                      value={form.bookType}
-                      onChange={(e) => setForm({ ...form, bookType: e.target.value })}
-                    >
-                      {Object.entries(BOOK_TYPE_LABELS).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label>اللغة</Label>
-                    <Input value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} placeholder="en / ar" />
-                  </div>
-                </div>
-                <div>
-                  <Label>التصنيف</Label>
-                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                </div>
-                <div>
-                  <Label>الوصف</Label>
-                  <textarea
-                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>ملاحظات</Label>
-                  <textarea
-                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[50px]"
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>سنة النشر</Label>
-                    <Input value={form.publishYear} onChange={(e) => setForm({ ...form, publishYear: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>تقييم Goodreads</Label>
-                    <Input value={form.goodreadsRating} onChange={(e) => setForm({ ...form, goodreadsRating: e.target.value })} placeholder="4.25" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>ساعات القراءة المتوقعة</Label>
-                    <Input value={form.estimatedReadingHours} onChange={(e) => setForm({ ...form, estimatedReadingHours: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>مرحلة الخطة</Label>
-                    <Input value={form.readingPhase} onChange={(e) => setForm({ ...form, readingPhase: e.target.value })} placeholder="1-6" />
-                  </div>
-                </div>
-                <div>
-                  <Label>ترتيب داخل المرحلة</Label>
-                  <Input value={form.readingPlanOrder} onChange={(e) => setForm({ ...form, readingPlanOrder: e.target.value })} />
-                </div>
-                <div>
-                  <Label>رابط الشراء (اختياري)</Label>
-                  <Input value={form.purchaseUrl} onChange={(e) => setForm({ ...form, purchaseUrl: e.target.value })} placeholder="https://..." />
-                </div>
-                <div>
-                  <Label>اقتباسات / Highlights (سطر لكل اقتباس)</Label>
-                  <textarea
-                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
-                    value={form.highlightsText}
-                    onChange={(e) => setForm({ ...form, highlightsText: e.target.value })}
-                    placeholder="كل سطر = اقتباس واحد"
-                  />
-                </div>
-                <div>
-                  <Label>رابط غلاف (OpenLibrary / Google Books)</Label>
-                  <Input
-                    value={form.coverUrl}
-                    onChange={(e) => {
-                      setForm({ ...form, coverUrl: e.target.value, coverPreviewUrl: e.target.value });
-                      setCoverPreview(e.target.value || null);
-                    }}
-                    placeholder="https://covers.openlibrary.org/..."
-                  />
-                </div>
-                <div>
-                  <Label>صورة الغلاف (رفع محلي)</Label>
-                  {(coverPreview || form.coverPreviewUrl) && (
-                    <div className="mb-2 aspect-[3/4] max-w-[120px] rounded overflow-hidden border border-border">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={coverPreview ?? form.coverPreviewUrl}
-                        alt="معاينة الغلاف"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="text-xs text-text3"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      const bookId = form.id || uid();
-                      if (!f) return;
-                      const path = await uploadCover(bookId, f);
-                      if (path) toast("تم رفع الغلاف — اضغط حفظ", "success");
-                    }}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => setModal(null)}>
-                    إلغاء
-                  </Button>
-                  <Button variant="gold" onClick={addOrUpdateBook}>
-                    حفظ
-                  </Button>
-                </div>
-              </>
-            )}
-
-            {modal === "session" && (
-              <>
-                <h3 className="font-bold text-gold2">جلسة قراءة جديدة</h3>
-                <div>
-                  <Label>الكتاب</Label>
-                  <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={sessionForm.bookId} onChange={(e) => setSessionForm({ ...sessionForm, bookId: e.target.value })}>
-                    <option value="">اختر كتاب</option>
-                    {books.map((b) => (
-                      <option key={b.id} value={b.id}>{b.title}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label>التاريخ</Label>
-                  <Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} />
-                </div>
-                <div>
-                  <Label>صفحات مقروءة</Label>
-                  <Input value={sessionForm.pages} onChange={(e) => setSessionForm({ ...sessionForm, pages: e.target.value })} />
-                </div>
-                <div>
-                  <Label>المدة (دقيقة)</Label>
-                  <Input value={sessionForm.durationMin} onChange={(e) => setSessionForm({ ...sessionForm, durationMin: e.target.value })} />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => setModal(null)}>
-                    إلغاء
-                  </Button>
-                  <Button variant="gold" onClick={addSession}>
-                    حفظ الجلسة
-                  </Button>
-                </div>
-              </>
-            )}
+      <AppModal
+        open={modal === "book"}
+        onClose={() => setModal(null)}
+        title={form.id ? "تعديل كتاب" : "كتاب جديد"}
+        icon="📚"
+        size="xl"
+        onSave={addOrUpdateBook}
+        saving={saving}
+        saveDisabled={!form.title.trim()}
+      >
+        <FormSection title="المعلومات الأساسية">
+          <div>
+            <Label>العنوان</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
-      </MotionModal>
+          <div>
+            <Label>المؤلف</Label>
+            <Input value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>عدد الصفحات</Label>
+              <Input value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+            </div>
+            <div>
+              <Label>الصفحة الحالية</Label>
+              <Input value={form.curPage} onChange={(e) => setForm({ ...form, curPage: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>الحالة</Label>
+              <select
+                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as Book["status"] })}
+              >
+                <option value="planned">مخطط</option>
+                <option value="reading">قيد القراءة</option>
+                <option value="done">مكتمل</option>
+              </select>
+            </div>
+            <div>
+              <Label>الأولوية</Label>
+              <select
+                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value as Book["priority"] })}
+              >
+                <option value="high">عالي</option>
+                <option value="med">متوسط</option>
+                <option value="low">منخفض</option>
+              </select>
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="التصنيف واللغة">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>نوع الكتاب</Label>
+              <select
+                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                value={form.bookType}
+                onChange={(e) => setForm({ ...form, bookType: e.target.value })}
+              >
+                {Object.entries(BOOK_TYPE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>اللغة</Label>
+              <Input value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} placeholder="en / ar" />
+            </div>
+          </div>
+          <div>
+            <Label>التصنيف</Label>
+            <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+          </div>
+        </FormSection>
+
+        <FormSection title="غلاف الكتاب">
+          <BookCoverPicker
+            title={form.title}
+            author={form.author}
+            coverUrl={form.coverUrl}
+            coverPreview={(coverPreview ?? form.coverPreviewUrl) || null}
+            onCoverUrlChange={(url) => {
+              setForm({ ...form, coverUrl: url, coverPreviewUrl: url });
+              setCoverPreview(url || null);
+            }}
+            onFileSelect={async (file) => {
+              const bookId = form.id || uid();
+              if (!form.id) setForm((prev) => ({ ...prev, id: bookId }));
+              const path = await uploadCover(bookId, file);
+              if (path) toast("تم رفع الغلاف", "success");
+            }}
+            disabled={saving}
+          />
+        </FormSection>
+
+        <FormSection title="تفاصيل إضافية">
+          <div>
+            <Label>الوصف</Label>
+            <textarea
+              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>سنة النشر</Label>
+              <Input value={form.publishYear} onChange={(e) => setForm({ ...form, publishYear: e.target.value })} />
+            </div>
+            <div>
+              <Label>تقييم Goodreads</Label>
+              <Input value={form.goodreadsRating} onChange={(e) => setForm({ ...form, goodreadsRating: e.target.value })} placeholder="4.25" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>ساعات القراءة</Label>
+              <Input value={form.estimatedReadingHours} onChange={(e) => setForm({ ...form, estimatedReadingHours: e.target.value })} />
+            </div>
+            <div>
+              <Label>مرحلة الخطة</Label>
+              <Input value={form.readingPhase} onChange={(e) => setForm({ ...form, readingPhase: e.target.value })} placeholder="1-6" />
+            </div>
+          </div>
+          <div>
+            <Label>رابط الشراء</Label>
+            <Input value={form.purchaseUrl} onChange={(e) => setForm({ ...form, purchaseUrl: e.target.value })} placeholder="https://..." />
+          </div>
+        </FormSection>
+      </AppModal>
+
+      <AppModal
+        open={modal === "session"}
+        onClose={() => setModal(null)}
+        title="جلسة قراءة جديدة"
+        icon="📖"
+        size="md"
+        onSave={addSession}
+        saveLabel="حفظ الجلسة"
+      >
+        <div>
+          <Label>الكتاب</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={sessionForm.bookId}
+            onChange={(e) => setSessionForm({ ...sessionForm, bookId: e.target.value })}
+          >
+            <option value="">اختر كتاب</option>
+            {books.map((b) => (
+              <option key={b.id} value={b.id}>{b.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>التاريخ</Label>
+          <Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>صفحات مقروءة</Label>
+            <Input value={sessionForm.pages} onChange={(e) => setSessionForm({ ...sessionForm, pages: e.target.value })} />
+          </div>
+          <div>
+            <Label>المدة (دقيقة)</Label>
+            <Input value={sessionForm.durationMin} onChange={(e) => setSessionForm({ ...sessionForm, durationMin: e.target.value })} />
+          </div>
+        </div>
+      </AppModal>
     </ViewShell>
   );
 }

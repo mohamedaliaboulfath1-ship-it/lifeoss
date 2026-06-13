@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { Card } from "@/components/ui/card";
 import { AutoAnimateList } from "@/components/motion/auto-animate-list";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function ResourcesView() {
+  const { toast } = useToast();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [migrationRequired, setMigrationRequired] = useState(false);
@@ -60,6 +63,7 @@ export function ResourcesView() {
     setShowForm(false);
     setForm({ title: "", resourceType: "reference", domainId: "domain_learning", url: "", content: "" });
     void load();
+    toast("تم حفظ المورد", "success");
   }
 
   async function remove(id: string) {
@@ -126,54 +130,53 @@ export function ResourcesView() {
         </AutoAnimateList>
       )}
 
-      {showForm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4 glass-premium">
-            <h3 className="font-bold text-gold2">مورد PARA جديد</h3>
-            <div>
-              <Label>العنوان</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </div>
-            <div>
-              <Label>النوع</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm"
-                value={form.resourceType}
-                onChange={(e) => setForm({ ...form, resourceType: e.target.value })}
-              >
-                <option value="reference">مرجع</option>
-                <option value="link">رابط</option>
-                <option value="note">ملاحظة</option>
-                <option value="doc">مستند</option>
-              </select>
-            </div>
-            <div>
-              <Label>المجال</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm"
-                value={form.domainId}
-                onChange={(e) => setForm({ ...form, domainId: e.target.value })}
-              >
-                {SYSTEM_DOMAINS.map((d) => (
-                  <option key={d.id} value={d.id}>{d.icon} {d.nameAr}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>رابط (اختياري)</Label>
-              <Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} dir="ltr" />
-            </div>
-            <div>
-              <Label>ملاحظات</Label>
-              <Input value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>إلغاء</Button>
-              <Button variant="gold" size="sm" onClick={save}>حفظ</Button>
-            </div>
-          </Card>
+      <AppModal
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        title="مورد PARA جديد"
+        icon="📚"
+        size="md"
+        onSave={save}
+        saveDisabled={!form.title.trim()}
+      >
+        <div>
+          <Label>العنوان</Label>
+          <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </div>
-      )}
+        <div>
+          <Label>النوع</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm"
+            value={form.resourceType}
+            onChange={(e) => setForm({ ...form, resourceType: e.target.value })}
+          >
+            <option value="reference">مرجع</option>
+            <option value="link">رابط</option>
+            <option value="note">ملاحظة</option>
+            <option value="doc">مستند</option>
+          </select>
+        </div>
+        <div>
+          <Label>المجال</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm"
+            value={form.domainId}
+            onChange={(e) => setForm({ ...form, domainId: e.target.value })}
+          >
+            {SYSTEM_DOMAINS.map((d) => (
+              <option key={d.id} value={d.id}>{d.icon} {d.nameAr}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>رابط (اختياري)</Label>
+          <Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} dir="ltr" />
+        </div>
+        <div>
+          <Label>ملاحظات</Label>
+          <Input value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+        </div>
+      </AppModal>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -8,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import type { ParaArea } from "@/types/para";
 
 export function AreasView() {
+  const { toast } = useToast();
   const [areas, setAreas] = useState<ParaArea[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
@@ -33,6 +36,7 @@ export function AreasView() {
     setModal(false);
     setForm({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
     await load();
+    toast("تم إضافة المجال", "success");
   }
 
   return (
@@ -49,19 +53,18 @@ export function AreasView() {
       </div>
       <Button variant="gold" onClick={() => setModal(true)}>+ مجال مخصص</Button>
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <Card className="w-full max-w-sm p-6 space-y-4">
-            <h3 className="font-bold">مجال جديد</h3>
-            <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
-            <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={addArea}>حفظ</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="مجال جديد"
+        icon="📌"
+        size="md"
+        onSave={addArea}
+        saveDisabled={!form.nameAr.trim()}
+      >
+        <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
+        <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
+      </AppModal>
     </div>
   );
 }

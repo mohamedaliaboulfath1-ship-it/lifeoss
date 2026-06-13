@@ -2,6 +2,8 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
@@ -30,6 +32,7 @@ type BudgetItem = {
 type FinanceTab = "overview" | "transactions" | "debts" | "budgets";
 
 export function FinanceView({ yearData, salary }: FinanceViewProps) {
+  const { toast } = useToast();
   const [tab, setTab] = useState<FinanceTab>("overview");
   const [loading, setLoading] = useState(true);
   const [txs, setTxs] = useState<Transaction[]>(yearData.transactions ?? []);
@@ -155,6 +158,7 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
     );
     setModal(null);
     setTxForm({ id: "", type: "expense", amount: "", cat: "عام", note: "", date: today() });
+    toast(txForm.id ? "تم تحديث المعاملة" : "تم حفظ المعاملة", "success");
   }
 
   async function addOrUpdateDebt() {
@@ -190,6 +194,7 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
     );
     setModal(null);
     setDebtForm({ id: "", name: "", total: "", paid: "", monthlyPayment: "", dueDate: "" });
+    toast(debtForm.id ? "تم تحديث الدين" : "تم حفظ الدين", "success");
   }
 
   async function addOrUpdateBudget() {
@@ -219,7 +224,23 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
     );
     setModal(null);
     setBudgetForm({ id: "", category: "", monthlyLimit: "", month: String(new Date().getMonth() + 1), year: String(new Date().getFullYear()), notes: "" });
+    toast(budgetForm.id ? "تم تحديث الميزانية" : "تم حفظ الميزانية", "success");
   }
+
+  function handleModalSave() {
+    if (modal === "tx") void addOrUpdateTx();
+    else if (modal === "debt") void addOrUpdateDebt();
+    else if (modal === "budget") void addOrUpdateBudget();
+  }
+
+  const modalTitle =
+    modal === "tx"
+      ? txForm.id ? "تعديل معاملة" : "معاملة جديدة"
+      : modal === "debt"
+        ? debtForm.id ? "تعديل دين" : "دين جديد"
+        : modal === "budget"
+          ? budgetForm.id ? "تعديل ميزانية" : "ميزانية جديدة"
+          : "";
 
   async function remove(entity: "transaction" | "debt" | "budget", id: string) {
     await fetch(`/api/finance?entity=${entity}&id=${id}`, { method: "DELETE" });
@@ -396,66 +417,54 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
 
       {loading && <Card className="p-4 text-sm text-text3">جاري تحميل بيانات المالية...</Card>}
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            {modal === "tx" && (
-              <>
-                <h3 className="font-bold text-gold2">{txForm.id ? "تعديل معاملة" : "معاملة جديدة"}</h3>
-                <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={txForm.type} onChange={(e) => setTxForm({ ...txForm, type: e.target.value as Transaction["type"] })}>
-                  <option value="expense">مصروف</option>
-                  <option value="income">دخل</option>
-                  <option value="saving">ادخار</option>
-                </select>
-                <div>
-                  <Label>التاريخ</Label>
-                  <Input type="date" value={txForm.date} onChange={(e) => setTxForm({ ...txForm, date: e.target.value })} />
-                </div>
-                <div>
-                  <Label>المبلغ (ر.س)</Label>
-                  <Input value={txForm.amount} onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })} />
-                </div>
-                <div>
-                  <Label>التصنيف</Label>
-                  <Input value={txForm.cat} onChange={(e) => setTxForm({ ...txForm, cat: e.target.value })} />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => setModal(null)}>إلغاء</Button>
-                  <Button variant="gold" onClick={addOrUpdateTx}>حفظ</Button>
-                </div>
-              </>
-            )}
-            {modal === "debt" && (
-              <>
-                <h3 className="font-bold text-gold2">{debtForm.id ? "تعديل دين" : "دين جديد"}</h3>
-                <div><Label>اسم الدين</Label><Input value={debtForm.name} onChange={(e) => setDebtForm({ ...debtForm, name: e.target.value })} /></div>
-                <div><Label>الإجمالي</Label><Input value={debtForm.total} onChange={(e) => setDebtForm({ ...debtForm, total: e.target.value })} /></div>
-                <div><Label>المدفوع</Label><Input value={debtForm.paid} onChange={(e) => setDebtForm({ ...debtForm, paid: e.target.value })} /></div>
-                <div><Label>القسط الشهري</Label><Input value={debtForm.monthlyPayment} onChange={(e) => setDebtForm({ ...debtForm, monthlyPayment: e.target.value })} /></div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => setModal(null)}>إلغاء</Button>
-                  <Button variant="gold" onClick={addOrUpdateDebt}>حفظ</Button>
-                </div>
-              </>
-            )}
-            {modal === "budget" && (
-              <>
-                <h3 className="font-bold text-gold2">{budgetForm.id ? "تعديل ميزانية" : "ميزانية جديدة"}</h3>
-                <div><Label>الفئة</Label><Input value={budgetForm.category} onChange={(e) => setBudgetForm({ ...budgetForm, category: e.target.value })} /></div>
-                <div><Label>الحد الشهري</Label><Input value={budgetForm.monthlyLimit} onChange={(e) => setBudgetForm({ ...budgetForm, monthlyLimit: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>الشهر</Label><Input value={budgetForm.month} onChange={(e) => setBudgetForm({ ...budgetForm, month: e.target.value })} /></div>
-                  <div><Label>السنة</Label><Input value={budgetForm.year} onChange={(e) => setBudgetForm({ ...budgetForm, year: e.target.value })} /></div>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => setModal(null)}>إلغاء</Button>
-                  <Button variant="gold" onClick={addOrUpdateBudget}>حفظ</Button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <AppModal
+        open={!!modal}
+        onClose={() => setModal(null)}
+        title={modalTitle}
+        icon="💰"
+        size="md"
+        onSave={handleModalSave}
+      >
+        {modal === "tx" && (
+          <>
+            <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={txForm.type} onChange={(e) => setTxForm({ ...txForm, type: e.target.value as Transaction["type"] })}>
+              <option value="expense">مصروف</option>
+              <option value="income">دخل</option>
+              <option value="saving">ادخار</option>
+            </select>
+            <div>
+              <Label>التاريخ</Label>
+              <Input type="date" value={txForm.date} onChange={(e) => setTxForm({ ...txForm, date: e.target.value })} />
+            </div>
+            <div>
+              <Label>المبلغ (ر.س)</Label>
+              <Input value={txForm.amount} onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })} />
+            </div>
+            <div>
+              <Label>التصنيف</Label>
+              <Input value={txForm.cat} onChange={(e) => setTxForm({ ...txForm, cat: e.target.value })} />
+            </div>
+          </>
+        )}
+        {modal === "debt" && (
+          <>
+            <div><Label>اسم الدين</Label><Input value={debtForm.name} onChange={(e) => setDebtForm({ ...debtForm, name: e.target.value })} /></div>
+            <div><Label>الإجمالي</Label><Input value={debtForm.total} onChange={(e) => setDebtForm({ ...debtForm, total: e.target.value })} /></div>
+            <div><Label>المدفوع</Label><Input value={debtForm.paid} onChange={(e) => setDebtForm({ ...debtForm, paid: e.target.value })} /></div>
+            <div><Label>القسط الشهري</Label><Input value={debtForm.monthlyPayment} onChange={(e) => setDebtForm({ ...debtForm, monthlyPayment: e.target.value })} /></div>
+          </>
+        )}
+        {modal === "budget" && (
+          <>
+            <div><Label>الفئة</Label><Input value={budgetForm.category} onChange={(e) => setBudgetForm({ ...budgetForm, category: e.target.value })} /></div>
+            <div><Label>الحد الشهري</Label><Input value={budgetForm.monthlyLimit} onChange={(e) => setBudgetForm({ ...budgetForm, monthlyLimit: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>الشهر</Label><Input value={budgetForm.month} onChange={(e) => setBudgetForm({ ...budgetForm, month: e.target.value })} /></div>
+              <div><Label>السنة</Label><Input value={budgetForm.year} onChange={(e) => setBudgetForm({ ...budgetForm, year: e.target.value })} /></div>
+            </div>
+          </>
+        )}
+      </AppModal>
     </ViewShell>
   );
 }

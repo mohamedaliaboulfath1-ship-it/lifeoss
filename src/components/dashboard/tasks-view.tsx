@@ -8,13 +8,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Tabs } from "@/components/ui/tabs";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AnimatePresence } from "framer-motion";
 import { TaskRow } from "@/components/motion/task-row";
-import { MotionModal } from "@/components/motion/motion";
-import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
+import { AppModal } from "@/components/ui/app-modal";
+import { FormSection } from "@/components/ui/form-section";
 import { useAchievementOptional } from "@/contexts/achievement-context";
 import { today, uid } from "@/lib/utils";
 import type { LifeTask, YearPayload } from "@/types/lifeos";
@@ -49,8 +48,10 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
   const [focusMode, setFocusMode] = useState(false);
   const [modal, setModal] = useState(false);
   const [tasks, setTasks] = useState<LifeTask[]>(yearData.tasks ?? []);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: "",
+    description: "",
     status: "inbox" as LifeTask["status"],
     priority: "p2" as "p1" | "p2" | "p3" | "p4",
     dueDate: today(),
@@ -132,33 +133,46 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
   }, [tasks]);
 
   async function addTask() {
-    if (!form.title.trim()) return;
-    await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: uid(),
-        title: form.title.trim(),
-        status: form.status,
-        priority: form.priority,
-        dueDate: form.dueDate || undefined,
-        estimatedTime: form.estimatedTime || undefined,
-        goalId: form.goalId || undefined,
-        note: form.note || undefined,
-      }),
-    });
-    setForm({
-      title: "",
-      status: "inbox",
-      priority: "p2",
-      dueDate: today(),
-      estimatedTime: 30,
-      goalId: "",
-      note: "",
-    });
-    setModal(false);
-    await refreshTasks();
-    void refreshSilent();
+    if (!form.title.trim()) {
+      toast("أدخل عنوان المهمة", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: uid(),
+          title: form.title.trim(),
+          status: form.status,
+          priority: form.priority,
+          dueDate: form.dueDate || undefined,
+          estimatedTime: form.estimatedTime || undefined,
+          goalId: form.goalId || undefined,
+          note: form.note || form.description || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("failed");
+      setForm({
+        title: "",
+        description: "",
+        status: "inbox",
+        priority: "p2",
+        dueDate: today(),
+        estimatedTime: 30,
+        goalId: "",
+        note: "",
+      });
+      setModal(false);
+      await refreshTasks();
+      void refreshSilent();
+      toast("تم حفظ المهمة", "success");
+    } catch {
+      toast("فشل حفظ المهمة", "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleDone(id: string) {
@@ -376,84 +390,107 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
         </Card>
       )}
 
-      <MotionModal open={modal} onClose={() => setModal(false)}>
-          <div className="bg-surface border border-border2 rounded-[10px] w-full p-6 space-y-4 shadow-premium-lg">
-            <h3 className="font-bold text-gold2">مهمة جديدة</h3>
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="مهمة جديدة"
+        icon="✅"
+        size="xl"
+        onSave={addTask}
+        saving={saving}
+        saveDisabled={!form.title.trim()}
+      >
+        <FormSection title="المعلومات الأساسية">
+          <div>
+            <Label>العنوان</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          </div>
+          <div>
+            <Label>الوصف</Label>
+            <textarea
+              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[72px]"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>العنوان</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>الأولوية</Label>
-                <select
-                  className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value as "p1" | "p2" | "p3" | "p4" })}
-                >
-                  <option value="p1">P1</option>
-                  <option value="p2">P2</option>
-                  <option value="p3">P3</option>
-                  <option value="p4">P4</option>
-                </select>
-              </div>
-              <div>
-                <Label>الحالة</Label>
-                <select
-                  className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as LifeTask["status"] })}
-                >
-                  <option value="inbox">Inbox</option>
-                  <option value="active">Active</option>
-                  <option value="done">Done</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>تاريخ التنفيذ</Label>
-                <Input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>الوقت المتوقع (دقائق)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={String(form.estimatedTime)}
-                  onChange={(e) => setForm({ ...form, estimatedTime: parseInt(e.target.value || "0", 10) })}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>ربط بهدف (اختياري)</Label>
+              <Label>الأولوية</Label>
               <select
                 className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={form.goalId}
-                onChange={(e) => setForm({ ...form, goalId: e.target.value })}
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value as "p1" | "p2" | "p3" | "p4" })}
               >
-                <option value="">بدون ربط</option>
-                {(yearData.goals ?? []).map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.title}
-                  </option>
-                ))}
+                <option value="p1">P1 — عاجل</option>
+                <option value="p2">P2</option>
+                <option value="p3">P3</option>
+                <option value="p4">P4</option>
               </select>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>
-                إلغاء
-              </Button>
-              <Button variant="gold" onClick={addTask}>
-                حفظ
-              </Button>
+            <div>
+              <Label>الحالة</Label>
+              <select
+                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as LifeTask["status"] })}
+              >
+                <option value="inbox">Inbox</option>
+                <option value="active">Active</option>
+                <option value="done">Done</option>
+              </select>
             </div>
           </div>
-      </MotionModal>
+        </FormSection>
+
+        <FormSection title="العلاقات">
+          <div>
+            <Label>ربط بهدف (اختياري)</Label>
+            <select
+              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+              value={form.goalId}
+              onChange={(e) => setForm({ ...form, goalId: e.target.value })}
+            >
+              <option value="">بدون ربط</option>
+              {(yearData.goals ?? []).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </FormSection>
+
+        <FormSection title="تخطيط الوقت">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>تاريخ التنفيذ</Label>
+              <Input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>الوقت المتوقع (دقائق)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={String(form.estimatedTime)}
+                onChange={(e) => setForm({ ...form, estimatedTime: parseInt(e.target.value || "0", 10) })}
+              />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="ملاحظات">
+          <textarea
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
+            value={form.note}
+            onChange={(e) => setForm({ ...form, note: e.target.value })}
+            placeholder="ملاحظات إضافية..."
+          />
+        </FormSection>
+      </AppModal>
     </ViewShell>
   );
 }

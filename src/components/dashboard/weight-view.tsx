@@ -2,6 +2,7 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -276,35 +277,33 @@ export function WeightView({
         </Card>
       )}
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">⚖️ تسجيل وزن</h3>
-            <div>
-              <Label>التاريخ</Label>
-              <Input type="date" dir="ltr" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-            </div>
-            <div>
-              <Label>الوزن (كجم)</Label>
-              <Input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>ساعات النوم</Label>
-                <Input type="number" value={form.sleep} onChange={(e) => setForm({ ...form, sleep: e.target.value })} />
-              </div>
-              <div>
-                <Label>السعرات</Label>
-                <Input type="number" value={form.cals} onChange={(e) => setForm({ ...form, cals: e.target.value })} />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModalOpen(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={saveLog}>حفظ</Button>
-            </div>
+      <AppModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="تسجيل وزن"
+        icon="⚖️"
+        size="md"
+        onSave={saveLog}
+      >
+        <div>
+          <Label>التاريخ</Label>
+          <Input type="date" dir="ltr" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+        </div>
+        <div>
+          <Label>الوزن (كجم)</Label>
+          <Input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>ساعات النوم</Label>
+            <Input type="number" value={form.sleep} onChange={(e) => setForm({ ...form, sleep: e.target.value })} />
+          </div>
+          <div>
+            <Label>السعرات</Label>
+            <Input type="number" value={form.cals} onChange={(e) => setForm({ ...form, cals: e.target.value })} />
           </div>
         </div>
-      )}
+      </AppModal>
     </ViewShell>
   );
 }

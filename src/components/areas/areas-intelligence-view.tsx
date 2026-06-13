@@ -5,11 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageUnfold, SectionReveal } from "@/components/motion/unfold-reveal";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { AreasHero } from "@/components/areas/areas-hero";
 import { AreaPremiumCard } from "@/components/areas/area-premium-card";
 import { AreasParaSection } from "@/components/areas/areas-para-section";
-import { GlassModal } from "@/components/glass";
-import { MotionModal } from "@/components/motion/motion";
 import { useAreasOverview } from "@/hooks/queries/use-areas-overview";
 import { queryKeys } from "@/lib/query/keys";
 import { buildOverviewParaGraph } from "@/lib/areas/para-graph";
@@ -24,6 +24,7 @@ const EMPTY_STATS = {
 };
 
 export function AreasIntelligenceView() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data, isLoading, isFetching } = useAreasOverview();
   const [modal, setModal] = useState(false);
@@ -44,6 +45,7 @@ export function AreasIntelligenceView() {
     setModal(false);
     setForm({ nameAr: "", slug: "", icon: "📌", color: "#94a3b8" });
     await queryClient.invalidateQueries({ queryKey: queryKeys.areasOverview });
+    toast("تم إضافة المجال", "success");
   }
 
   const paraGraph = useMemo(() => buildOverviewParaGraph(previews), [previews]);
@@ -108,19 +110,18 @@ export function AreasIntelligenceView() {
         </div>
       </SectionReveal>
 
-      <MotionModal open={modal} onClose={() => setModal(false)}>
-        <GlassModal className="max-w-sm">
-          <h3 className="font-bold mb-4">مجال جديد</h3>
-          <div className="space-y-4">
-          <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
-          <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
-            <Button variant="gold" onClick={addArea}>حفظ</Button>
-          </div>
-          </div>
-        </GlassModal>
-      </MotionModal>
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="مجال جديد"
+        icon="📌"
+        size="md"
+        onSave={addArea}
+        saveDisabled={!form.nameAr.trim()}
+      >
+        <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
+        <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
+      </AppModal>
     </PageUnfold>
   );
 }

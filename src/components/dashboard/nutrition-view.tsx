@@ -2,6 +2,8 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Card } from "@/components/ui/card";
@@ -41,6 +43,7 @@ const BODY_GOAL_TO_MODE: Record<string, DietMode> = {
 };
 
 export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWeight = 70, onEditPlan, onRefresh }: NutritionViewProps) {
+  const { toast } = useToast();
   const [tab, setTab] = useState("overview");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
@@ -166,6 +169,7 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
     });
     setModal(false);
     onRefresh();
+    toast("تم حفظ الوجبة", "success");
   }
 
   async function removeLog(id: string) {
@@ -540,39 +544,35 @@ export function NutritionView({ yearData, targets, bodyPlan, bodyGoal, currentWe
         </div>
       ))}
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">Meal Builder</h3>
-            <div>
-              <Label>اسم الوجبة</Label>
-              <Input value={mealName} onChange={(e) => setMealName(e.target.value)} />
-            </div>
-            <div>
-              <Label>اختر الطعام</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={foodId}
-                onChange={(e) => setFoodId(e.target.value)}
-              >
-                {foods.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} — {f.calories} kcal
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>
-                إلغاء
-              </Button>
-              <Button variant="gold" onClick={saveMealBuilder}>
-                حفظ الوجبة
-              </Button>
-            </div>
-          </div>
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="Meal Builder"
+        icon="🍽️"
+        size="md"
+        onSave={saveMealBuilder}
+        saveLabel="حفظ الوجبة"
+        saveDisabled={!mealName.trim()}
+      >
+        <div>
+          <Label>اسم الوجبة</Label>
+          <Input value={mealName} onChange={(e) => setMealName(e.target.value)} />
         </div>
-      )}
+        <div>
+          <Label>اختر الطعام</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={foodId}
+            onChange={(e) => setFoodId(e.target.value)}
+          >
+            {foods.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} — {f.calories} kcal
+              </option>
+            ))}
+          </select>
+        </div>
+      </AppModal>
     </ViewShell>
   );
 }

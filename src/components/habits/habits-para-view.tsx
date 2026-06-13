@@ -4,6 +4,7 @@ import { ViewShell } from "@/components/motion/view-shell";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { useToast } from "@/contexts/toast-context";
+import { AppModal } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
@@ -247,86 +248,89 @@ export function HabitsParaView({ yearData, forceAddModal, onAddModalClose }: Pro
         <Button variant="gold" onClick={() => setModalOpen(true)}>+ عادة مرتبطة</Button>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold">⚡ عادة مرتبطة بـ PARA</h3>
-            <div>
-              <Label>اسم العادة</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <Label>المجال (Area)</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={form.cat}
-                onChange={(e) => setForm({ ...form, cat: e.target.value })}
-              >
-                {SYSTEM_DOMAINS.map((d) => (
-                  <option key={d.id} value={d.slug}>{d.nameAr}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>الهدف المرتبط</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={form.goalLink}
-                onChange={(e) => setForm({ ...form, goalLink: e.target.value })}
-              >
-                <option value="">— اختر هدفاً —</option>
-                {activeGoals.map((g: Goal) => (
-                  <option key={g.id} value={g.id}>{g.title}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>المشروع</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={form.projectId}
-                onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-              >
-                <option value="">— اختياري —</option>
-                {projects.map((g) => (
-                  <option key={g.id} value={g.id}>{g.title}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>لماذا أفعلها؟</Label>
-              <Input value={form.why} onChange={(e) => setForm({ ...form, why: e.target.value })} placeholder="ربط بالهدف طويل المدى" />
-            </div>
-            <HabitSchedulePicker
-              frequencyType={form.frequencyType}
-              frequencyValue={form.frequencyValue}
-              onChange={(frequencyType, frequencyValue) => setForm({ ...form, frequencyType, frequencyValue })}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>التأثير</Label>
-                <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.impact} onChange={(e) => setForm({ ...form, impact: e.target.value as "medium" })}>
-                  <option value="low">منخفض</option>
-                  <option value="medium">متوسط</option>
-                  <option value="high">عالي</option>
-                </select>
-              </div>
-              <div>
-                <Label>الأولوية</Label>
-                <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as "normal" })}>
-                  <option value="normal">عادي</option>
-                  <option value="high">عالي</option>
-                  <option value="critical">حرج</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => { setModalOpen(false); onAddModalClose?.(); }}>إلغاء</Button>
-              <Button variant="gold" onClick={addHabit}>حفظ وربط</Button>
-            </div>
+      <AppModal
+        open={showModal}
+        onClose={() => {
+          setModalOpen(false);
+          onAddModalClose?.();
+        }}
+        title="عادة مرتبطة بـ PARA"
+        icon="⚡"
+        size="lg"
+        onSave={addHabit}
+        saveLabel="حفظ وربط"
+        saveDisabled={!form.name.trim()}
+      >
+        <div>
+          <Label>اسم العادة</Label>
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </div>
+        <div>
+          <Label>المجال (Area)</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={form.cat}
+            onChange={(e) => setForm({ ...form, cat: e.target.value })}
+          >
+            {SYSTEM_DOMAINS.map((d) => (
+              <option key={d.id} value={d.slug}>{d.nameAr}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>الهدف المرتبط</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={form.goalLink}
+            onChange={(e) => setForm({ ...form, goalLink: e.target.value })}
+          >
+            <option value="">— اختر هدفاً —</option>
+            {activeGoals.map((g: Goal) => (
+              <option key={g.id} value={g.id}>{g.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>المشروع</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={form.projectId}
+            onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+          >
+            <option value="">— اختياري —</option>
+            {projects.map((g) => (
+              <option key={g.id} value={g.id}>{g.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>لماذا أفعلها؟</Label>
+          <Input value={form.why} onChange={(e) => setForm({ ...form, why: e.target.value })} placeholder="ربط بالهدف طويل المدى" />
+        </div>
+        <HabitSchedulePicker
+          frequencyType={form.frequencyType}
+          frequencyValue={form.frequencyValue}
+          onChange={(frequencyType, frequencyValue) => setForm({ ...form, frequencyType, frequencyValue })}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>التأثير</Label>
+            <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.impact} onChange={(e) => setForm({ ...form, impact: e.target.value as "medium" })}>
+              <option value="low">منخفض</option>
+              <option value="medium">متوسط</option>
+              <option value="high">عالي</option>
+            </select>
+          </div>
+          <div>
+            <Label>الأولوية</Label>
+            <select className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as "normal" })}>
+              <option value="normal">عادي</option>
+              <option value="high">عالي</option>
+              <option value="critical">حرج</option>
+            </select>
           </div>
         </div>
-      )}
+      </AppModal>
     </ViewShell>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ const VIEW_TABS = [
 ];
 
 export function PlannerView() {
+  const { toast } = useToast();
   const [view, setView] = useState("week");
   const [weekOffset, setWeekOffset] = useState(0);
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
@@ -97,6 +100,7 @@ export function PlannerView() {
     });
     setModal(false);
     await load();
+    toast("تم حفظ الكتلة", "success");
   }
 
   async function markDone(block: TimeBlock) {
@@ -179,29 +183,27 @@ export function PlannerView() {
 
       <FocusTimer onComplete={() => void load()} />
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold">Time Block جديد</h3>
-            <div><Label>العنوان</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>التاريخ</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-              <div><Label>البداية</Label><Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} /></div>
-            </div>
-            <div><Label>المدة (دقيقة)</Label><Input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: +e.target.value })} /></div>
-            <Button variant="ghost" onClick={() => void suggestTime()}>اقتراح وقت تلقائي</Button>
-            {suggestions.slice(0, 3).map((s) => (
-              <button key={s.startAt} type="button" className="w-full text-right text-sm p-2 rounded-sm bg-surface2 hover:border-gold/40 border border-border/50" onClick={() => void createBlock(s)}>
-                📅 {s.dayLabel}
-              </button>
-            ))}
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={() => void createBlock()}>حفظ</Button>
-            </div>
-          </Card>
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="Time Block جديد"
+        icon="📅"
+        size="md"
+        onSave={() => void createBlock()}
+      >
+        <div><Label>العنوان</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><Label>التاريخ</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+          <div><Label>البداية</Label><Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} /></div>
         </div>
-      )}
+        <div><Label>المدة (دقيقة)</Label><Input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: +e.target.value })} /></div>
+        <Button variant="ghost" onClick={() => void suggestTime()}>اقتراح وقت تلقائي</Button>
+        {suggestions.slice(0, 3).map((s) => (
+          <button key={s.startAt} type="button" className="w-full text-right text-sm p-2 rounded-sm bg-surface2 hover:border-gold/40 border border-border/50" onClick={() => void createBlock(s)}>
+            📅 {s.dayLabel}
+          </button>
+        ))}
+      </AppModal>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { ViewShell } from "@/components/motion/view-shell";
 import { useEffect, useMemo, useState } from "react";
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { useToast } from "@/contexts/toast-context";
+import { AppModal } from "@/components/ui/app-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
@@ -207,6 +208,7 @@ export function HabitsView({
     setModalOpen(false);
     onAddModalClose?.();
     await syncHabits();
+    toast("تم إضافة العادة", "success");
   }
 
   async function removeHabit(id: string) {
@@ -416,31 +418,23 @@ export function HabitsView({
         </Card>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-sm p-6 space-y-4">
-            <h3 className="font-bold">⚡ عادة جديدة</h3>
-            <div>
-              <Label>اسم العادة</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setModalOpen(false);
-                  onAddModalClose?.();
-                }}
-              >
-                إلغاء
-              </Button>
-              <Button variant="gold" onClick={addHabit}>
-                حفظ
-              </Button>
-            </div>
-          </div>
+      <AppModal
+        open={showModal}
+        onClose={() => {
+          setModalOpen(false);
+          onAddModalClose?.();
+        }}
+        title="عادة جديدة"
+        icon="⚡"
+        size="md"
+        onSave={addHabit}
+        saveDisabled={!name.trim()}
+      >
+        <div>
+          <Label>اسم العادة</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-      )}
+      </AppModal>
     </ViewShell>
   );
 }

@@ -2,6 +2,8 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs } from "@/components/ui/tabs";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -31,6 +33,7 @@ interface WorkoutsViewProps {
 }
 
 export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: WorkoutsViewProps) {
+  const { toast } = useToast();
   const [view, setView] = useState("log");
   const [modal, setModal] = useState(false);
   const [exerciseModal, setExerciseModal] = useState(false);
@@ -156,6 +159,46 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
     });
     setModal(false);
     onRefresh();
+    toast("تم تسجيل التمرين", "success");
+  }
+
+  async function saveTemplate() {
+    if (!newTemplate.name.trim()) return;
+    const defaultSchedule = newTemplate.splitType === "ppl"
+      ? [
+          { day: "الأحد", label: "Push", focus: "صدر + كتف + ترايسبس" },
+          { day: "الثلاثاء", label: "Pull", focus: "ظهر + بايسبس" },
+          { day: "الخميس", label: "Legs", focus: "أرجل + جلوت" },
+        ]
+      : [{ day: "اليوم 1", label: newTemplate.name, focus: "مخصص" }];
+    await fetch("/api/workouts/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newTemplate.name,
+        splitType: newTemplate.splitType,
+        daysPerWeek: parseInt(newTemplate.daysPerWeek, 10) || 4,
+        schedule: defaultSchedule,
+        notes: newTemplate.notes || undefined,
+      }),
+    });
+    setTemplateModal(false);
+    setNewTemplate({ name: "", splitType: "ppl", daysPerWeek: "4", notes: "" });
+    await loadTemplates();
+    toast("تم حفظ القالب", "success");
+  }
+
+  async function saveExercise() {
+    if (!newExercise.name.trim()) return;
+    await fetch("/api/workouts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity: "exercise", payload: newExercise }),
+    });
+    setExerciseModal(false);
+    setNewExercise({ name: "", muscleGroup: "", equipment: "" });
+    onRefresh();
+    toast("تم إضافة التمرين", "success");
   }
 
   const grouped = useMemo(() => {
@@ -374,125 +417,84 @@ export function WorkoutsView({ yearData, workoutProgram = "PPLUL", onRefresh }: 
         </div>
       )}
 
-      {templateModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">قالب تمرين جديد</h3>
-            <div><Label>الاسم</Label><Input value={newTemplate.name} onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })} placeholder="PPL Bulking" /></div>
-            <div>
-              <Label>نوع التقسيم</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={newTemplate.splitType}
-                onChange={(e) => setNewTemplate({ ...newTemplate, splitType: e.target.value as typeof newTemplate.splitType })}
-              >
-                <option value="ppl">PPL</option>
-                <option value="upper_lower">Upper / Lower</option>
-                <option value="full_body">Full Body</option>
-                <option value="custom">مخصص</option>
-              </select>
-            </div>
-            <div><Label>أيام/أسبوع</Label><Input value={newTemplate.daysPerWeek} onChange={(e) => setNewTemplate({ ...newTemplate, daysPerWeek: e.target.value })} /></div>
-            <div><Label>ملاحظات</Label><Input value={newTemplate.notes} onChange={(e) => setNewTemplate({ ...newTemplate, notes: e.target.value })} /></div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setTemplateModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={async () => {
-                if (!newTemplate.name.trim()) return;
-                const defaultSchedule = newTemplate.splitType === "ppl"
-                  ? [
-                      { day: "الأحد", label: "Push", focus: "صدر + كتف + ترايسبس" },
-                      { day: "الثلاثاء", label: "Pull", focus: "ظهر + بايسبس" },
-                      { day: "الخميس", label: "Legs", focus: "أرجل + جلوت" },
-                    ]
-                  : [{ day: "اليوم 1", label: newTemplate.name, focus: "مخصص" }];
-                await fetch("/api/workouts/templates", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name: newTemplate.name,
-                    splitType: newTemplate.splitType,
-                    daysPerWeek: parseInt(newTemplate.daysPerWeek, 10) || 4,
-                    schedule: defaultSchedule,
-                    notes: newTemplate.notes || undefined,
-                  }),
-                });
-                setTemplateModal(false);
-                setNewTemplate({ name: "", splitType: "ppl", daysPerWeek: "4", notes: "" });
-                await loadTemplates();
-              }}>حفظ</Button>
-            </div>
-          </div>
+      <AppModal
+        open={templateModal}
+        onClose={() => setTemplateModal(false)}
+        title="قالب تمرين جديد"
+        icon="🏋️"
+        size="md"
+        onSave={saveTemplate}
+        saveDisabled={!newTemplate.name.trim()}
+      >
+        <div><Label>الاسم</Label><Input value={newTemplate.name} onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })} placeholder="PPL Bulking" /></div>
+        <div>
+          <Label>نوع التقسيم</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={newTemplate.splitType}
+            onChange={(e) => setNewTemplate({ ...newTemplate, splitType: e.target.value as typeof newTemplate.splitType })}
+          >
+            <option value="ppl">PPL</option>
+            <option value="upper_lower">Upper / Lower</option>
+            <option value="full_body">Full Body</option>
+            <option value="custom">مخصص</option>
+          </select>
         </div>
-      )}
+        <div><Label>أيام/أسبوع</Label><Input value={newTemplate.daysPerWeek} onChange={(e) => setNewTemplate({ ...newTemplate, daysPerWeek: e.target.value })} /></div>
+        <div><Label>ملاحظات</Label><Input value={newTemplate.notes} onChange={(e) => setNewTemplate({ ...newTemplate, notes: e.target.value })} /></div>
+      </AppModal>
 
-      {exerciseModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">تمرين جديد</h3>
-            <div><Label>الاسم</Label><Input value={newExercise.name} onChange={(e) => setNewExercise({ ...newExercise, name: e.target.value })} /></div>
-            <div><Label>المجموعة العضلية</Label><Input value={newExercise.muscleGroup} onChange={(e) => setNewExercise({ ...newExercise, muscleGroup: e.target.value })} placeholder="صدر، ظهر..." /></div>
-            <div><Label>المعدات</Label><Input value={newExercise.equipment} onChange={(e) => setNewExercise({ ...newExercise, equipment: e.target.value })} /></div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setExerciseModal(false)}>إلغاء</Button>
-              <Button variant="gold" onClick={async () => {
-                if (!newExercise.name.trim()) return;
-                await fetch("/api/workouts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ entity: "exercise", payload: newExercise }),
-                });
-                setExerciseModal(false);
-                setNewExercise({ name: "", muscleGroup: "", equipment: "" });
-                onRefresh();
-              }}>حفظ</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AppModal
+        open={exerciseModal}
+        onClose={() => setExerciseModal(false)}
+        title="تمرين جديد"
+        icon="💪"
+        size="md"
+        onSave={saveExercise}
+        saveDisabled={!newExercise.name.trim()}
+      >
+        <div><Label>الاسم</Label><Input value={newExercise.name} onChange={(e) => setNewExercise({ ...newExercise, name: e.target.value })} /></div>
+        <div><Label>المجموعة العضلية</Label><Input value={newExercise.muscleGroup} onChange={(e) => setNewExercise({ ...newExercise, muscleGroup: e.target.value })} placeholder="صدر، ظهر..." /></div>
+        <div><Label>المعدات</Label><Input value={newExercise.equipment} onChange={(e) => setNewExercise({ ...newExercise, equipment: e.target.value })} /></div>
+      </AppModal>
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">تسجيل تمرين</h3>
-            <div>
-              <Label>التمرين</Label>
-              <select
-                className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
-                value={form.exerciseId}
-                onChange={(e) => setForm({ ...form, exerciseId: e.target.value })}
-              >
-                {exercises.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label>الوزن</Label>
-                <Input value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
-              </div>
-              <div>
-                <Label>تكرار</Label>
-                <Input value={form.reps} onChange={(e) => setForm({ ...form, reps: e.target.value })} />
-              </div>
-              <div>
-                <Label>مجموعات</Label>
-                <Input value={form.sets} onChange={(e) => setForm({ ...form, sets: e.target.value })} />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(false)}>
-                إلغاء
-              </Button>
-              <Button variant="gold" onClick={saveLog}>
-                حفظ
-              </Button>
-            </div>
+      <AppModal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="تسجيل تمرين"
+        icon="🏋️"
+        size="md"
+        onSave={saveLog}
+      >
+        <div>
+          <Label>التمرين</Label>
+          <select
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+            value={form.exerciseId}
+            onChange={(e) => setForm({ ...form, exerciseId: e.target.value })}
+          >
+            {exercises.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <Label>الوزن</Label>
+            <Input value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+          </div>
+          <div>
+            <Label>تكرار</Label>
+            <Input value={form.reps} onChange={(e) => setForm({ ...form, reps: e.target.value })} />
+          </div>
+          <div>
+            <Label>مجموعات</Label>
+            <Input value={form.sets} onChange={(e) => setForm({ ...form, sets: e.target.value })} />
           </div>
         </div>
-      )}
+      </AppModal>
     </ViewShell>
   );
 }

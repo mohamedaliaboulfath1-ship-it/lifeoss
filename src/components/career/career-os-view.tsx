@@ -2,6 +2,8 @@
 import { ViewShell } from "@/components/motion/view-shell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/app-modal";
+import { useToast } from "@/contexts/toast-context";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs } from "@/components/ui/tabs";
@@ -60,6 +62,7 @@ type CareerBundle = {
 };
 
 export function CareerOsView({ yearData, onRefresh }: Props) {
+  const { toast } = useToast();
   const [tab, setTab] = useState("overview");
   const [data, setData] = useState<CareerBundle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +96,56 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
     setForm({});
     await load();
     onRefresh?.();
+    toast("تم الحفظ", "success");
   }
+
+  function handleModalSave() {
+    if (!data || !modal) return;
+    if (modal === "node") {
+      void post("milestone", {
+        id: uid(),
+        title: form.title,
+        targetDate: form.targetDate,
+        salaryRange: form.salaryRange,
+        focus: form.focus?.split(",").map((s) => s.trim()).filter(Boolean) ?? [],
+        stageOrder: data.roadmap.length + 1,
+        status: data.roadmap.length === 0 ? "active" : "planned",
+      });
+    } else if (modal === "skill") {
+      void post("skill", {
+        id: uid(),
+        name: form.name,
+        current: parseInt(form.current || "0", 10),
+        target: parseInt(form.target || "80", 10),
+        scoringMode: "hybrid",
+      });
+    } else if (modal === "cert") {
+      void post("certification", {
+        id: uid(),
+        name: form.name,
+        provider: form.provider,
+        dueDate: form.dueDate,
+        careerImpactScore: parseInt(form.careerImpactScore || "50", 10),
+        status: "planned",
+      });
+    } else if (modal === "project") {
+      void post("portfolio", {
+        id: uid(),
+        title: form.title,
+        description: form.description,
+        skillsUsed: form.skillsUsed?.split(",").map((s) => s.trim()).filter(Boolean) ?? [],
+        careerImpact: parseInt(form.careerImpact || "10", 10),
+        status: "active",
+      });
+    }
+  }
+
+  const modalTitle =
+    modal === "node" ? "مرحلة مهنية جديدة"
+      : modal === "skill" ? "مهارة جديدة"
+        : modal === "cert" ? "شهادة جديدة"
+          : modal === "project" ? "مشروع جديد"
+            : "";
 
   async function remove(entity: string, id: string) {
     await fetch("/api/career", {
@@ -330,96 +382,46 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
         />
       )}
 
-      {modal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <h3 className="font-bold text-gold2">
-              {modal === "node" && "مرحلة مهنية جديدة"}
-              {modal === "skill" && "مهارة جديدة"}
-              {modal === "cert" && "شهادة جديدة"}
-              {modal === "project" && "مشروع جديد"}
-            </h3>
-            {modal === "node" && (
-              <>
-                <Field label="المسمى الوظيفي" keyName="title" form={form} setForm={setForm} placeholder="Financial Analyst" />
-                <Field label="تاريخ الهدف" keyName="targetDate" form={form} setForm={setForm} type="date" />
-                <Field label="نطاق الراتب" keyName="salaryRange" form={form} setForm={setForm} placeholder="15k–20k SAR" />
-                <Field label="التركيز (مفصول بفاصلة)" keyName="focus" form={form} setForm={setForm} placeholder="Modeling, BI" />
-              </>
-            )}
-            {modal === "skill" && (
-              <>
-                <Field label="اسم المهارة" keyName="name" form={form} setForm={setForm} placeholder="Financial Modeling" />
-                <Field label="المستوى الحالي %" keyName="current" form={form} setForm={setForm} type="number" />
-                <Field label="الهدف %" keyName="target" form={form} setForm={setForm} type="number" placeholder="90" />
-              </>
-            )}
-            {modal === "cert" && (
-              <>
-                <Field label="الشهادة" keyName="name" form={form} setForm={setForm} placeholder="FMVA" />
-                <Field label="المزود" keyName="provider" form={form} setForm={setForm} placeholder="CFI" />
-                <Field label="تاريخ الهدف" keyName="dueDate" form={form} setForm={setForm} type="date" />
-                <Field label="تأثير مهني %" keyName="careerImpactScore" form={form} setForm={setForm} type="number" placeholder="50" />
-              </>
-            )}
-            {modal === "project" && (
-              <>
-                <Field label="عنوان المشروع" keyName="title" form={form} setForm={setForm} />
-                <Field label="الوصف" keyName="description" form={form} setForm={setForm} />
-                <Field label="المهارات (فاصلة)" keyName="skillsUsed" form={form} setForm={setForm} placeholder="Excel, Modeling" />
-                <Field label="تأثير مهني %" keyName="careerImpact" form={form} setForm={setForm} type="number" />
-              </>
-            )}
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setModal(null)}>إلغاء</Button>
-              <Button
-                variant="gold"
-                onClick={() => {
-                  if (modal === "node") {
-                    void post("milestone", {
-                      id: uid(),
-                      title: form.title,
-                      targetDate: form.targetDate,
-                      salaryRange: form.salaryRange,
-                      focus: form.focus?.split(",").map((s) => s.trim()).filter(Boolean) ?? [],
-                      stageOrder: d.roadmap.length + 1,
-                      status: d.roadmap.length === 0 ? "active" : "planned",
-                    });
-                  } else if (modal === "skill") {
-                    void post("skill", {
-                      id: uid(),
-                      name: form.name,
-                      current: parseInt(form.current || "0", 10),
-                      target: parseInt(form.target || "80", 10),
-                      scoringMode: "hybrid",
-                    });
-                  } else if (modal === "cert") {
-                    void post("certification", {
-                      id: uid(),
-                      name: form.name,
-                      provider: form.provider,
-                      dueDate: form.dueDate,
-                      careerImpactScore: parseInt(form.careerImpactScore || "50", 10),
-                      status: "planned",
-                    });
-                  } else if (modal === "project") {
-                    void post("portfolio", {
-                      id: uid(),
-                      title: form.title,
-                      description: form.description,
-                      skillsUsed: form.skillsUsed?.split(",").map((s) => s.trim()).filter(Boolean) ?? [],
-                      careerImpact: parseInt(form.careerImpact || "10", 10),
-                      status: "active",
-                    });
-                  }
-                }}
-              >
-                حفظ
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <AppModal
+        open={!!modal}
+        onClose={() => setModal(null)}
+        title={modalTitle}
+        icon="📈"
+        size="md"
+        onSave={handleModalSave}
+      >
+        {modal === "node" && (
+          <>
+            <Field label="المسمى الوظيفي" keyName="title" form={form} setForm={setForm} placeholder="Financial Analyst" />
+            <Field label="تاريخ الهدف" keyName="targetDate" form={form} setForm={setForm} type="date" />
+            <Field label="نطاق الراتب" keyName="salaryRange" form={form} setForm={setForm} placeholder="15k–20k SAR" />
+            <Field label="التركيز (مفصول بفاصلة)" keyName="focus" form={form} setForm={setForm} placeholder="Modeling, BI" />
+          </>
+        )}
+        {modal === "skill" && (
+          <>
+            <Field label="اسم المهارة" keyName="name" form={form} setForm={setForm} placeholder="Financial Modeling" />
+            <Field label="المستوى الحالي %" keyName="current" form={form} setForm={setForm} type="number" />
+            <Field label="الهدف %" keyName="target" form={form} setForm={setForm} type="number" placeholder="90" />
+          </>
+        )}
+        {modal === "cert" && (
+          <>
+            <Field label="الشهادة" keyName="name" form={form} setForm={setForm} placeholder="FMVA" />
+            <Field label="المزود" keyName="provider" form={form} setForm={setForm} placeholder="CFI" />
+            <Field label="تاريخ الهدف" keyName="dueDate" form={form} setForm={setForm} type="date" />
+            <Field label="تأثير مهني %" keyName="careerImpactScore" form={form} setForm={setForm} type="number" placeholder="50" />
+          </>
+        )}
+        {modal === "project" && (
+          <>
+            <Field label="عنوان المشروع" keyName="title" form={form} setForm={setForm} />
+            <Field label="الوصف" keyName="description" form={form} setForm={setForm} />
+            <Field label="المهارات (فاصلة)" keyName="skillsUsed" form={form} setForm={setForm} placeholder="Excel, Modeling" />
+            <Field label="تأثير مهني %" keyName="careerImpact" form={form} setForm={setForm} type="number" />
+          </>
+        )}
+      </AppModal>
     </ViewShell>
   );
 }
