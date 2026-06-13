@@ -13,6 +13,7 @@ import type {
 } from "@/types/database";
 import type { Goal, GoalTask, Habit, WeightLog, YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
+import { parseSaasMetadata } from "@/lib/tenant/constants";
 
 export function mapProfile(row: ProfileRow) {
   const ext = row as ProfileRow & {
@@ -24,6 +25,8 @@ export function mapProfile(row: ProfileRow) {
     metadata?: { bodyPlan?: Record<string, unknown> } | null;
   };
   const meta = ext.metadata ?? {};
+  const saas = parseSaasMetadata(meta as Record<string, unknown>);
+  const rowExt = row as ProfileRow & { tenant_id?: string; workspace_id?: string };
   return {
     id: row.id,
     displayName: row.display_name,
@@ -54,6 +57,9 @@ export function mapProfile(row: ProfileRow) {
     timezone: row.timezone ?? "Asia/Riyadh",
     language: row.language ?? "ar",
     bio: row.bio ?? null,
+    tenantId: rowExt.tenant_id ?? row.id,
+    workspaceId: rowExt.workspace_id ?? row.id,
+    saas,
   };
 }
 

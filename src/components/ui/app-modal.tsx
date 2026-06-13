@@ -43,6 +43,8 @@ export type AppModalProps = {
   saveDisabled?: boolean;
   /** Only mount children after first open (performance) */
   lazy?: boolean;
+  /** When false, backdrop/ESC/close button are disabled */
+  dismissible?: boolean;
   className?: string;
 };
 
@@ -61,6 +63,7 @@ export function AppModal({
   saving = false,
   saveDisabled = false,
   lazy = true,
+  dismissible = true,
   className,
 }: AppModalProps) {
   const reduced = useReducedMotion();
@@ -102,7 +105,7 @@ export function AppModal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && dismissible) {
         e.preventDefault();
         onClose();
       }
@@ -148,7 +151,7 @@ export function AppModal({
           animate={{ opacity: 1 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          onClick={onClose}
+          onClick={dismissible ? onClose : undefined}
           role="presentation"
         >
           <div className="absolute inset-0 bg-black/55" aria-hidden />
@@ -182,14 +185,16 @@ export function AppModal({
                     <p className="text-xs text-text3 mt-0.5">{subtitle}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="text-text3 hover:text-text text-lg leading-none px-2 py-1 rounded hover:bg-surface2"
-                  aria-label="إغلاق"
-                >
-                  ×
-                </button>
+                {dismissible && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-text3 hover:text-text text-lg leading-none px-2 py-1 rounded hover:bg-surface2"
+                    aria-label="إغلاق"
+                  >
+                    ×
+                  </button>
+                )}
               </header>
             )}
 

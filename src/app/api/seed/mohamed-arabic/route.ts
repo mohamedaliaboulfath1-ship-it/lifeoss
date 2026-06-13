@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/api-auth";
+import { requireSuperAdmin } from "@/lib/api-auth";
 import { runMohamedArabicSeed } from "@/lib/seed/run-mohamed-arabic";
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
+  const auth = await requireSuperAdmin();
   if ("error" in auth) return auth.error;
 
   const force = new URL(req.url).searchParams.get("force") === "1";

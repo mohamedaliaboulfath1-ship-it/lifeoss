@@ -32,6 +32,7 @@ import Link from "next/link";
 import { StaggerGrid, StaggerItem } from "@/components/motion/stagger";
 import { ProjectCommandCenter } from "@/components/dashboard/project-command-center";
 import { useGoalExpand } from "@/contexts/goal-expand-context";
+import { WisdomWidget } from "@/components/wisdom/wisdom-widget";
 
 interface Profile {
   displayName: string;
@@ -446,6 +447,10 @@ export function DashboardView({
 
       {/* ── Career & Learning ── */}
       <CareerPanel career={dashboard.career} />
+
+      <StaggerItem>
+        <WisdomWidget />
+      </StaggerItem>
 
       {/* ── Smart Insights ── */}
       <Card>

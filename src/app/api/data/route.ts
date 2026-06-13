@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { maybeSeedMohamedArabic } from "@/lib/seed/run-mohamed-arabic";
 import { maybeSeedMohamedBooksLibrary } from "@/lib/seed/run-mohamed-books-library";
+import { maybeSeedOnboarding } from "@/lib/seed/run-onboarding-seed";
 import { getUserContext, invalidateUserContext } from "@/lib/year-data";
+import { shouldSkipOnboarding } from "@/lib/tenant/super-admin";
 
 function errorMessage(e: unknown) {
   if (e instanceof Error) return e.message;
@@ -24,8 +26,31 @@ export async function GET() {
       authResult.userId,
       authResult.user.email
     );
+    const profileRole = (
+      await authResult.supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", authResult.userId)
+        .maybeSingle()
+    ).data?.role;
+
+    if (!shouldSkipOnboarding(authResult.user.email, profileRole)) {
+      await maybeSeedOnboarding(
+        authResult.supabase,
+        authResult.userId,
+        authResult.user.email,
+        profileRole
+      );
+    }
+
     const ctx = await getUserContext(authResult.userId);
-    return NextResponse.json(ctx);
+    return NextResponse.json({
+      ...ctx,
+      profile: {
+        ...ctx.profile,
+        email: authResult.user.email ?? undefined,
+      },
+    });
   } catch (e) {
     console.error("GET /api/data:", e);
     return NextResponse.json(

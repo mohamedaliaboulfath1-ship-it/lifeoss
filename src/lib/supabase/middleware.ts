@@ -80,5 +80,22 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (pathname.startsWith("/admin") && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, suspended")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (
+      profile?.suspended ||
+      (profile?.role !== "admin" && profile?.role !== "super_admin")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }

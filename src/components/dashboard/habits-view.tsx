@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Tabs } from "@/components/ui/tabs";
 import { LazyChart } from "@/components/ui/lazy-chart";
+import { EmptyState } from "@/components/ui/empty-state";
 import { calcOverallHabitPct, calcStreak } from "@/lib/calculations";
 import { getWeekDates, today } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
@@ -285,6 +286,20 @@ export function HabitsView({
 
       {tab === "tracker" && (
         <>
+          {habits.length === 0 ? (
+            <EmptyState
+              icon="🔄"
+              title="لا توجد عادات بعد"
+              description="العادات هي محرك التغيير — ابدأ بعادة واحدة يومية"
+              example="قراءة 20 صفحة · تمرين · مراجعة مسائية"
+              suggestedActions={[
+                { label: "أضف أول عادة", onClick: () => setModalOpen(true), variant: "gold" },
+                { label: "عادات تجريبية", href: "/welcome", variant: "ghost" },
+                { label: "دليل العادات", href: "/guide", variant: "ghost" },
+              ]}
+            />
+          ) : (
+          <>
           <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={() => setWeekOffset((w) => w - 1)}>
               ← الأسبوع السابق
@@ -346,10 +361,12 @@ export function HabitsView({
                 ))}
               </tbody>
             </table>
-            {!habitBestStreak.length && (
+            {!habitBestStreak.length && catFilter !== "all" && (
               <p className="text-center text-text3 py-8 text-sm">لا عادات ضمن هذا التصنيف</p>
             )}
           </Card>
+          </>
+          )}
         </>
       )}
 

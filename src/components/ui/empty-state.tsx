@@ -1,8 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+
+export interface EmptyStateAction {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  variant?: "gold" | "ghost" | "danger";
+}
 
 interface EmptyStateProps {
   icon?: string;
@@ -12,6 +20,8 @@ interface EmptyStateProps {
   actionLabel?: string;
   onAction?: () => void;
   href?: string;
+  /** Intelligent empty state — multiple suggested actions */
+  suggestedActions?: EmptyStateAction[];
   className?: string;
 }
 
@@ -22,8 +32,15 @@ export function EmptyState({
   example,
   actionLabel,
   onAction,
+  suggestedActions,
   className,
 }: EmptyStateProps) {
+  const actions: EmptyStateAction[] =
+    suggestedActions ??
+    (actionLabel
+      ? [{ label: actionLabel, onClick: onAction, variant: "gold" as const }]
+      : []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -36,10 +53,7 @@ export function EmptyState({
         className
       )}
     >
-      <div
-        className="text-5xl mb-4 opacity-90 select-none"
-        aria-hidden
-      >
+      <div className="text-5xl mb-4 opacity-90 select-none" aria-hidden>
         {icon}
       </div>
       <h3 className="font-bold text-text text-base mb-1.5">{title}</h3>
@@ -51,10 +65,27 @@ export function EmptyState({
           مثال: {example}
         </p>
       )}
-      {actionLabel && onAction && (
-        <Button variant="gold" size="sm" onClick={onAction}>
-          {actionLabel}
-        </Button>
+      {actions.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-center mt-2">
+          {actions.map((action) =>
+            action.href ? (
+              <Link key={action.label} href={action.href}>
+                <Button variant={action.variant ?? "ghost"} size="sm">
+                  {action.label}
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                key={action.label}
+                variant={action.variant ?? "ghost"}
+                size="sm"
+                onClick={action.onClick}
+              >
+                {action.label}
+              </Button>
+            )
+          )}
+        </div>
       )}
     </motion.div>
   );

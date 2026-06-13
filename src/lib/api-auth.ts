@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { NextResponse } from "next/server";
+import { isAdminRole } from "@/lib/tenant/super-admin";
 
 export async function requireSession() {
   if (!isSupabaseConfigured()) {
@@ -50,9 +51,37 @@ export async function requireAdmin() {
     };
   }
 
-  if (profile?.role !== "admin") {
+  if (!isAdminRole(profile?.role)) {
     return {
       error: NextResponse.json({ error: "صلاحيات المسؤول مطلوبة" }, { status: 403 }),
+    };
+  }
+
+  return session;
+}
+
+export async function requireSuperAdmin() {
+  const session = await requireSession();
+  if ("error" in session) return session;
+
+  const { data: profile } = await session.supabase
+    .from("profiles")
+    .select("role, suspended")
+    .eq("id", session.userId)
+    .single();
+
+  if (profile?.suspended) {
+    return {
+      error: NextResponse.json({ error: "الحساب معلّق" }, { status: 403 }),
+    };
+  }
+
+  if (profile?.role !== "super_admin") {
+    return {
+      error: NextResponse.json(
+        { error: "حساب المسؤول الأعلى مطلوب" },
+        { status: 403 }
+      ),
     };
   }
 

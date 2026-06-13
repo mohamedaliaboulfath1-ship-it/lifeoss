@@ -240,7 +240,15 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             </Card>
           ))}
           {!d.insights.length && (
-            <EmptyState title="ابدأ ببناء مسارك" description="أضف مرحلة مهنية أو مهارة لتفعيل المدرب" />
+            <EmptyState
+              icon="🧭"
+              title="ابدأ ببناء مسارك"
+              description="أضف مرحلة مهنية أو مهارة لتفعيل المدرب"
+              suggestedActions={[
+                { label: "أضف مرحلة", onClick: () => setModal("node"), variant: "gold" },
+                { label: "دليل المهنة", href: "/guide", variant: "ghost" },
+              ]}
+            />
           )}
         </div>
       )}
@@ -252,7 +260,15 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             <Button variant="gold" size="sm" onClick={() => setModal("node")}>+ مرحلة جديدة</Button>
           </div>
           {!d.roadmap.length ? (
-            <EmptyState title="لا مسار بعد" description="أنشئ مسارك: Accountant → FA → CFO أو أي مسار تريده" />
+            <EmptyState
+              icon="📈"
+              title="لا يوجد مسار مهني بعد"
+              description="أنشئ مسارك: Accountant → FA → CFO أو أي مسار تريده"
+              suggestedActions={[
+                { label: "مرحلة جديدة", onClick: () => setModal("node"), variant: "gold" },
+                { label: "مسار تجريبي", href: "/welcome", variant: "ghost" },
+              ]}
+            />
           ) : (
             <CareerRoadmapDnd stages={d.roadmap} onReorder={reorderRoadmap} onDelete={(id) => remove("milestone", id)} />
           )}
@@ -276,7 +292,17 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             <div className="text-sm font-bold">Skills Matrix 2.0 (0–100)</div>
             <Button variant="gold" size="sm" onClick={() => setModal("skill")}>+ مهارة</Button>
           </div>
-          {!d.skills.length && <EmptyState title="لا مهارات" description="أضف Excel، Financial Modeling، Power BI..." />}
+          {!d.skills.length && (
+            <EmptyState
+              icon="🛠️"
+              title="لا توجد مهارات بعد"
+              description="أضف Excel، Financial Modeling، Power BI..."
+              suggestedActions={[
+                { label: "أضف مهارة", onClick: () => setModal("skill"), variant: "gold" },
+                { label: "دليل المهنة", href: "/guide", variant: "ghost" },
+              ]}
+            />
+          )}
           <VirtualList
             items={d.skills}
             rowHeight={88}
@@ -313,7 +339,17 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             <div className="text-sm font-bold">الشهادات — Timeline</div>
             <Button variant="gold" size="sm" onClick={() => setModal("cert")}>+ شهادة</Button>
           </div>
-          {!d.certifications.length && <EmptyState title="لا شهادات" description="CMA، CFA، FMVA، Power BI..." />}
+          {!d.certifications.length && (
+            <EmptyState
+              icon="🎓"
+              title="لا توجد شهادات بعد"
+              description="CMA، CFA، FMVA، Power BI..."
+              suggestedActions={[
+                { label: "أضف شهادة", onClick: () => setModal("cert"), variant: "gold" },
+                { label: "دليل التعلّم", href: "/guide", variant: "ghost" },
+              ]}
+            />
+          )}
           <VirtualList
             items={[...d.certifications].sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))}
             rowHeight={56}
@@ -341,7 +377,17 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
             <div className="text-sm font-bold">Portfolio Projects</div>
             <Button variant="gold" size="sm" onClick={() => setModal("project")}>+ مشروع</Button>
           </div>
-          {!d.portfolio.length && <EmptyState title="لا مشاريع" description="أضف مشاريعك لرفع مستوى المهارات تلقائياً" />}
+          {!d.portfolio.length && (
+            <EmptyState
+              icon="💼"
+              title="لا توجد مشاريع بعد"
+              description="أضف مشاريعك لرفع مستوى المهارات تلقائياً"
+              suggestedActions={[
+                { label: "أضف مشروعاً", onClick: () => setModal("project"), variant: "gold" },
+                { label: "دليل المهنة", href: "/guide", variant: "ghost" },
+              ]}
+            />
+          )}
           {d.portfolio.map((p) => (
             <div key={p.id} className="border border-border rounded-sm p-3">
               <div className="flex justify-between">
@@ -358,7 +404,16 @@ export function CareerOsView({ yearData, onRefresh }: Props) {
 
       {tab === "links" && d.integrations && <CareerIntegrationsPanel integrations={d.integrations} />}
       {tab === "links" && !d.integrations && (
-        <EmptyState title="الربط" description="أضف أهدافاً وعادات وكتباً مهنية" />
+        <EmptyState
+          icon="🔗"
+          title="لا توجد روابط بعد"
+          description="اربط أهدافاً وعادات وكتباً مهنية"
+          suggestedActions={[
+            { label: "الأهداف", href: "/goals", variant: "gold" },
+            { label: "العادات", href: "/habits", variant: "ghost" },
+            { label: "المكتبة", href: "/books", variant: "ghost" },
+          ]}
+        />
       )}
 
       {tab === "coach" && (

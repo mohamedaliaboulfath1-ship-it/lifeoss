@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useLifeOS } from "@/contexts/lifeos-context";
 import { cn } from "@/lib/utils";
+import { isAdminRole } from "@/lib/tenant/super-admin";
 
 const MENU_ITEMS = [
   { href: "/account/profile", label: "الملف الشخصي", icon: "👤" },
@@ -47,7 +48,7 @@ export function ProfileMenu() {
   const ref = useRef<HTMLDivElement>(null);
   const name = data?.profile.displayName ?? "مستخدم";
   const avatarUrl = data?.profile.avatarUrl;
-  const isAdmin = data?.profile.role === "admin";
+  const isAdmin = isAdminRole(data?.profile.role);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {

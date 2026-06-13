@@ -13,6 +13,14 @@ export const DEFAULT_RULES = [
 /** Navigation aligned with LifeOS_1.html */
 export const NAV_PAGES: NavPage[] = [
   {
+    id: "welcome",
+    href: "/welcome",
+    icon: "🌟",
+    title: "مركز الترحيب",
+    sub: "البداية والقائمة التفاعلية",
+    section: "الرئيسية",
+  },
+  {
     id: "dashboard",
     href: "/dashboard",
     icon: "🏠",
@@ -179,6 +187,22 @@ export const NAV_PAGES: NavPage[] = [
     title: "الأرشيف",
     sub: "حفظ ومقارنة السنوات",
     section: "التحليل والمراجعة",
+  },
+  {
+    id: "wisdom",
+    href: "/wisdom",
+    icon: "✨",
+    title: "الحكمة",
+    sub: "تحفيز وحكمة يومية",
+    section: "التحليل والمراجعة",
+  },
+  {
+    id: "guide",
+    href: "/guide",
+    icon: "📖",
+    title: "مركز المساعدة",
+    sub: "دليل المستخدم والجولات",
+    section: "الإعدادات",
   },
   {
     id: "settings",

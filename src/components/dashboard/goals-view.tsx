@@ -12,6 +12,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { GoalsKanban } from "@/components/dashboard/goals-kanban";
 import { PremiumGoalCard } from "@/components/goals/premium-goal-card";
 import { AppModal } from "@/components/ui/app-modal";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/contexts/toast-context";
 import { useGoalExpand } from "@/contexts/goal-expand-context";
 import { areaLabel, calcGoalPct } from "@/lib/calculations";
@@ -272,10 +273,24 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
       </Card>
 
       {view === "kanban" && (
+        goals.length === 0 ? (
+          <EmptyState
+            icon="🎯"
+            title="لا توجد أهداف بعد"
+            description="حوّل أحلامك إلى أهداف قابلة للقياس مع مهام وعادات مرتبطة"
+            example="زيادة الوزن 5 كجم · قراءة 12 كتاباً · ترقية وظيفية"
+            suggestedActions={[
+              { label: "أنشئ هدفك الأول", onClick: () => setModalOpen(true), variant: "gold" },
+              { label: "أهداف تجريبية", href: "/welcome", variant: "ghost" },
+              { label: "دليل الأهداف", href: "/guide", variant: "ghost" },
+            ]}
+          />
+        ) : (
         <GoalsKanban
           goals={proGoals}
           onStatusChange={updateStatus}
         />
+        )
       )}
 
       {view === "grid" && (
@@ -305,9 +320,15 @@ export function GoalsView({ yearData, onRefresh, openAdd, onAddClose }: GoalsVie
       {view === "hierarchy" && (
         <div className="space-y-4">
           {hierarchy.length === 0 ? (
-            <p className="text-text3 text-center py-8">
-              أضف رؤية (Vision) ثم أهداف ومشاريع مرتبطة بها
-            </p>
+            <EmptyState
+              icon="🏛️"
+              title="لا توجد هيكلة بعد"
+              description="ابدأ برؤية (Vision) ثم أهداف ومشاريع مرتبطة بها"
+              suggestedActions={[
+                { label: "أضف رؤية", onClick: () => { setForm((f) => ({ ...f, level: "vision" })); setModalOpen(true); }, variant: "gold" },
+                { label: "مركز الترحيب", href: "/welcome", variant: "ghost" },
+              ]}
+            />
           ) : (
             hierarchy.map((node, i) => (
               <HierarchyNode key={node.goal.id} node={node} depth={0} unfoldIndex={i} />

@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BodyGoal } from "@/components/body/body-plan-panel";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
+import type { SaasMetadata } from "@/lib/tenant/constants";
 import { queryKeys } from "@/lib/query/keys";
 import { readPersistedLifeOS, writePersistedLifeOS } from "@/lib/query/persist";
 
@@ -40,7 +41,11 @@ interface Profile {
   currentYear: string;
   onboarded: boolean;
   avatarUrl?: string | null;
-  role?: "user" | "admin";
+  role?: "user" | "admin" | "super_admin";
+  email?: string;
+  tenantId?: string;
+  workspaceId?: string;
+  saas?: SaasMetadata;
   timezone?: string;
   language?: string;
   bio?: string | null;

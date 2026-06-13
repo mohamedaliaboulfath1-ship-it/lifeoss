@@ -7,6 +7,7 @@ import { CommandPalette } from "@/components/layout/command-palette";
 import { NavTracker } from "@/components/layout/nav-tracker";
 import { MobileNavProvider, useMobileNav } from "@/contexts/mobile-nav-context";
 import { GoalExpandOverlay } from "@/components/goals/goal-expand-overlay";
+import { isAdminRole } from "@/lib/tenant/super-admin";
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const { data } = useLifeOSData();
@@ -18,18 +19,23 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-[100dvh] overflow-hidden">
       <NavTracker />
-      <Sidebar
-        userName={data.profile.displayName}
-        avatarUrl={data.profile.avatarUrl}
-        isAdmin={data.profile.role === "admin"}
-        currentYear={data.currentYear}
-        years={data.years}
-        habitCount={data.yearData.habits?.length ?? 0}
-        onYearChange={setCurrentYear}
-        mobileOpen={isOpen}
-        onMobileClose={close}
-      />
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0 w-full">
+      <div data-tour="sidebar" className="contents">
+        <Sidebar
+          userName={data.profile.displayName}
+          avatarUrl={data.profile.avatarUrl}
+          isAdmin={isAdminRole(data.profile.role)}
+          currentYear={data.currentYear}
+          years={data.years}
+          habitCount={data.yearData.habits?.length ?? 0}
+          onYearChange={setCurrentYear}
+          mobileOpen={isOpen}
+          onMobileClose={close}
+        />
+      </div>
+      <main
+        data-tour="main-content"
+        className="flex-1 overflow-hidden flex flex-col min-w-0 w-full"
+      >
         {children}
       </main>
       <CommandPalette />

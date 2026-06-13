@@ -15,7 +15,7 @@ export interface ProfileRow {
   timezone: string;
   language: string;
   bio: string | null;
-  role: "user" | "admin";
+  role: "user" | "admin" | "super_admin";
   suspended: boolean;
   last_active_at: string | null;
   created_at: string;

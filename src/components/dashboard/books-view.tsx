@@ -625,7 +625,16 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       />
 
       {filteredBooks.length === 0 ? (
-        <EmptyState icon="📚" title="مكتبتك فارغة" actionLabel="+ أول كتاب" onAction={() => openBookModal()} />
+        <EmptyState
+          icon="📚"
+          title="لا توجد كتب بعد"
+          description="ابنِ مكتبتك أو ابدأ بمكتبة تجريبية من مركز الترحيب"
+          suggestedActions={[
+            { label: "أضف أول كتاب", onClick: () => openBookModal(), variant: "gold" },
+            { label: "استخدم المكتبة التجريبية", href: "/welcome", variant: "ghost" },
+            { label: "دليل القراءة", href: "/guide", variant: "ghost" },
+          ]}
+        />
       ) : view === "gallery" ? (
         <LayoutAnimateList className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredBooks.map((b, i) => (

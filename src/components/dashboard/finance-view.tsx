@@ -320,7 +320,16 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
       {tab === "transactions" && (
         <Card className="p-4">
           {txs.length === 0 ? (
-            <EmptyState icon="💰" title="لا معاملات" actionLabel="+ إضافة" onAction={() => setModal("tx")} />
+            <EmptyState
+              icon="💰"
+              title="لا توجد معاملات بعد"
+              description="سجّل دخلك ومصروفاتك لبناء صورة مالية واضحة"
+              suggestedActions={[
+                { label: "أضف معاملة", onClick: () => setModal("tx"), variant: "gold" },
+                { label: "دليل المال", href: "/guide", variant: "ghost" },
+                { label: "مركز الترحيب", href: "/welcome", variant: "ghost" },
+              ]}
+            />
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -354,7 +363,15 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
       {tab === "debts" && (
         <Card className="p-4">
           {debts.length === 0 ? (
-            <EmptyState icon="🧾" title="لا توجد ديون" actionLabel="+ إضافة دين" onAction={() => setModal("debt")} />
+            <EmptyState
+              icon="🧾"
+              title="لا توجد ديون مسجّلة"
+              description="تتبّع التزاماتك وخطط السداد"
+              suggestedActions={[
+                { label: "أضف ديناً", onClick: () => setModal("debt"), variant: "gold" },
+                { label: "دليل المال", href: "/guide", variant: "ghost" },
+              ]}
+            />
           ) : (
             <div className="space-y-3">
               {debts.map((d) => {
@@ -386,7 +403,15 @@ export function FinanceView({ yearData, salary }: FinanceViewProps) {
       {tab === "budgets" && (
         <Card className="p-4">
           {budgets.length === 0 ? (
-            <EmptyState icon="📦" title="لا ميزانيات" actionLabel="+ إضافة ميزانية" onAction={() => setModal("budget")} />
+            <EmptyState
+              icon="📦"
+              title="لا توجد ميزانيات"
+              description="حدّد حدوداً شهرية لكل فئة إنفاق"
+              suggestedActions={[
+                { label: "أضف ميزانية", onClick: () => setModal("budget"), variant: "gold" },
+                { label: "دليل الميزانية", href: "/guide", variant: "ghost" },
+              ]}
+            />
           ) : (
             <table className="w-full text-sm">
               <thead>
