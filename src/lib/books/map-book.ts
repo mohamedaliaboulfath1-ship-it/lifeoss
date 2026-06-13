@@ -1,5 +1,11 @@
 import type { Book, BookHighlight } from "@/types/lifeos";
 
+import {
+  dbStatusToReadingStatus,
+  readingStatusToDb,
+  type ReadingStatus,
+} from "@/lib/books/book-status";
+
 export type BookMetadata = {
   language?: string;
   description?: string;
@@ -12,6 +18,11 @@ export type BookMetadata = {
   readingPlanOrder?: number;
   seedTag?: string;
   progressPct?: number;
+  readingStatus?: ReadingStatus;
+  richNotes?: string;
+  archived?: boolean;
+  learningPath?: string;
+  relatedArea?: string;
 };
 
 export type BookRow = Record<string, unknown>;
@@ -35,6 +46,11 @@ export function mapBookRow(row: BookRow, coverUrlFromStorage?: string): Book {
   const progressPct =
     meta.progressPct ??
     (pages ? Math.round((curPage / pages) * 100) : 0);
+
+  const readingStatus = dbStatusToReadingStatus(
+    row.status as string | undefined,
+    meta.readingStatus
+  );
 
   return {
     id: String(row.id),
@@ -61,6 +77,16 @@ export function mapBookRow(row: BookRow, coverUrlFromStorage?: string): Book {
     readingPhase: meta.readingPhase,
     readingPlanOrder: meta.readingPlanOrder,
     progressPct,
+    tags: Array.isArray(row.tags) ? (row.tags as string[]) : undefined,
+    readingStatus,
+    startDate: (row.start_date as string) ?? undefined,
+    finishDate: (row.finish_date as string) ?? undefined,
+    createdAt: (row.created_at as string) ?? undefined,
+    goalId: (row.goal_id as string) ?? undefined,
+    richNotes: meta.richNotes,
+    archived: meta.archived,
+    learningPath: meta.learningPath,
+    relatedArea: meta.relatedArea ?? "Learning",
   };
 }
 
@@ -77,5 +103,12 @@ export function buildBookMetadata(input: Partial<BookMetadata>): BookMetadata {
     readingPlanOrder: input.readingPlanOrder,
     seedTag: input.seedTag,
     progressPct: input.progressPct ?? 0,
+    readingStatus: input.readingStatus,
+    richNotes: input.richNotes,
+    archived: input.archived,
+    learningPath: input.learningPath,
+    relatedArea: input.relatedArea,
   };
 }
+
+export { readingStatusToDb };

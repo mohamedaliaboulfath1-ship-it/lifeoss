@@ -1,14 +1,15 @@
 "use client";
 import { ViewShell } from "@/components/motion/view-shell";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MotionCard } from "@/components/motion/motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MotionCard, motion } from "@/components/motion/motion";
 import { AppModal } from "@/components/ui/app-modal";
 import { FormSection } from "@/components/ui/form-section";
 import { BookCoverPicker } from "@/components/ui/book-cover-picker";
 import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
 import { CardUnfold } from "@/components/motion/unfold-reveal";
-import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
+import { BookDetailsModal } from "@/components/dashboard/book-details-modal";
+import { READING_STATUS_CONFIG } from "@/lib/books/book-status";
 import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { BOOK_TYPE_LABELS } from "@/lib/icons";
 import { Tabs } from "@/components/ui/tabs";
@@ -51,36 +52,51 @@ type BookExt = LibraryBook & {
 
 function BookGalleryCard({
   book,
-  onOpen,
+  sessions,
+  onOpenDetails,
   onEdit,
   onProgress,
   onRemove,
 }: {
   book: BookExt;
-  onOpen: (book: BookExt, rect: DOMRect) => void;
+  sessions: ReadingSession[];
+  onOpenDetails: (book: BookExt) => void;
   onEdit: (book: BookExt) => void;
   onProgress: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
   const pct = book.pages ? Math.round(((book.curPage ?? 0) / book.pages) * 100) : 0;
-  const statusLabel =
-    book.status === "done" ? "مكتمل" : book.status === "reading" ? "قيد القراءة" : "مخطط";
-
-  function handleOpen() {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    onOpen(book, rect);
-  }
+  const status = book.readingStatus ?? (book.status === "done" ? "completed" : book.status === "reading" ? "reading" : "planned");
+  const statusCfg = READING_STATUS_CONFIG[status];
+  const lastActivity = sessions
+    .filter((s) => s.bookId === book.id)
+    .sort((a, b) => b.date.localeCompare(a.date))[0]?.date;
 
   return (
-    <div ref={ref} onClick={handleOpen} className="h-full">
+    <div onClick={() => onOpenDetails(book)} className="h-full cursor-pointer group">
     <MotionCard
       layout
-      className="border border-border rounded-[10px] overflow-hidden bg-surface cursor-pointer group h-full"
+      className="border border-border rounded-[10px] overflow-hidden bg-surface h-full hover:border-gold/30 hover:shadow-premium transition-shadow"
     >
-      <div className="aspect-[3/4] bg-gradient-to-br from-surface2 to-surface flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[3/4] bg-gradient-to-br from-surface2 to-surface overflow-hidden">
         <BookCover title={book.title} coverUrl={book.coverUrl} coverPath={book.coverPath} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+          <motion.div
+            initial={false}
+            className="translate-y-2 group-hover:translate-y-0 transition-transform duration-300 space-y-1"
+          >
+            <div className="text-sm font-bold text-white">{pct}%</div>
+            <div className="text-[10px] text-white/80" style={{ color: statusCfg.color }}>
+              {statusCfg.labelAr}
+            </div>
+            <div className="text-[10px] text-white/70">
+              ص {book.curPage ?? 0}/{book.pages ?? "—"}
+            </div>
+            {lastActivity && (
+              <div className="text-[9px] text-white/50">آخر نشاط: {lastActivity}</div>
+            )}
+          </motion.div>
+        </div>
       </div>
       <div className="p-3 space-y-2">
         <div className="font-bold text-sm line-clamp-2 leading-snug">{book.title}</div>
@@ -89,7 +105,7 @@ function BookGalleryCard({
         )}
         <div className="flex justify-between text-[10px] text-text3">
           <span>{book.pages ? `${book.pages} صفحة` : "—"}</span>
-          <span>{statusLabel}</span>
+          <span style={{ color: statusCfg.color }}>{statusCfg.labelAr}</span>
         </div>
         <ProgressBar value={pct} color="var(--sky)" />
         <div className="text-[10px] text-text3">{pct}% · {book.curPage ?? 0}/{book.pages ?? "—"}</div>
@@ -106,7 +122,6 @@ function BookGalleryCard({
 
 export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   const { toast } = useToast();
-  const expand = useExpandTransitionOptional();
   const [books, setBooks] = useState<BookExt[]>([]);
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [view, setView] = useState("gallery");
@@ -140,7 +155,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     highlightsText: "",
   });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [detailsBook, setDetailsBook] = useState<BookExt | null>(null);
 
   const loadBooks = useCallback(async () => {
     try {
@@ -195,24 +210,36 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     return [...list].sort(sortBooksByReadingPlan);
   }, [books, query, typeFilter, statusFilter, categoryFilter]);
 
-  function openBookWithExpand(book: BookExt, rect: DOMRect) {
-    const pct = book.pages ? Math.round(((book.curPage ?? 0) / book.pages) * 100) : 0;
-    if (expand) {
-      expand.expandCard(
-        {
-          entity: "book",
-          id: book.id,
-          title: book.title,
-          subtitle: book.author ?? "مكتبة LifeOS",
-          progress: pct,
-          icon: "📚",
-        },
-        rect,
-        () => openBookModal(book)
-      );
-    } else {
-      openBookModal(book);
+  const [saving, setSaving] = useState(false);
+
+  async function patchBook(id: string, patch: Record<string, unknown>) {
+    const res = await fetch("/api/books", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...patch }),
+    });
+    if (!res.ok) {
+      toast("فشل التحديث", "error");
+      return false;
     }
+    await loadBooks();
+    const updated = books.find((b) => b.id === id);
+    if (updated && detailsBook?.id === id) {
+      const fresh = await fetch("/api/books");
+      if (fresh.ok) {
+        const json = await fresh.json();
+        const book = (json.books as BookExt[]).find((b) => b.id === id);
+        if (book) setDetailsBook(book);
+        setBooks(json.books ?? []);
+        setSessions(json.sessions ?? []);
+      }
+    }
+    onRefresh();
+    return true;
+  }
+
+  function openBookDetails(book: BookExt) {
+    setDetailsBook(book);
   }
 
   function openBookModal(book?: BookExt) {
@@ -605,7 +632,8 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
             <CardUnfold key={b.id} index={i}>
               <BookGalleryCard
                 book={b as BookExt}
-                onOpen={openBookWithExpand}
+                sessions={sessions}
+                onOpenDetails={openBookDetails}
                 onEdit={openBookModal}
                 onProgress={updateProgress}
                 onRemove={removeBook}
@@ -616,12 +644,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       ) : view === "shelf" ? (
         <BooksCategoryShelf
           books={filteredBooks as BookExt[]}
-          onOpen={openBookWithExpand}
+          onOpen={(book) => openBookDetails(book)}
         />
       ) : view === "roadmap" ? (
         <BooksReadingRoadmap
           books={filteredBooks as BookExt[]}
-          onOpen={openBookWithExpand}
+          onOpen={(book) => openBookDetails(book)}
           onEdit={openBookModal}
         />
       ) : view === "list" ? (
@@ -629,7 +657,11 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
           {filteredBooks.map((b) => {
             const pct = b.pages ? Math.round(((b.curPage ?? 0) / b.pages) * 100) : 0;
             return (
-              <Card key={b.id} className="p-3 flex items-center gap-4">
+              <Card
+                key={b.id}
+                className="p-3 flex items-center gap-4 cursor-pointer hover:border-gold/30 transition-colors"
+                onClick={() => openBookDetails(b as BookExt)}
+              >
                 <div className="w-10 h-14 bg-surface2 rounded flex items-center justify-center shrink-0 overflow-hidden">
                   <BookCover
                     title={b.title}
@@ -845,6 +877,29 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
           </div>
         </div>
       </AppModal>
+
+      <BookDetailsModal
+        book={detailsBook}
+        sessions={sessions}
+        goals={yearData.goals ?? []}
+        open={!!detailsBook}
+        onClose={() => setDetailsBook(null)}
+        onPatch={patchBook}
+        onDelete={async (id) => {
+          await fetch(`/api/books?id=${id}`, { method: "DELETE" });
+          await loadBooks();
+          onRefresh();
+        }}
+        onEdit={(book) => {
+          setDetailsBook(null);
+          openBookModal(book as BookExt);
+        }}
+        onUploadCover={uploadCover}
+        onRefresh={() => {
+          void loadBooks();
+          onRefresh();
+        }}
+      />
     </ViewShell>
   );
 }

@@ -123,6 +123,15 @@ export interface Book {
   readingPlanOrder?: number;
   progressPct?: number;
   tags?: string[];
+  readingStatus?: "planned" | "reading" | "paused" | "completed" | "dropped";
+  startDate?: string;
+  finishDate?: string;
+  createdAt?: string;
+  goalId?: string;
+  richNotes?: string;
+  archived?: boolean;
+  learningPath?: string;
+  relatedArea?: string;
 }
 
 export interface Transaction {

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
-import { buildBookMetadata, mapBookRow } from "@/lib/books/map-book";
+import { buildBookMetadata, mapBookRow, readingStatusToDb } from "@/lib/books/map-book";
+import type { ReadingStatus } from "@/lib/books/book-status";
 import { uid } from "@/lib/utils";
 
 const bookSchema = z.object({
@@ -29,6 +30,17 @@ const bookSchema = z.object({
   purchaseUrl: z.string().optional(),
   readingPhase: z.number().int().optional(),
   readingPlanOrder: z.number().int().optional(),
+  readingStatus: z
+    .enum(["planned", "reading", "paused", "completed", "dropped"])
+    .optional(),
+  startDate: z.string().optional(),
+  finishDate: z.string().optional(),
+  goalId: z.string().optional(),
+  richNotes: z.string().optional(),
+  archived: z.boolean().optional(),
+  learningPath: z.string().optional(),
+  relatedArea: z.string().optional(),
+  removeCover: z.boolean().optional(),
   highlights: z
     .array(
       z.object({
@@ -58,13 +70,18 @@ function metadataFromPayload(parsed: BookPayload, curPage = 0) {
     language: parsed.language,
     description: parsed.description ?? parsed.notes,
     estimatedReadingHours: parsed.estimatedReadingHours,
-    coverUrl: parsed.coverUrl,
+    coverUrl: parsed.removeCover ? undefined : parsed.coverUrl,
     publishYear: parsed.publishYear,
     goodreadsRating: parsed.goodreadsRating,
     purchaseUrl: parsed.purchaseUrl,
     readingPhase: parsed.readingPhase,
     readingPlanOrder: parsed.readingPlanOrder,
     progressPct,
+    readingStatus: parsed.readingStatus,
+    richNotes: parsed.richNotes,
+    archived: parsed.archived,
+    learningPath: parsed.learningPath,
+    relatedArea: parsed.relatedArea,
   });
 }
 
@@ -247,11 +264,20 @@ export async function PATCH(req: Request) {
     readingPlanOrder,
     priority,
     highlights,
+    readingStatus,
+    startDate,
+    finishDate,
+    goalId,
+    richNotes,
+    archived,
+    learningPath,
+    relatedArea,
+    removeCover,
   } = body as BookPayload & { id: string };
 
   const { data: existing } = await authResult.supabase
     .from("books")
-    .select("metadata, pages_read, pages_total")
+    .select("metadata, pages_read, pages_total, start_date")
     .eq("id", id)
     .eq("user_id", authResult.userId)
     .maybeSingle();
@@ -259,6 +285,15 @@ export async function PATCH(req: Request) {
   const updates: Record<string, unknown> = {};
   if (curPage !== undefined) updates.pages_read = curPage;
   if (status !== undefined) updates.status = status;
+  if (readingStatus !== undefined) {
+    updates.status = readingStatusToDb(readingStatus as ReadingStatus);
+    if (readingStatus === "completed") {
+      updates.finish_date = finishDate ?? new Date().toISOString().slice(0, 10);
+    }
+    if (readingStatus === "reading" && !existing?.start_date) {
+      updates.start_date = startDate ?? new Date().toISOString().slice(0, 10);
+    }
+  }
   if (title !== undefined) updates.title = title;
   if (author !== undefined) updates.author = author;
   if (pages !== undefined) updates.pages_total = pages;
@@ -269,7 +304,11 @@ export async function PATCH(req: Request) {
   if (rating !== undefined) updates.rating = rating;
   if (priority !== undefined) updates.priority = priority;
   if (coverPath !== undefined) updates.cover_path = coverPath;
+  if (removeCover) updates.cover_path = null;
   if (highlights !== undefined) updates.highlights = highlights;
+  if (startDate !== undefined) updates.start_date = startDate || null;
+  if (finishDate !== undefined) updates.finish_date = finishDate || null;
+  if (goalId !== undefined) updates.goal_id = goalId || null;
 
   const nextPages = pages ?? existing?.pages_total ?? 0;
   const nextCur = curPage ?? existing?.pages_read ?? 0;
@@ -278,7 +317,7 @@ export async function PATCH(req: Request) {
     language,
     description: description ?? notes,
     estimatedReadingHours,
-    coverUrl,
+    coverUrl: removeCover ? undefined : coverUrl,
     publishYear,
     goodreadsRating,
     purchaseUrl,
@@ -286,6 +325,11 @@ export async function PATCH(req: Request) {
     readingPlanOrder,
     progressPct: nextPages > 0 ? Math.round((nextCur / nextPages) * 100) : 0,
     seedTag: prevMeta.seedTag as string | undefined,
+    readingStatus: readingStatus as ReadingStatus | undefined,
+    richNotes,
+    archived,
+    learningPath,
+    relatedArea,
   });
   if (
     language !== undefined ||
@@ -293,15 +337,24 @@ export async function PATCH(req: Request) {
     notes !== undefined ||
     estimatedReadingHours !== undefined ||
     coverUrl !== undefined ||
+    removeCover ||
     publishYear !== undefined ||
     goodreadsRating !== undefined ||
     purchaseUrl !== undefined ||
     readingPhase !== undefined ||
     readingPlanOrder !== undefined ||
     curPage !== undefined ||
-    pages !== undefined
+    pages !== undefined ||
+    readingStatus !== undefined ||
+    richNotes !== undefined ||
+    archived !== undefined ||
+    learningPath !== undefined ||
+    relatedArea !== undefined
   ) {
     updates.metadata = { ...prevMeta, ...metaPatch };
+    if (removeCover) {
+      (updates.metadata as Record<string, unknown>).coverUrl = undefined;
+    }
   }
 
   const { error } = await authResult.supabase
