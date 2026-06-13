@@ -10,6 +10,9 @@
     "migrate": "node scripts/run-migrations.mjs",
     "test:backup": "node scripts/test-mappers.mjs",
     "test:smoke": "node scripts/smoke-test.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "seed:mohamed": "node scripts/seed-mohamed-arabic.mjs",
     "remotion:studio": "remotion studio"
   },
@@ -47,10 +50,12 @@
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9.27.0",
     "eslint-config-next": "^15.3.3",
     "pg": "^8.16.0",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.8"
   }
 }
