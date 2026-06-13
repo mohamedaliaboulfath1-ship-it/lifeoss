@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { CountUp } from "@/components/ui/count-up";
 import { kpiVariants } from "@/lib/ui/variants";
@@ -16,7 +17,7 @@ interface KpiCardProps {
   badge?: string;
 }
 
-export function KpiCard({
+export const KpiCard = memo(function KpiCard({
   label,
   value,
   numericValue,
@@ -54,4 +55,4 @@ export function KpiCard({
       )}
     </motion.div>
   );
-}
+});

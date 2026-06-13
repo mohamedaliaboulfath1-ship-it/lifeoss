@@ -40,6 +40,114 @@ function monthStart(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+const TASK_PRIO: Record<string, number> = { p1: 0, p2: 1, p3: 2, p4: 3 };
+
+function taskPriorityRank(p?: string | null) {
+  return TASK_PRIO[p ?? "p3"] ?? 2;
+}
+
+type SnapshotHabitRow = {
+  id: string;
+  name: string;
+  frequency?: string | null;
+  frequency_type?: string | null;
+  frequency_value?: Record<string, unknown> | null;
+  active?: boolean;
+  category?: string | null;
+  time_of_day?: string | null;
+  cat?: string | null;
+  freq?: string | null;
+  goal_id?: string | null;
+  project_id?: string | null;
+  domain_id?: string | null;
+  why?: string | null;
+  stop_impact?: string | null;
+  priority?: string | null;
+  impact?: string | null;
+  active_days?: number[] | null;
+  life_score_weight?: number | null;
+  best_streak?: number | null;
+};
+
+function habitsFromYearData(habits: YearPayload["habits"]): SnapshotHabitRow[] {
+  return (habits ?? [])
+    .filter((h) => h.active !== false)
+    .map((h) => ({
+      id: h.id,
+      name: h.name,
+      frequency: h.freq,
+      frequency_type: h.frequencyType,
+      frequency_value: h.frequencyValue as Record<string, unknown> | null,
+      active: h.active,
+      category: h.cat,
+      time_of_day: h.time,
+      cat: h.cat,
+      freq: h.freq,
+      goal_id: h.goalLink,
+      project_id: h.projectId,
+      domain_id: h.domainId,
+      why: h.why,
+      stop_impact: h.stopImpact,
+      priority: h.priority,
+      impact: h.impact,
+      active_days: h.activeDays,
+      life_score_weight: h.lifeScoreWeight,
+      best_streak: h.bestStreak,
+    }));
+}
+
+function goalsFromYearData(goals: YearPayload["goals"]) {
+  return (goals ?? [])
+    .filter((g) => g.status === "active" || g.status === "paused")
+    .slice(0, 30)
+    .map((g) => ({
+      id: g.id,
+      title: g.title,
+      progress: g.progress,
+      status: g.status,
+      target_date: g.targetDate,
+      due_date: g.due,
+      area: g.area,
+      category: g.category,
+      created_at: g.createdAt,
+      priority: g.priority,
+      level: g.level,
+      parent_id: g.parentId,
+      tasks: g.tasks,
+    }));
+}
+
+function tasksFromYearData(
+  tasks: YearPayload["tasks"],
+  todayStr: string,
+  weekLater: string
+) {
+  const active = (tasks ?? []).filter((t) => t.status === "inbox" || t.status === "active");
+  const dueToday = active
+    .filter((t) => !t.dueDate || t.dueDate <= todayStr)
+    .sort((a, b) => taskPriorityRank(a.priority) - taskPriorityRank(b.priority))
+    .slice(0, 15)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      priority: t.priority ?? "p3",
+      due_date: t.dueDate ?? null,
+      status: t.status,
+    }));
+  const dueSoon = active
+    .filter((t) => t.dueDate && t.dueDate > todayStr && t.dueDate <= weekLater)
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+    .slice(0, 8)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      priority: t.priority ?? "p3",
+      due_date: t.dueDate ?? null,
+      status: t.status,
+    }));
+  return { dueToday, dueSoon };
+}
+
 export async function buildDashboardSnapshot(
   db: SupabaseClient,
   userId: string,
@@ -48,66 +156,45 @@ export async function buildDashboardSnapshot(
   profileExtras?: {
     startWeight?: number | null;
     targetWeight?: number | null;
+    currentWeight?: number | null;
+    height?: number | null;
     dailyCalories?: number;
     proteinTarget?: number;
     carbsTarget?: number;
     fatsTarget?: number;
     lifeStartDate?: string | null;
+    salary?: number | null;
+    cashBalance?: number | null;
   }
 ): Promise<DashboardSnapshot> {
   const todayStr = today();
   const monthStartStr = monthStart();
   const weekLater = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
-  const [
-    tasksRes,
-    dueSoonRes,
-    habitsRes,
-    habitLogsRes,
-    goalsRes,
-    notifRes,
-    mealRes,
-    debtsRes,
-    txMonthRes,
-    profileRes,
-    career,
-    subsRes,
-    catRes,
-    photosRes,
-  ] = await Promise.all([
-    db
-      .from("life_tasks")
-      .select("id, title, priority, due_date, status")
-      .eq("user_id", userId)
-      .in("status", ["inbox", "active"])
-      .or(`due_date.lte.${todayStr},due_date.is.null`)
-      .order("priority", { ascending: true })
-      .limit(15),
-    db
-      .from("life_tasks")
-      .select("id, title, priority, due_date, status")
-      .eq("user_id", userId)
-      .in("status", ["inbox", "active"])
-      .gt("due_date", todayStr)
-      .lte("due_date", weekLater)
-      .order("due_date", { ascending: true })
-      .limit(8),
-    db
-      .from("habits")
-      .select("id, name, frequency, frequency_type, frequency_value, active, category, time_of_day, cat, freq, goal_id, project_id, domain_id, why, stop_impact, priority, impact, active_days, life_score_weight, best_streak")
-      .eq("user_id", userId)
-      .eq("active", true),
-    db
-      .from("habit_logs")
-      .select("habit_id, log_date, done")
-      .eq("user_id", userId)
-      .eq("log_date", todayStr),
-    db
-      .from("goals")
-      .select("id, title, progress, status, target_date, due_date, area, category, created_at, priority, level, parent_id, tasks")
-      .eq("user_id", userId)
-      .in("status", ["active", "paused"])
-      .limit(30),
+  const { dueToday: tasksDueTodayRows, dueSoon: tasksDueSoonRows } = tasksFromYearData(
+    yearData.tasks,
+    todayStr,
+    weekLater
+  );
+  const activeHabitRows = habitsFromYearData(yearData.habits);
+  const goals = goalsFromYearData(yearData.goals);
+  const logsMap = yearData.habitLogs ?? {};
+  const mealsToday = (yearData.mealLogs ?? []).filter((m) => m.date === todayStr);
+  const txsMonth = (yearData.transactions ?? [])
+    .filter((t) => t.date >= monthStartStr)
+    .map((t) => ({
+      type: t.type === "saving" ? "savings" : t.type,
+      amount: t.amount,
+      tx_date: t.date,
+      category: t.cat,
+    }));
+  const debtRemaining = (yearData.debts ?? []).reduce(
+    (sum, d) => sum + Math.max(0, d.total - d.paid),
+    0
+  );
+  const activeDebts = (yearData.debts ?? []).filter((d) => d.total - d.paid > 0);
+
+  const [notifRes, career, subsRes, catRes, photosRes] = await Promise.all([
     db
       .from("notifications")
       .select("id, title, priority, type, action_url, domain_id")
@@ -116,29 +203,28 @@ export async function buildDashboardSnapshot(
       .is("dismissed_at", null)
       .order("created_at", { ascending: false })
       .limit(5),
-    db
-      .from("meal_logs")
-      .select("calories, protein, carbs, fats")
-      .eq("user_id", userId)
-      .eq("log_date", todayStr),
-    db.from("debts").select("remaining_amount, status").eq("user_id", userId),
-    db
-      .from("transactions")
-      .select("type, amount, tx_date, category")
-      .eq("user_id", userId)
-      .gte("tx_date", monthStartStr),
-    db
-      .from("profiles")
-      .select("start_weight, target_weight, current_weight, height, daily_calories, protein_target, carbs_target, fats_target, life_start_date, start_date, salary, cash_balance")
-      .eq("id", userId)
-      .maybeSingle(),
     loadCareerSummary(db, userId),
     db.from("subscriptions").select("name, price, billing_cycle, renewal_date").eq("user_id", userId).eq("active", true),
     db.from("expense_categories").select("name, monthly_budget").eq("user_id", userId),
     db.from("progress_photos").select("id").eq("user_id", userId).limit(1),
   ]);
 
-  const profile = profileRes.data;
+  const profile = profileExtras
+    ? {
+        start_weight: profileExtras.startWeight,
+        target_weight: profileExtras.targetWeight,
+        current_weight: profileExtras.currentWeight,
+        height: profileExtras.height,
+        daily_calories: profileExtras.dailyCalories,
+        protein_target: profileExtras.proteinTarget,
+        carbs_target: profileExtras.carbsTarget,
+        fats_target: profileExtras.fatsTarget,
+        life_start_date: profileExtras.lifeStartDate,
+        start_date: profileExtras.lifeStartDate,
+        salary: profileExtras.salary,
+        cash_balance: profileExtras.cashBalance,
+      }
+    : null;
   const startWeight = profile?.start_weight ?? profileExtras?.startWeight ?? null;
   const targetWeight = profile?.target_weight ?? profileExtras?.targetWeight ?? 75;
   const calorieTarget = profile?.daily_calories ?? profileExtras?.dailyCalories ?? 3000;
@@ -146,13 +232,7 @@ export async function buildDashboardSnapshot(
   const carbsTarget = profile?.carbs_target ?? profileExtras?.carbsTarget ?? 350;
   const fatsTarget = profile?.fats_target ?? profileExtras?.fatsTarget ?? 90;
 
-  const logsMap: Record<string, Record<string, boolean>> = {};
-  for (const l of habitLogsRes.data ?? []) {
-    if (!logsMap[l.habit_id]) logsMap[l.habit_id] = {};
-    logsMap[l.habit_id][l.log_date] = l.done;
-  }
-
-  const activeHabits = (habitsRes.data ?? []).filter((h) => h.active !== false);
+  const activeHabits = activeHabitRows;
   const dueTodayHabits = activeHabits.filter((h) =>
     isHabitDueOnDate(
       {
@@ -160,7 +240,7 @@ export async function buildDashboardSnapshot(
         frequencyType: h.frequency_type,
         frequencyValue: h.frequency_value,
         activeDays: h.active_days as number[] | undefined,
-        freq: h.frequency,
+        freq: h.freq ?? h.frequency ?? undefined,
       },
       todayStr,
       logsMap
@@ -215,14 +295,12 @@ export async function buildDashboardSnapshot(
     status: t.status,
   });
 
-  const tasksDueToday = (tasksRes.data ?? [])
+  const tasksDueToday = tasksDueTodayRows
     .filter((t) => t.due_date && t.due_date <= todayStr)
     .slice(0, 8)
     .map(mapTask);
 
-  const tasksDueSoon = (dueSoonRes.data ?? []).map(mapTask);
-
-  const goals = goalsRes.data ?? [];
+  const tasksDueSoon = tasksDueSoonRows.map(mapTask);
   const atRiskGoals = goals
     .map((g) => {
       const prob = calcGoalProbability({
@@ -321,7 +399,7 @@ export async function buildDashboardSnapshot(
     });
   }
 
-  const meals = mealRes.data ?? [];
+  const meals = mealsToday;
   const nutrition = {
     calories: meals.reduce((s, m) => s + (m.calories ?? 0), 0),
     protein: meals.reduce((s, m) => s + (m.protein ?? 0), 0),
@@ -355,16 +433,13 @@ export async function buildDashboardSnapshot(
   const weekLogs = workoutLogs.filter((w) => isThisWeek(w.date));
   const uniqueDays = new Set(weekLogs.map((w) => w.date)).size;
 
-  const txs = txMonthRes.data ?? [];
+  const txs = txsMonth;
   const monthIncome = txs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const monthExpense = txs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const monthSavings = txs.filter((t) => t.type === "savings").reduce((s, t) => s + t.amount, 0);
   const totalSavings = (yearData.transactions ?? [])
     .filter((t) => t.type === "saving")
     .reduce((a, b) => a + b.amount, 0);
-
-  const activeDebts = (debtsRes.data ?? []).filter((d) => d.status === "active");
-  const debtRemaining = activeDebts.reduce((s, d) => s + (d.remaining_amount ?? 0), 0);
 
   const habitPct = calcOverallHabitPct(yearData);
   const avgGoalProgress = goals.length
@@ -457,24 +532,22 @@ export async function buildDashboardSnapshot(
     })
   );
 
-  const habitLogsMap: Record<string, Record<string, boolean>> = {};
-  for (const l of habitLogsRes.data ?? []) {
-    if (!habitLogsMap[l.habit_id]) habitLogsMap[l.habit_id] = {};
-    habitLogsMap[l.habit_id][l.log_date] = l.done;
-  }
+  const habitLogsMap = logsMap;
   const goalsMap = new Map(goals.map((g) => [g.id, {
     id: g.id, title: g.title, level: g.level, parentId: g.parent_id,
     progress: g.progress, status: g.status, targetDate: g.target_date ?? g.due_date,
     due: g.due_date, createdAt: g.created_at, tasks: g.tasks as { id: string; text: string; done: boolean }[] | undefined,
   }]));
-  const enrichedHabits = (habitsRes.data ?? []).map((h) =>
+  const enrichedHabits = activeHabitRows.map((h) =>
     enrichHabit(
       {
         id: h.id, name: h.name, cat: h.cat ?? h.category ?? "prod", freq: h.freq ?? h.frequency ?? "daily",
         goalLink: h.goal_id ?? undefined, projectId: h.project_id ?? undefined, domainId: h.domain_id ?? undefined,
         why: h.why ?? undefined, stopImpact: h.stop_impact ?? undefined,
-        priority: h.priority, impact: h.impact, activeDays: h.active_days as number[] | undefined,
-        frequencyType: h.frequency_type, frequencyValue: h.frequency_value,
+        priority: h.priority as import("@/types/lifeos").Habit["priority"],
+        impact: h.impact as import("@/types/lifeos").Habit["impact"], activeDays: h.active_days as number[] | undefined,
+        frequencyType: h.frequency_type ?? undefined,
+        frequencyValue: h.frequency_value ?? undefined,
         lifeScoreWeight: h.life_score_weight != null ? Number(h.life_score_weight) : undefined,
         bestStreak: h.best_streak ?? undefined,
       },
@@ -485,12 +558,16 @@ export async function buildDashboardSnapshot(
   const goalCompletions = goals
     .filter((g) => g.status !== "done")
     .map((g) => {
-      const linkedHabits = (habitsRes.data ?? []).filter(
-        (h) => h.goal_id === g.id || h.project_id === g.id
-      ).map((h) => ({
-        id: h.id, name: h.name, cat: h.cat ?? "prod", freq: h.frequency ?? "daily",
-        goalLink: h.goal_id, activeDays: h.active_days as number[] | undefined,
-      }));
+      const linkedHabits = activeHabitRows
+        .filter((h) => h.goal_id === g.id || h.project_id === g.id)
+        .map((h) => ({
+          id: h.id,
+          name: h.name,
+          cat: h.cat ?? "prod",
+          freq: h.frequency ?? "daily",
+          goalLink: h.goal_id ?? undefined,
+          activeDays: h.active_days as number[] | undefined,
+        }));
       return calcGoalCompletionScore({
         goal: {
           id: g.id, title: g.title, area: "body", priority: "high",

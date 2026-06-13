@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Tabs } from "@/components/ui/tabs";
-import { MiniChart } from "@/components/ui/mini-chart";
+import { LazyChart } from "@/components/ui/lazy-chart";
 import { calcOverallHabitPct, calcStreak } from "@/lib/calculations";
 import { getWeekDates, today } from "@/lib/utils";
 import type { YearPayload } from "@/types/lifeos";
@@ -355,11 +355,11 @@ export function HabitsView({
         <div className="grid xl:grid-cols-3 gap-4">
           <Card className="p-4 xl:col-span-2">
             <div className="text-sm font-bold mb-3">إنجاز أسبوعي</div>
-            <MiniChart data={weeklyCompletion} type="bar" color="var(--sky)" />
+            <LazyChart data={weeklyCompletion} type="bar" color="var(--sky)" />
           </Card>
           <Card className="p-4">
             <div className="text-sm font-bold mb-3">إنجاز شهري (4 أسابيع)</div>
-            <MiniChart data={monthlyCompletion} type="bar" color="var(--gold)" />
+            <LazyChart data={monthlyCompletion} type="bar" color="var(--gold)" />
           </Card>
           <Card className="p-4 xl:col-span-2">
             <div className="text-sm font-bold mb-3">لوحة الرؤى</div>

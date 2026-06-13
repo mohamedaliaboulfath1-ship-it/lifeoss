@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { maybeSeedMohamedArabic } from "@/lib/seed/run-mohamed-arabic";
-import { getUserContext } from "@/lib/year-data";
+import { getUserContext, invalidateUserContext } from "@/lib/year-data";
 
 function errorMessage(e: unknown) {
   if (e instanceof Error) return e.message;
@@ -81,6 +81,7 @@ export async function PATCH(req: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    invalidateUserContext(authResult.userId);
   }
 
   try {

@@ -1,11 +1,20 @@
 "use client";
 
-import { AnalyticsView } from "@/components/dashboard/analytics-view";
+import dynamic from "next/dynamic";
 import { Topbar } from "@/components/layout/topbar";
-import { useLifeOS } from "@/contexts/lifeos-context";
+import { useLifeOSData } from "@/contexts/lifeos-context";
+import { ViewSkeleton } from "@/components/ui/skeleton";
+
+const AnalyticsView = dynamic(
+  () =>
+    import("@/components/dashboard/analytics-view").then((m) => ({
+      default: m.AnalyticsView,
+    })),
+  { loading: () => <ViewSkeleton />, ssr: false }
+);
 
 export default function AnalyticsPage() {
-  const { data } = useLifeOS();
+  const { data } = useLifeOSData();
   if (!data) return null;
 
   return (

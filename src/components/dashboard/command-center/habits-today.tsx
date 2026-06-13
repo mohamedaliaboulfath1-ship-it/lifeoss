@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimatedProgress } from "@/components/motion/animated-progress";
 import { HabitCheck } from "@/components/motion/habit-check";
@@ -19,7 +19,7 @@ interface HabitsTodayProps {
   onHabitComplete?: () => void;
 }
 
-export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
+export const HabitsToday = memo(function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
   const { toast } = useToast();
   const celebrate = useAchievementOptional()?.celebrate;
   const [local, setLocal] = useState(habits);
@@ -104,4 +104,4 @@ export function HabitsToday({ habits, onHabitComplete }: HabitsTodayProps) {
       </CardBody>
     </Card>
   );
-}
+});

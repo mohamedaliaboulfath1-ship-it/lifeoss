@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   type ReactNode,
 } from "react";
@@ -12,6 +13,7 @@ import type { BodyGoal } from "@/components/body/body-plan-panel";
 import type { YearPayload } from "@/types/lifeos";
 import type { DashboardSnapshot } from "@/types/lifeos-pro";
 import { queryKeys } from "@/lib/query/keys";
+import { readPersistedLifeOS, writePersistedLifeOS } from "@/lib/query/persist";
 
 interface Profile {
   displayName: string;
@@ -84,11 +86,16 @@ export function LifeOSProvider({ children }: { children: ReactNode }) {
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: queryKeys.lifeos,
     queryFn: fetchLifeOSData,
-    staleTime: 45_000,
-    gcTime: 10 * 60_000,
-    placeholderData: (prev) => prev,
+    staleTime: 120_000,
+    gcTime: 15 * 60_000,
+    placeholderData: (prev) => prev ?? readPersistedLifeOS(),
     refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (data) writePersistedLifeOS(data);
+  }, [data]);
 
   const refresh = useCallback(async () => {
     await refetch();

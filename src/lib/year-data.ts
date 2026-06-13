@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildDashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { loadIdentity, loadRelationalYearData } from "@/lib/relational-data";
+import { cachedFetch, invalidateCache } from "@/lib/query/simple-cache";
+import { DEFAULT_RULES } from "@/lib/constants";
+import type { IdentityData } from "@/types/lifeos";
 import type {
   HabitLogRow,
   HabitRow,
@@ -178,10 +181,20 @@ async function ensureLifeYearRow(userId: string, year: string): Promise<LifeYear
   return created as LifeYearRow;
 }
 
+function identityFromProfile(row: ProfileRow): IdentityData {
+  const meta = (row as ProfileRow & { metadata?: Record<string, unknown> | null }).metadata ?? {};
+  const identity = (meta.identity as Partial<IdentityData> | undefined) ?? {};
+  return {
+    traits: identity.traits ?? [],
+    rules: identity.rules?.length ? identity.rules : [...DEFAULT_RULES],
+  };
+}
+
 /** Assemble YearPayload exclusively from Supabase relational tables. */
 export async function assembleYearPayload(
   userId: string,
-  year: string
+  year: string,
+  preloadedIdentity?: IdentityData
 ): Promise<YearPayload> {
   const supabase = await createClient();
 
@@ -199,7 +212,9 @@ export async function assembleYearPayload(
         .eq("user_id", userId)
         .order("log_date", { ascending: true }),
       loadRelationalYearData(supabase, userId),
-      loadIdentity(supabase, userId),
+      preloadedIdentity
+        ? Promise.resolve(preloadedIdentity)
+        : loadIdentity(supabase, userId),
     ]);
 
   const habitIds = new Set((habitsRes.data ?? []).map((h) => h.id));
@@ -248,9 +263,13 @@ export async function assembleYearPayload(
   };
 }
 
-export async function getOrCreateLifeYear(userId: string, year: string) {
+export async function getOrCreateLifeYear(
+  userId: string,
+  year: string,
+  preloadedIdentity?: IdentityData
+) {
   const record = await ensureLifeYearRow(userId, year);
-  const data = await assembleYearPayload(userId, year);
+  const data = await assembleYearPayload(userId, year, preloadedIdentity);
   return { record, data };
 }
 
@@ -327,22 +346,40 @@ async function ensureProfile(userId: string) {
 }
 
 export async function getUserContext(userId: string) {
+  return cachedFetch(`user-context:${userId}`, () => loadUserContext(userId), 45_000);
+}
+
+export function invalidateUserContext(userId: string) {
+  invalidateCache(`user-context:${userId}`);
+}
+
+async function loadUserContext(userId: string) {
   const supabase = await createClient();
   const profileRow = await ensureProfile(userId);
 
   const profile = mapProfile(profileRow);
   const currentYear = profile.currentYear;
+  const preloadedIdentity = identityFromProfile(profileRow);
+  const profileExt = profileRow as ProfileRow & {
+    current_weight?: number | null;
+    daily_calories?: number | null;
+    protein_target?: number | null;
+    carbs_target?: number | null;
+    fats_target?: number | null;
+    cash_balance?: number | null;
+  };
 
-  const { data: yearRows } = await supabase
-    .from("life_years")
-    .select("year")
-    .eq("user_id", userId)
-    .order("year", { ascending: false });
+  const [{ data: yearRows }, { data: yearData }] = await Promise.all([
+    supabase
+      .from("life_years")
+      .select("year")
+      .eq("user_id", userId)
+      .order("year", { ascending: false }),
+    getOrCreateLifeYear(userId, currentYear, preloadedIdentity).then((r) => r),
+  ]);
 
   const years = (yearRows ?? []).map((y) => y.year);
   if (!years.includes(currentYear)) years.unshift(currentYear);
-
-  const { data: yearData } = await getOrCreateLifeYear(userId, currentYear);
 
   let dashboard: DashboardSnapshot | null = null;
   try {
@@ -350,7 +387,20 @@ export async function getUserContext(userId: string) {
       supabase,
       userId,
       profile.displayName,
-      yearData
+      yearData,
+      {
+        startWeight: profile.startWeight,
+        targetWeight: profile.targetWeight,
+        currentWeight: profile.currentWeight,
+        height: profile.height,
+        dailyCalories: profile.dailyCalories ?? undefined,
+        proteinTarget: profile.proteinTarget ?? undefined,
+        carbsTarget: profile.carbsTarget ?? undefined,
+        fatsTarget: profile.fatsTarget ?? undefined,
+        lifeStartDate: profile.startDate,
+        salary: profile.salary,
+        cashBalance: profileExt.cash_balance ?? null,
+      }
     );
   } catch (e) {
     console.warn("dashboard snapshot:", e);

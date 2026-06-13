@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
 import { NAV_PAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MOTION } from "@/lib/motion";
 import { modalBackdrop } from "@/lib/motion/modal";
+import { useRoutePrefetch } from "@/hooks/use-route-prefetch";
 
 interface SidebarProps {
   userName: string;
@@ -29,12 +30,14 @@ interface SidebarProps {
 function UserAvatar({ name, avatarUrl, size = 34 }: { name: string; avatarUrl?: string | null; size?: number }) {
   if (avatarUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={avatarUrl}
         alt=""
+        width={size}
+        height={size}
         className="rounded-full shrink-0 object-cover"
-        style={{ width: size, height: size }}
+        loading="lazy"
+        unoptimized
       />
     );
   }
@@ -61,6 +64,7 @@ export function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const prefetchRoute = useRoutePrefetch();
   const [favorites, setFavorites] = useState<ReturnType<typeof getFavorites>>([]);
 
   useEffect(() => {
@@ -68,6 +72,7 @@ export function Sidebar({
   }, [pathname]);
 
   async function handleSignOut() {
+    const { createClient } = await import("@/lib/supabase");
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
@@ -151,6 +156,7 @@ export function Sidebar({
                 key={f.href}
                 href={f.href}
                 onClick={onMobileClose}
+                onMouseEnter={() => prefetchRoute(f.href)}
                 className={cn(
                   "flex items-center gap-2 px-[18px] py-1.5 text-[12px] border-r-[3px] transition-all",
                   active
@@ -179,6 +185,7 @@ export function Sidebar({
                   key={page.id}
                   href={page.href}
                   onClick={onMobileClose}
+                  onMouseEnter={() => prefetchRoute(page.href)}
                   className={cn(
                     "relative flex items-center gap-2 px-[18px] py-2 text-[13px] min-h-[40px] transition-colors",
                     active ? "text-gold2" : "text-text2 hover:text-text"

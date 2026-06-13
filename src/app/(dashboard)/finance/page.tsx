@@ -1,11 +1,20 @@
 "use client";
 
-import { WealthFinanceView } from "@/components/finance/wealth-finance-view";
+import dynamic from "next/dynamic";
 import { Topbar } from "@/components/layout/topbar";
-import { useLifeOS } from "@/contexts/lifeos-context";
+import { useLifeOSData } from "@/contexts/lifeos-context";
+import { ViewSkeleton } from "@/components/ui/skeleton";
+
+const WealthFinanceView = dynamic(
+  () =>
+    import("@/components/finance/wealth-finance-view").then((m) => ({
+      default: m.WealthFinanceView,
+    })),
+  { loading: () => <ViewSkeleton />, ssr: false }
+);
 
 export default function FinancePage() {
-  const { data } = useLifeOS();
+  const { data } = useLifeOSData();
   if (!data) return null;
 
   return (

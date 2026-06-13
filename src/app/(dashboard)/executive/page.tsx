@@ -1,11 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Topbar } from "@/components/layout/topbar";
-import { ExecutiveView } from "@/components/dashboard/executive-view";
-import { useLifeOS } from "@/contexts/lifeos-context";
+import { useLifeOSData } from "@/contexts/lifeos-context";
+import { ViewSkeleton } from "@/components/ui/skeleton";
+
+const ExecutiveView = dynamic(
+  () =>
+    import("@/components/dashboard/executive-view").then((m) => ({
+      default: m.ExecutiveView,
+    })),
+  { loading: () => <ViewSkeleton />, ssr: false }
+);
 
 export default function ExecutivePage() {
-  const { data } = useLifeOS();
+  const { data } = useLifeOSData();
   if (!data) return null;
 
   return (
