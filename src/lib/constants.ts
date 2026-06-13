@@ -61,11 +61,11 @@ export const NAV_PAGES: NavPage[] = [
     section: "الرئيسية",
   },
   {
-    id: "resources",
-    href: "/resources",
-    icon: "📌",
-    title: "الموارد",
-    sub: "PARA Resources — مراجع وروابط",
+    id: "journal",
+    href: "/journal",
+    icon: "🧠",
+    title: "Journal OS",
+    sub: "العقل الثاني — كتابة ومعرفة",
     section: "الرئيسية",
   },
   {

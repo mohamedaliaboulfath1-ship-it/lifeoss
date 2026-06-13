@@ -1,11 +1,6 @@
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
 
-const ResourcesView = dynamic(
-  () => import("@/components/para/resources-view").then((m) => m.ResourcesView),
-  { loading: () => <Skeleton className="h-96 rounded-2xl" /> }
-);
-
-export default function ResourcesPage() {
-  return <ResourcesView />;
+/** Legacy PARA Resources route → Journal OS */
+export default function ResourcesRedirectPage() {
+  redirect("/journal");
 }

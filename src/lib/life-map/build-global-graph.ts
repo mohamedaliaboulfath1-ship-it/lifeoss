@@ -67,7 +67,7 @@ function nodeHref(type: string, domainSlug?: string): string | undefined {
     case "learning_path":
       return "/learning";
     case "resource":
-      return "/resources";
+      return "/journal";
     case "weight":
       return "/weight";
     case "finance":
