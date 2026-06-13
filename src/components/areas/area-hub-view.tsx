@@ -89,8 +89,8 @@ export function AreaHubView({ slug }: Props) {
       {/* Command Center Hero */}
       <SectionReveal index={0}>
         <div
-          className="relative overflow-hidden rounded-2xl border border-border/40"
-          style={{ boxShadow: `0 12px 40px ${gradient.glow}` }}
+          className="relative overflow-hidden rounded-2xl liquid-glass glass-blur-lg glass-reflect"
+          style={{ boxShadow: `0 12px 48px ${gradient.glow}` }}
         >
           <div
             className="absolute inset-0 opacity-90"

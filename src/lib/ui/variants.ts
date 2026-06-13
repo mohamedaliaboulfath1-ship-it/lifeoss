@@ -37,17 +37,14 @@ export const cardVariants = cva(
   }
 );
 
-export const kpiVariants = cva(
-  "card-premium border border-border rounded-[10px] p-[18px] relative overflow-hidden shadow-premium group transition-all duration-200 hover:border-border2 hover:shadow-premium hover:-translate-y-0.5",
-  {
-    variants: {
-      animate: {
-        true: "animate-in fade-in-0 slide-in-from-bottom-2 duration-500",
-        false: "",
-      },
+export const kpiVariants = cva("rounded-2xl p-[18px] relative", {
+  variants: {
+    animate: {
+      true: "animate-in fade-in-0 slide-in-from-bottom-2 duration-500",
+      false: "",
     },
-    defaultVariants: {
-      animate: true,
-    },
-  }
-);
+  },
+  defaultVariants: {
+    animate: true,
+  },
+});

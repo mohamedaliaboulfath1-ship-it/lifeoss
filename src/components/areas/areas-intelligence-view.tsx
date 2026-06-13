@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageUnfold, SectionReveal } from "@/components/motion/unfold-reveal";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { AreasHero } from "@/components/areas/areas-hero";
 import { AreaPremiumCard } from "@/components/areas/area-premium-card";
 import { AreasParaSection } from "@/components/areas/areas-para-section";
+import { GlassModal } from "@/components/glass";
 import { MotionModal } from "@/components/motion/motion";
 import { useAreasOverview } from "@/hooks/queries/use-areas-overview";
 import { queryKeys } from "@/lib/query/keys";
@@ -75,9 +75,20 @@ export function AreasIntelligenceView() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
             {previews.map((p, i) => (
-              <AreaPremiumCard key={p.id} preview={p} index={i} />
+              <div
+                key={p.id}
+                className={
+                  i % 5 === 0
+                    ? "lg:col-span-6"
+                    : i % 3 === 0
+                      ? "lg:col-span-4"
+                      : "lg:col-span-3"
+                }
+              >
+                <AreaPremiumCard preview={p} index={i} />
+              </div>
             ))}
           </div>
         )}
@@ -98,15 +109,17 @@ export function AreasIntelligenceView() {
       </SectionReveal>
 
       <MotionModal open={modal} onClose={() => setModal(false)}>
-        <Card className="w-full max-w-sm p-6 space-y-4 glass-premium">
-          <h3 className="font-bold">مجال جديد</h3>
+        <GlassModal className="max-w-sm">
+          <h3 className="font-bold mb-4">مجال جديد</h3>
+          <div className="space-y-4">
           <div><Label>الاسم</Label><Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></div>
           <div><Label>أيقونة</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} /></div>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={() => setModal(false)}>إلغاء</Button>
             <Button variant="gold" onClick={addArea}>حفظ</Button>
           </div>
-        </Card>
+          </div>
+        </GlassModal>
       </MotionModal>
     </PageUnfold>
   );

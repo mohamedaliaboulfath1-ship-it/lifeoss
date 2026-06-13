@@ -42,7 +42,7 @@ function ShellLoading({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-[100dvh] overflow-hidden">
       <aside
-        className="hidden md:block w-[220px] shrink-0 border-l border-border bg-surface2/40"
+        className="hidden md:block w-[220px] shrink-0 glass-sidebar"
         aria-hidden
       >
         <div className="p-4 space-y-3">

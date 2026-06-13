@@ -74,7 +74,7 @@ export function AreaPremiumCard({ preview, index = 0 }: Props) {
           boxShadow: `0 8px 32px ${gradient.glow}`,
         }}
       >
-        <div className="area-premium-card-inner relative h-full rounded-[15px] p-5 flex flex-col backdrop-blur-xl">
+        <div className="area-premium-card-inner relative h-full rounded-[15px] p-5 flex flex-col liquid-glass glass-blur-lg glass-reflect">
           <div className="area-card-shine absolute inset-0 pointer-events-none" aria-hidden />
 
           <div className="flex items-start justify-between gap-3 mb-4 relative z-[1]">

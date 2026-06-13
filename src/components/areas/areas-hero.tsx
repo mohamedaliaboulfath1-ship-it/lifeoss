@@ -29,8 +29,8 @@ const KPI_ITEMS: {
 export function AreasHero({ stats, loading }: AreasHeroProps) {
   return (
     <SectionReveal index={0}>
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 areas-hero-shell">
-        <div className="areas-hero-gradient absolute inset-0" />
+      <div className="relative overflow-hidden rounded-2xl liquid-glass glass-blur-xl glass-reflect glass-inner-glow areas-hero-shell">
+        <div className="areas-hero-gradient absolute inset-0 opacity-80" />
         <ParticlesBackground className="z-[1]" color="var(--gold)" count={24} />
 
         <div className="relative z-[2] p-6 md:p-8">
@@ -62,7 +62,7 @@ export function AreasHero({ stats, loading }: AreasHeroProps) {
               </motion.p>
             </div>
 
-            <div className="areas-hero-score glass-premium rounded-xl px-6 py-4 text-center min-w-[140px]">
+            <div className="areas-hero-score liquid-glass glass-blur-md glass-reflect rounded-xl px-6 py-4 text-center min-w-[140px] glass-inner-glow">
               <div className="text-[10px] uppercase tracking-widest text-text3 mb-1">Overall</div>
               {loading ? (
                 <div className="h-10 w-20 skeleton-shimmer rounded mx-auto" />
@@ -88,8 +88,8 @@ export function AreasHero({ stats, loading }: AreasHeroProps) {
                   delay: 0.08 + i * 0.06,
                 }}
                 className={cn(
-                  "areas-kpi-tile glass-premium rounded-xl p-3 text-center",
-                  item.key === "areasNeedingAttention" && stats.areasNeedingAttention > 0 && "border-amber2/40"
+                  "areas-kpi-tile liquid-glass glass-blur-sm glass-reflect rounded-xl p-3 text-center glass-lift",
+                  item.key === "areasNeedingAttention" && stats.areasNeedingAttention > 0 && "glass-glow-warning"
                 )}
               >
                 <div className="text-sm mb-1">{item.icon}</div>

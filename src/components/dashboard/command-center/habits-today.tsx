@@ -64,7 +64,7 @@ export const HabitsToday = memo(function HabitsToday({ habits, onHabitComplete }
   }
 
   return (
-    <Card className="h-full glass-premium">
+    <Card className="h-full glass-gradient-health">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>🔄 Today&apos;s Habits</CardTitle>
         <motion.span

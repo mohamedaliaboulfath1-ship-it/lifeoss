@@ -27,8 +27,10 @@ function LifeMapEdgeComponent({
   const weight = d.weight ?? 1;
   const strokeWidth = Math.min(4, 1 + weight * 0.8);
   const color = d.color ?? "var(--gold)";
-  const opacity = d.dimmed ? 0.08 : d.highlighted ? 1 : 0.45;
-  const glow = d.highlighted ? `drop-shadow(0 0 6px color-mix(in srgb, ${color} 60%, transparent))` : undefined;
+  const opacity = d.dimmed ? 0.06 : d.highlighted ? 1 : 0.55;
+  const glow = d.highlighted
+    ? `drop-shadow(0 0 8px color-mix(in srgb, ${color} 70%, transparent)) drop-shadow(0 0 16px color-mix(in srgb, var(--sky) 40%, transparent))`
+    : `drop-shadow(0 0 4px color-mix(in srgb, ${color} 25%, transparent))`;
 
   return (
     <>
@@ -47,8 +49,8 @@ function LifeMapEdgeComponent({
           strokeWidth,
           opacity,
           filter: glow,
-          strokeDasharray: d.kind === "hub" ? undefined : d.highlighted ? undefined : "6 4",
-          animation: d.highlighted ? "life-map-flow 1.2s linear infinite" : undefined,
+          strokeDasharray: d.kind === "hub" ? undefined : d.highlighted ? undefined : "8 5",
+          animation: d.highlighted ? "life-map-flow 1s linear infinite" : d.dimmed ? undefined : "life-map-flow 3s linear infinite",
         }}
         className="life-map-edge"
       />

@@ -55,7 +55,7 @@ export function LifeMapPanel({ node, nodes, edges, onSelectNode, onClose }: Life
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 24 }}
         transition={{ type: "spring", stiffness: 400, damping: 34 }}
-        className="absolute top-0 left-0 z-20 w-full sm:w-[340px] h-full border-r border-border/60 glass-premium overflow-y-auto"
+        className="absolute top-0 left-0 z-20 w-full sm:w-[340px] h-full liquid-glass glass-blur-xl glass-reflect overflow-y-auto"
       >
         <div className="p-5 space-y-4">
           <div className="flex items-start justify-between gap-2">

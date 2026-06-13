@@ -11,6 +11,7 @@ import { Menu } from "lucide-react";
 import { toggleFavorite, isFavorite } from "@/lib/navigation-store";
 import { useState } from "react";
 import { useMobileNav } from "@/contexts/mobile-nav-context";
+import { GlassNavbar } from "@/components/glass";
 
 interface TopbarProps {
   onImport?: () => void;
@@ -27,7 +28,7 @@ export function Topbar({ onImport, onAdd, addLabel = "+ إضافة" }: TopbarPro
   const section = NAV_PAGES.find((p) => pathname.startsWith(p.href))?.section;
 
   return (
-    <header className="px-4 md:px-7 py-3 border-b border-border flex items-center justify-between bg-bg/80 backdrop-blur-xl sticky top-0 z-50 shrink-0 gap-3">
+    <GlassNavbar className="px-4 md:px-7 py-3 sticky top-0 z-50 shrink-0 relative">
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
         <button
           type="button"
@@ -82,6 +83,6 @@ export function Topbar({ onImport, onAdd, addLabel = "+ إضافة" }: TopbarPro
           </Button>
         )}
       </div>
-    </header>
+    </GlassNavbar>
   );
 }

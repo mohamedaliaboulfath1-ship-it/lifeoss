@@ -27,10 +27,22 @@ export const KpiCard = memo(function KpiCard({
   badge,
 }: KpiCardProps) {
   return (
-    <motion.div layout className={cn(kpiVariants({ animate: true }), "group")} whileHover={kpiPulse}>
+    <motion.div
+      layout
+      className={cn(kpiVariants({ animate: true }), "group liquid-glass glass-blur-md glass-reflect glass-lift relative overflow-hidden")}
+      whileHover={kpiPulse}
+    >
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          background: `linear-gradient(145deg, color-mix(in srgb, ${color} 18%, transparent), transparent 60%)`,
+        }}
+      />
+      <div className="glass-edge" aria-hidden />
+      <div className="relative z-[1]">
       <div
         className="absolute top-0 right-0 left-0 h-0.5 opacity-80 group-hover:opacity-100 transition-opacity"
-        style={{ background: color }}
+        style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
       />
       <div className="text-[10px] text-text3 uppercase tracking-wide mb-2">
         {label}
@@ -53,6 +65,7 @@ export const KpiCard = memo(function KpiCard({
           {badge}
         </span>
       )}
+      </div>
     </motion.div>
   );
 });

@@ -6,6 +6,7 @@ export { buttonHover, buttonTap, buttonSuccess, spinnerTransition } from "./butt
 export { listContainer, listItem, taskCompleteExit, habitCheckPop } from "./list";
 export { dashboardStagger, kpiPulse, progressFill } from "./dashboard";
 export { chartBarGrow, chartLineDraw, chartPointPop } from "./chart";
+export { glassMotion } from "./glass";
 export { micro } from "./micro";
 export { motionV2 } from "./presets-v2";
 export { UNFOLD } from "./unfold";

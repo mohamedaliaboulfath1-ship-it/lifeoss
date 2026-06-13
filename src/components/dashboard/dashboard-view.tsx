@@ -95,7 +95,7 @@ export function DashboardView({
       <StaggerItem>
         <BentoGrid>
           <BentoTile span="hero" delay={0}>
-            <Card className="relative h-full p-5 md:p-6 glass-premium border-gold/15 overflow-hidden">
+            <Card className="relative h-full p-5 md:p-6 glass-gradient-default glass-inner-glow glow overflow-hidden">
               <AmbientHeroBg className="opacity-50" />
               <div className="relative z-10">
               <p className="text-[10px] uppercase tracking-[0.25em] text-text3 mb-2">LifeOS · Today</p>
@@ -149,7 +149,7 @@ export function DashboardView({
       {/* ── Alerts badge ── */}
       {(dashboard.counts?.unreadNotifications ?? 0) > 0 && (
       <StaggerItem>
-        <Card className="p-3 border-amber2/30 bg-amber2/5 flex items-center justify-between gap-3">
+        <Card className="p-3 glass-glow-warning flex items-center justify-between gap-3">
           <div className="text-sm">
             <span className="font-bold text-amber2">🔔 {dashboard.counts.unreadNotifications} تنبيه</span>
             <span className="text-text3 mr-2">— تحقق من الإشعارات غير المقروءة</span>
@@ -163,7 +163,7 @@ export function DashboardView({
 
       {/* ── TOP 5 PRIORITIES — 30 second answer ── */}
       <StaggerItem>
-      <Card className="p-4 border-gold/30 glass-premium bg-gradient-to-br from-gold/[0.04] to-transparent">
+      <Card className="p-4 glass-gradient-goals glass-inner-glow">
           <h3 className="text-sm font-bold text-gold2 mb-3">⚡ ماذا تفعل الآن؟</h3>
           {dashboard.priorities.length === 0 ? (
             <div className="text-sm text-text3 space-y-2 py-2">
@@ -208,7 +208,7 @@ export function DashboardView({
       {/* ── هذا الأسبوع + قريباً ── */}
       <StaggerItem>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="border-emerald/20">
+        <Card className="glass-gradient-health h-full">
           <CardHeader>
             <CardTitle>📈 ما تحسّن هذا الأسبوع؟</CardTitle>
           </CardHeader>
@@ -281,7 +281,7 @@ export function DashboardView({
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <MissedHabits habits={dashboard.missedHabits ?? []} />
 
-        <Card className="h-full glass-premium">
+        <Card className="h-full glass-gradient-finance">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>✅ مهام اليوم</CardTitle>
             <Link href="/tasks" className="text-[11px] text-gold2 hover:underline">
@@ -323,7 +323,7 @@ export function DashboardView({
 
       {/* ── At-risk goals ── */}
       <StaggerItem>
-        <Card className="border-coral/20">
+        <Card className="glass-glow-critical">
           <CardHeader>
             <CardTitle>🚨 أهداف تحتاج اهتماماً</CardTitle>
           </CardHeader>
@@ -471,7 +471,7 @@ export function DashboardView({
 
       {(yearData.goals ?? []).length > 0 && (
         <StaggerItem>
-          <Card className="glass-premium">
+          <Card className="glass-gradient-goals">
             <CardHeader className="flex flex-row justify-between">
               <CardTitle>🎯 أهداف نشطة</CardTitle>
               <Link href="/goals" className="text-[11px] text-gold2">عرض الكل</Link>

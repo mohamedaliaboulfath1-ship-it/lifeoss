@@ -20,36 +20,37 @@ function LifeMapNodeComponent({ data }: NodeProps) {
   return (
     <div
       className={cn(
-        "relative rounded-2xl border backdrop-blur-sm transition-all duration-200",
+        "relative rounded-2xl liquid-glass glass-blur-md glass-reflect transition-all duration-300",
         isCenter && "rounded-full flex items-center justify-center text-center",
-        isHub && "min-w-[88px] cursor-pointer hover:scale-[1.03]",
-        !isCenter && !isHub && "min-w-[130px] max-w-[180px]",
-        d.selected && "ring-2 ring-gold/60 scale-[1.02]",
-        atRisk && "border-rose/50"
+        isHub && "min-w-[92px] cursor-pointer hover:scale-[1.04] glass-lift",
+        !isCenter && !isHub && "min-w-[130px] max-w-[180px] hover:scale-[1.02]",
+        d.selected && "ring-2 ring-gold/70 scale-[1.03] glass-inner-glow",
+        atRisk && "glass-glow-critical"
       )}
       style={{
-        borderColor: `${color}44`,
+        borderColor: `${color}55`,
         background: isCenter
-          ? `radial-gradient(circle, color-mix(in srgb, ${color} 20%, var(--surface)), var(--surface))`
-          : `linear-gradient(145deg, color-mix(in srgb, ${color} 10%, var(--surface)), var(--surface2))`,
+          ? `radial-gradient(circle at 35% 25%, color-mix(in srgb, ${color} 28%, transparent), color-mix(in srgb, var(--surface) 75%, transparent))`
+          : `linear-gradient(145deg, color-mix(in srgb, ${color} 14%, var(--surface)) 0%, color-mix(in srgb, var(--surface2) 65%, transparent) 100%)`,
         boxShadow: d.selected
-          ? `0 8px 24px color-mix(in srgb, ${color} 20%, transparent)`
-          : "0 2px 12px color-mix(in srgb, var(--bg) 30%, transparent)",
-        width: isCenter ? 100 : undefined,
-        height: isCenter ? 100 : undefined,
+          ? `0 0 32px color-mix(in srgb, ${color} 35%, transparent), 0 12px 36px color-mix(in srgb, var(--bg) 40%, transparent)`
+          : `0 0 16px color-mix(in srgb, ${color} 12%, transparent), 0 4px 20px color-mix(in srgb, var(--bg) 35%, transparent)`,
+        width: isCenter ? 108 : undefined,
+        height: isCenter ? 108 : undefined,
         padding: isCenter ? 0 : isHub ? "12px 14px" : "10px 12px",
       }}
     >
+      <div className="glass-edge" aria-hidden />
       <Handle type="target" position={Position.Top} className="!opacity-0 !w-1 !h-1" />
       <Handle type="source" position={Position.Bottom} className="!opacity-0 !w-1 !h-1" />
 
       {isCenter ? (
-        <div>
-          <div className="text-xl">{d.icon ?? "✦"}</div>
-          <div className="font-display font-black text-xs tracking-widest text-gold2">{d.label}</div>
+        <div className="relative z-[1]">
+          <div className="text-2xl drop-shadow-sm">{d.icon ?? "✦"}</div>
+          <div className="font-display font-black text-xs tracking-widest text-gold2 mt-0.5">{d.label}</div>
         </div>
       ) : (
-        <div className="text-right">
+        <div className="text-right relative z-[1]">
           <div className="flex items-center justify-end gap-1.5">
             <span className="text-base">{d.icon ?? "•"}</span>
             <span className={cn("font-bold truncate", isHub ? "text-[10px] tracking-wider" : "text-xs")}>

@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MOTION } from "@/lib/motion";
 import { modalBackdrop } from "@/lib/motion/modal";
 import { useRoutePrefetch } from "@/hooks/use-route-prefetch";
+import { GlassSidebar } from "@/components/glass";
 
 interface SidebarProps {
   userName: string;
@@ -93,7 +94,7 @@ export function Sidebar({
 
   const content = (
     <>
-      <div className="px-[18px] pt-[22px] pb-4 border-b border-border flex items-start justify-between">
+      <div className="px-[18px] pt-[22px] pb-4 border-b border-white/5 flex items-start justify-between">
         <div>
           <div className="font-display text-xl font-black bg-gradient-to-br from-gold via-sky2 to-gold3 bg-clip-text text-transparent">
             🏛️ Life OS
@@ -117,7 +118,7 @@ export function Sidebar({
       <Link
         href="/account/profile"
         onClick={onMobileClose}
-        className="px-[18px] py-3.5 border-b border-border flex items-center gap-2.5 hover:bg-surface2/50 transition-colors"
+        className="px-[18px] py-3.5 border-b border-white/5 flex items-center gap-2.5 hover:bg-white/5 transition-colors"
       >
         <UserAvatar name={userName} avatarUrl={avatarUrl} />
         <div className="min-w-0">
@@ -126,7 +127,7 @@ export function Sidebar({
         </div>
       </Link>
 
-      <div className="px-[18px] py-2.5 border-b border-border flex gap-1.5 flex-wrap">
+      <div className="px-[18px] py-2.5 border-b border-white/5 flex gap-1.5 flex-wrap">
         {yearOptions.slice(0, 4).map((y) => (
           <button
             key={y}
@@ -262,18 +263,18 @@ export function Sidebar({
           />
         )}
       </AnimatePresence>
-      <aside
+      <GlassSidebar
         className={cn(
-          "shrink-0 bg-surface border-l border-border flex flex-col overflow-hidden relative z-[195]",
+          "shrink-0 flex flex-col overflow-hidden relative z-[195]",
           "w-[var(--width-sidebar)]",
           "fixed md:static inset-y-0 right-0",
           "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:translate-x-0",
           mobileOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         )}
       >
-        <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-gold/30 to-transparent" />
+        <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-gold/30 to-transparent z-[2]" />
         {content}
-      </aside>
+      </GlassSidebar>
     </>
   );
 }

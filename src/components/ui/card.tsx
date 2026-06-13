@@ -6,14 +6,14 @@ export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        "card-premium layered-card surface-l1 border border-border/60 rounded-2xl overflow-hidden",
-        "shadow-premium transition-all duration-300 ease-out",
-        "hover:border-border2/80 hover:shadow-premium-lg hover:-translate-y-px",
+        "liquid-glass glass-blur-md glass-reflect layered-card surface-l2 rounded-2xl overflow-hidden relative",
+        "glass-lift",
         className
       )}
       {...props}
     >
-      {children}
+      <div className="glass-edge" aria-hidden />
+      <div className="relative z-[1]">{children}</div>
     </div>
   )
 );
@@ -27,7 +27,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "px-5 py-4 border-b border-border flex items-center justify-between",
+        "px-5 py-4 border-b border-white/5 flex items-center justify-between",
         className
       )}
       {...props}
