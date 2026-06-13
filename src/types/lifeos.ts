@@ -113,6 +113,16 @@ export interface Book {
   coverUrl?: string;
   highlights?: BookHighlight[];
   rating?: number;
+  language?: string;
+  description?: string;
+  estimatedReadingHours?: number;
+  publishYear?: number;
+  goodreadsRating?: number;
+  purchaseUrl?: string;
+  readingPhase?: number;
+  readingPlanOrder?: number;
+  progressPct?: number;
+  tags?: string[];
 }
 
 export interface Transaction {

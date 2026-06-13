@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "seed:mohamed": "node scripts/seed-mohamed-arabic.mjs",
+    "seed:books": "npx tsx scripts/seed-mohamed-books-library.ts",
     "remotion:studio": "remotion studio"
   },
   "dependencies": {

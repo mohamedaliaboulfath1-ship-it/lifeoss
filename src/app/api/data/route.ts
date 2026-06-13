@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { maybeSeedMohamedArabic } from "@/lib/seed/run-mohamed-arabic";
+import { maybeSeedMohamedBooksLibrary } from "@/lib/seed/run-mohamed-books-library";
 import { getUserContext, invalidateUserContext } from "@/lib/year-data";
 
 function errorMessage(e: unknown) {
@@ -14,6 +15,11 @@ export async function GET() {
 
   try {
     await maybeSeedMohamedArabic(
+      authResult.supabase,
+      authResult.userId,
+      authResult.user.email
+    );
+    await maybeSeedMohamedBooksLibrary(
       authResult.supabase,
       authResult.userId,
       authResult.user.email

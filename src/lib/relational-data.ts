@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_RULES } from "@/lib/constants";
+import { mapBookRow } from "@/lib/books/map-book";
 import type {
   Book,
   CareerCertification,
@@ -186,27 +187,7 @@ export async function loadRelationalYearData(db: Db, userId: string) {
           .createSignedUrl(coverPath, 3600);
         coverUrl = signed?.signedUrl;
       }
-      const rawHighlights = row.highlights;
-      const highlights = Array.isArray(rawHighlights)
-        ? (rawHighlights as Book["highlights"])
-        : [];
-      return {
-        id: b.id,
-        title: b.title,
-        author: b.author ?? undefined,
-        field: (row.category as string) ?? undefined,
-        category: (row.category as string) ?? undefined,
-        pages: b.pages_total ?? undefined,
-        curPage: b.pages_read ?? 0,
-        priority: b.priority,
-        status: b.status,
-        notes: b.notes ?? undefined,
-        bookType: (row.book_type as string) ?? "physical",
-        coverPath,
-        coverUrl,
-        highlights,
-        rating: (row.rating as number) ?? undefined,
-      };
+      return mapBookRow(row, coverUrl);
     })
   );
 

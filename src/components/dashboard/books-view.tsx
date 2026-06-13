@@ -4,7 +4,7 @@ import { ViewShell } from "@/components/motion/view-shell";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MotionCard, MotionModal } from "@/components/motion/motion";
 import { LayoutAnimateList } from "@/components/motion/layout-animate-list";
-import { CardUnfold, ShelfReveal } from "@/components/motion/unfold-reveal";
+import { CardUnfold } from "@/components/motion/unfold-reveal";
 import { useExpandTransitionOptional } from "@/contexts/goal-expand-context";
 import { ProgressJourney } from "@/components/emotion/progress-journey";
 import { BOOK_TYPE_LABELS } from "@/lib/icons";
@@ -20,6 +20,12 @@ import { commas, today, uid } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
 import { useToast } from "@/contexts/toast-context";
 import { BookCover } from "@/components/dashboard/book-cover";
+import {
+  BooksCategoryShelf,
+  BooksReadingRoadmap,
+  sortBooksByReadingPlan,
+  type LibraryBook,
+} from "@/components/dashboard/books-library-views";
 import type { Book, YearPayload } from "@/types/lifeos";
 
 interface BooksViewProps {
@@ -35,10 +41,8 @@ type ReadingSession = {
   durationMin: number;
 };
 
-type BookExt = Book & {
+type BookExt = LibraryBook & {
   bookType?: string;
-  category?: string;
-  coverUrl?: string;
   rating?: number;
 };
 
@@ -106,11 +110,23 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
     title: "",
     author: "",
     pages: "200",
+    curPage: "0",
+    status: "planned" as Book["status"],
+    priority: "med" as Book["priority"],
     bookType: "physical",
     category: "",
+    language: "en",
     notes: "",
+    description: "",
     coverPath: "",
     coverPreviewUrl: "",
+    coverUrl: "",
+    estimatedReadingHours: "",
+    publishYear: "",
+    goodreadsRating: "",
+    purchaseUrl: "",
+    readingPhase: "",
+    readingPlanOrder: "",
     highlightsText: "",
   });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -154,7 +170,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
 
   const filteredBooks = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return books.filter((b) => {
+    const list = books.filter((b) => {
       if (typeFilter !== "all" && (b as BookExt).bookType !== typeFilter) return false;
       if (statusFilter !== "all" && b.status !== statusFilter) return false;
       if (categoryFilter !== "all") {
@@ -165,6 +181,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       const hay = `${b.title} ${b.author ?? ""} ${(b as BookExt).category ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
+    return [...list].sort(sortBooksByReadingPlan);
   }, [books, query, typeFilter, statusFilter, categoryFilter]);
 
   function openBookWithExpand(book: BookExt, rect: DOMRect) {
@@ -195,11 +212,24 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         title: book.title,
         author: book.author ?? "",
         pages: String(book.pages ?? 200),
+        curPage: String(book.curPage ?? 0),
+        status: book.status ?? "planned",
+        priority: book.priority ?? "med",
         bookType: book.bookType ?? "physical",
         category: book.category ?? book.field ?? "",
+        language: book.language ?? "en",
         notes: book.notes ?? "",
+        description: book.description ?? book.notes ?? "",
         coverPath: book.coverPath ?? "",
         coverPreviewUrl: book.coverUrl ?? "",
+        coverUrl: book.coverUrl ?? "",
+        estimatedReadingHours:
+          book.estimatedReadingHours != null ? String(book.estimatedReadingHours) : "",
+        publishYear: book.publishYear != null ? String(book.publishYear) : "",
+        goodreadsRating: book.goodreadsRating != null ? String(book.goodreadsRating) : "",
+        purchaseUrl: book.purchaseUrl ?? "",
+        readingPhase: book.readingPhase != null ? String(book.readingPhase) : "",
+        readingPlanOrder: book.readingPlanOrder != null ? String(book.readingPlanOrder) : "",
         highlightsText: hl.map((h) => h.excerpt ?? h.note ?? "").filter(Boolean).join("\n"),
       });
       setCoverPreview(book.coverUrl ?? null);
@@ -209,11 +239,23 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
         title: "",
         author: "",
         pages: "200",
+        curPage: "0",
+        status: "planned",
+        priority: "med",
         bookType: "physical",
         category: "",
+        language: "en",
         notes: "",
+        description: "",
         coverPath: "",
         coverPreviewUrl: "",
+        coverUrl: "",
+        estimatedReadingHours: "",
+        publishYear: "",
+        goodreadsRating: "",
+        purchaseUrl: "",
+        readingPhase: "",
+        readingPlanOrder: "",
         highlightsText: "",
       });
       setCoverPreview(null);
@@ -303,17 +345,31 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
   async function addOrUpdateBook() {
     if (!form.title.trim()) return;
     const id = form.id || uid();
-    const payload = {
+    const pages = parseInt(form.pages, 10) || 200;
+    const curPage = parseInt(form.curPage, 10) || 0;
+    const body = {
       id,
       title: form.title.trim(),
       author: form.author || undefined,
-      pages: parseInt(form.pages, 10) || 200,
-      curPage: form.id ? books.find((b) => b.id === form.id)?.curPage ?? 0 : 0,
-      status: form.id ? books.find((b) => b.id === form.id)?.status ?? "planned" : "planned",
+      pages,
+      curPage,
+      status: form.status,
+      priority: form.priority,
       bookType: form.bookType,
       category: form.category || undefined,
+      language: form.language || undefined,
       notes: form.notes || undefined,
+      description: form.description || form.notes || undefined,
       coverPath: form.coverPath || undefined,
+      coverUrl: form.coverUrl || form.coverPreviewUrl || undefined,
+      estimatedReadingHours: form.estimatedReadingHours
+        ? parseFloat(form.estimatedReadingHours)
+        : undefined,
+      publishYear: form.publishYear ? parseInt(form.publishYear, 10) : undefined,
+      goodreadsRating: form.goodreadsRating ? parseFloat(form.goodreadsRating) : undefined,
+      purchaseUrl: form.purchaseUrl || undefined,
+      readingPhase: form.readingPhase ? parseInt(form.readingPhase, 10) : undefined,
+      readingPlanOrder: form.readingPlanOrder ? parseInt(form.readingPlanOrder, 10) : undefined,
       highlights: form.highlightsText
         .split("\n")
         .map((line) => line.trim())
@@ -325,24 +381,12 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       ? await fetch("/api/books", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: form.id,
-            title: payload.title,
-            author: payload.author,
-            pages: payload.pages,
-            bookType: payload.bookType,
-            category: payload.category,
-            notes: payload.notes,
-            coverPath: payload.coverPath,
-            highlights: payload.highlights,
-            curPage: payload.curPage,
-            status: payload.status,
-          }),
+          body: JSON.stringify(body),
         })
       : await fetch("/api/books", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entity: "book", payload }),
+          body: JSON.stringify({ entity: "book", payload: body }),
         });
     if (!res.ok) {
       toast("فشل حفظ الكتاب", "error");
@@ -353,11 +397,23 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       title: "",
       author: "",
       pages: "200",
+      curPage: "0",
+      status: "planned",
+      priority: "med",
       bookType: "physical",
       category: "",
+      language: "en",
       notes: "",
+      description: "",
       coverPath: "",
       coverPreviewUrl: "",
+      coverUrl: "",
+      estimatedReadingHours: "",
+      publishYear: "",
+      goodreadsRating: "",
+      purchaseUrl: "",
+      readingPhase: "",
+      readingPlanOrder: "",
       highlightsText: "",
     });
     setCoverPreview(null);
@@ -515,7 +571,8 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       <Tabs
         tabs={[
           { id: "gallery", label: "🖼️ معرض" },
-          { id: "shelf", label: "📚 رف" },
+          { id: "shelf", label: "📚 رف التصنيفات" },
+          { id: "roadmap", label: "🗺️ خطة القراءة" },
           { id: "list", label: "📋 قائمة" },
           { id: "progress", label: "📈 التقدم" },
         ]}
@@ -540,40 +597,16 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
           ))}
         </LayoutAnimateList>
       ) : view === "shelf" ? (
-        <div className="space-y-6">
-          {["reading", "done", "planned"].map((status, rowIndex) => {
-            const shelfBooks = filteredBooks.filter((b) => b.status === status);
-            if (!shelfBooks.length) return null;
-            return (
-              <ShelfReveal key={status} rowIndex={rowIndex}>
-                <div className="text-xs text-text3 mb-2 font-bold uppercase tracking-wider">
-                  {status === "reading" ? "قيد القراءة" : status === "done" ? "مكتمل" : "مخطط"}
-                </div>
-                <div className="flex items-end gap-1 pb-2 border-b-4 border-[#3d2b1f] px-2 min-h-[140px]">
-                  {shelfBooks.map((b, i) => {
-                    const ext = b as BookExt;
-                    return (
-                      <MotionCard
-                        key={b.id}
-                        layout
-                        className="shrink-0 cursor-pointer"
-                        style={{ marginBottom: i % 2 === 0 ? 0 : 8 }}
-                        onClick={(e) => {
-                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                          openBookWithExpand(ext, rect);
-                        }}
-                      >
-                        <div className="w-16 h-24 rounded-sm overflow-hidden border border-border shadow-md hover:-translate-y-1 transition-transform">
-                          <BookCover title={b.title} coverUrl={ext.coverUrl} coverPath={ext.coverPath} />
-                        </div>
-                      </MotionCard>
-                    );
-                  })}
-                </div>
-              </ShelfReveal>
-            );
-          })}
-        </div>
+        <BooksCategoryShelf
+          books={filteredBooks as BookExt[]}
+          onOpen={openBookWithExpand}
+        />
+      ) : view === "roadmap" ? (
+        <BooksReadingRoadmap
+          books={filteredBooks as BookExt[]}
+          onOpen={openBookWithExpand}
+          onEdit={openBookModal}
+        />
       ) : view === "list" ? (
         <div className="space-y-2">
           {filteredBooks.map((b) => {
@@ -621,7 +654,7 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
       )}
 
       <MotionModal open={!!modal} onClose={() => setModal(null)}>
-          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-md p-6 space-y-4">
+          <div className="bg-surface border border-border2 rounded-[10px] w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             {modal === "book" && (
               <>
                 <h3 className="font-bold text-gold2">{form.id ? "تعديل كتاب" : "كتاب جديد"}</h3>
@@ -639,6 +672,38 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                     <Input value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
                   </div>
                   <div>
+                    <Label>الصفحة الحالية</Label>
+                    <Input value={form.curPage} onChange={(e) => setForm({ ...form, curPage: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>الحالة</Label>
+                    <select
+                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as Book["status"] })}
+                    >
+                      <option value="planned">مخطط</option>
+                      <option value="reading">قيد القراءة</option>
+                      <option value="done">مكتمل</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label>الأولوية</Label>
+                    <select
+                      className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
+                      value={form.priority}
+                      onChange={(e) => setForm({ ...form, priority: e.target.value as Book["priority"] })}
+                    >
+                      <option value="high">عالي</option>
+                      <option value="med">متوسط</option>
+                      <option value="low">منخفض</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
                     <Label>نوع الكتاب</Label>
                     <select
                       className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm"
@@ -650,18 +715,58 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <Label>اللغة</Label>
+                    <Input value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} placeholder="en / ar" />
+                  </div>
                 </div>
                 <div>
                   <Label>التصنيف</Label>
                   <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
                 </div>
                 <div>
-                  <Label>ملاحظات</Label>
+                  <Label>الوصف</Label>
                   <textarea
                     className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[60px]"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>ملاحظات</Label>
+                  <textarea
+                    className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-sm min-h-[50px]"
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>سنة النشر</Label>
+                    <Input value={form.publishYear} onChange={(e) => setForm({ ...form, publishYear: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>تقييم Goodreads</Label>
+                    <Input value={form.goodreadsRating} onChange={(e) => setForm({ ...form, goodreadsRating: e.target.value })} placeholder="4.25" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>ساعات القراءة المتوقعة</Label>
+                    <Input value={form.estimatedReadingHours} onChange={(e) => setForm({ ...form, estimatedReadingHours: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>مرحلة الخطة</Label>
+                    <Input value={form.readingPhase} onChange={(e) => setForm({ ...form, readingPhase: e.target.value })} placeholder="1-6" />
+                  </div>
+                </div>
+                <div>
+                  <Label>ترتيب داخل المرحلة</Label>
+                  <Input value={form.readingPlanOrder} onChange={(e) => setForm({ ...form, readingPlanOrder: e.target.value })} />
+                </div>
+                <div>
+                  <Label>رابط الشراء (اختياري)</Label>
+                  <Input value={form.purchaseUrl} onChange={(e) => setForm({ ...form, purchaseUrl: e.target.value })} placeholder="https://..." />
                 </div>
                 <div>
                   <Label>اقتباسات / Highlights (سطر لكل اقتباس)</Label>
@@ -673,7 +778,18 @@ export function BooksView({ yearData, onRefresh }: BooksViewProps) {
                   />
                 </div>
                 <div>
-                  <Label>صورة الغلاف</Label>
+                  <Label>رابط غلاف (OpenLibrary / Google Books)</Label>
+                  <Input
+                    value={form.coverUrl}
+                    onChange={(e) => {
+                      setForm({ ...form, coverUrl: e.target.value, coverPreviewUrl: e.target.value });
+                      setCoverPreview(e.target.value || null);
+                    }}
+                    placeholder="https://covers.openlibrary.org/..."
+                  />
+                </div>
+                <div>
+                  <Label>صورة الغلاف (رفع محلي)</Label>
                   {(coverPreview || form.coverPreviewUrl) && (
                     <div className="mb-2 aspect-[3/4] max-w-[120px] rounded overflow-hidden border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
