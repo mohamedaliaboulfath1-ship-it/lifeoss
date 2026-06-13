@@ -12,14 +12,17 @@ import { JOURNAL_CATEGORIES } from "@/lib/journal/blocks";
 import type { JournalEntrySummary, JournalTemplate } from "@/types/journal";
 import { today } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/contexts/toast-context";
 
 export function JournalHubView() {
   const router = useRouter();
+  const { toast } = useToast();
   const [entries, setEntries] = useState<JournalEntrySummary[]>([]);
   const [templates, setTemplates] = useState<JournalTemplate[]>([]);
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [migrationRequired, setMigrationRequired] = useState(false);
 
   const load = useCallback(async () => {
@@ -44,19 +47,57 @@ export function JournalHubView() {
     isDaily?: boolean;
     title?: string;
   }) {
-    const res = await fetch("/api/journal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        templateId: opts?.templateId,
-        isDaily: opts?.isDaily,
-        journalDate: opts?.isDaily ? today() : undefined,
-        title: opts?.title,
-        category: opts?.isDaily ? "journal" : "ideas",
-      }),
-    });
-    const json = await res.json();
-    if (json.id) router.push(`/journal/${json.id}`);
+    if (creating) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: opts?.templateId,
+          isDaily: opts?.isDaily,
+          journalDate: opts?.isDaily ? today() : undefined,
+          title: opts?.title,
+          category: opts?.isDaily ? "journal" : "ideas",
+        }),
+      });
+
+      let json: {
+        id?: string;
+        error?: string;
+        migrationRequired?: boolean;
+        existing?: boolean;
+      } = {};
+
+      try {
+        json = await res.json();
+      } catch {
+        toast("خطأ في استجابة الخادم — حاول مرة أخرى", "error");
+        return;
+      }
+
+      if (json.migrationRequired) setMigrationRequired(true);
+
+      if (!res.ok || !json.id) {
+        toast(
+          json.migrationRequired
+            ? "شغّل migration 021_journal_os.sql في Supabase أولاً"
+            : (json.error ?? "فشل إنشاء المذكرة"),
+          "error"
+        );
+        return;
+      }
+
+      if (json.existing) {
+        toast("فتح يومية اليوم", "info");
+      }
+
+      router.push(`/journal/${json.id}`);
+    } catch {
+      toast("فشل الاتصال بالخادم", "error");
+    } finally {
+      setCreating(false);
+    }
   }
 
   if (loading) return <div className="h-64 skeleton-shimmer rounded-2xl" />;
@@ -77,10 +118,22 @@ export function JournalHubView() {
             العقل الثاني — كتابة · تفكير · معرفة · مرتبط بأهدافك وعاداتك وكتبك
           </p>
           <div className="flex flex-wrap gap-2 mt-6">
-            <Button variant="gold" size="sm" onClick={() => createNote()}>
+            <Button
+              variant="gold"
+              size="sm"
+              loading={creating}
+              disabled={creating}
+              onClick={() => void createNote()}
+            >
               + مذكرة جديدة
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => createNote({ isDaily: true })}>
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={creating}
+              disabled={creating}
+              onClick={() => void createNote({ isDaily: true })}
+            >
               📔 يومية اليوم
             </Button>
             <Link href="/journal/graph">
@@ -91,8 +144,12 @@ export function JournalHubView() {
       </motion.header>
 
       {migrationRequired && (
-        <GlassCard className="p-4 border-amber2/40 text-sm">
-          شغّل migration <code className="text-xs">021_journal_os.sql</code> في Supabase.
+        <GlassCard className="p-4 border-amber2/40 text-sm space-y-2">
+          <p className="font-bold text-amber2">مطلوب إعداد قاعدة البيانات</p>
+          <p>
+            شغّل migration <code className="text-xs bg-surface2 px-1 rounded">021_journal_os.sql</code> في
+            Supabase عبر <code className="text-xs bg-surface2 px-1 rounded">npm run migrate</code>
+          </p>
         </GlassCard>
       )}
 
@@ -101,7 +158,7 @@ export function JournalHubView() {
           <GlassCard
             key={tpl.id}
             className="p-4 cursor-pointer hover:border-gold/30 transition-all"
-            onClick={() => createNote({ templateId: tpl.id, title: tpl.name })}
+            onClick={() => void createNote({ templateId: tpl.id, title: tpl.name })}
           >
             <div className="font-bold text-sm">{tpl.name}</div>
             <p className="text-xs text-text3 mt-1">{tpl.description}</p>
@@ -149,9 +206,13 @@ export function JournalHubView() {
           title="ابدأ عقلك الثاني"
           description="مذكرات · أفكار · بحث · يوميات — كلها مرتبطة بـ LifeOS"
           suggestedActions={[
-            { label: "مذكرة جديدة", onClick: () => createNote(), variant: "gold" },
-            { label: "يومية اليوم", onClick: () => createNote({ isDaily: true }), variant: "ghost" },
-            { label: "مراجعة يومية", onClick: () => createNote({ templateId: "tpl_daily_review" }), variant: "ghost" },
+            { label: "مذكرة جديدة", onClick: () => void createNote(), variant: "gold" },
+            { label: "يومية اليوم", onClick: () => void createNote({ isDaily: true }), variant: "ghost" },
+            {
+              label: "مراجعة يومية",
+              onClick: () => void createNote({ templateId: "tpl_daily_review" }),
+              variant: "ghost",
+            },
           ]}
         />
       ) : (

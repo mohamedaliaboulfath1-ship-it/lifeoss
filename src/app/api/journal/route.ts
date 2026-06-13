@@ -4,6 +4,11 @@ import { requireSession } from "@/lib/api-auth";
 import { uid, today } from "@/lib/utils";
 import { blocksFromTemplate, defaultBlocks } from "@/lib/journal/blocks";
 import { mapEntrySummary, saveJournalEntry, signCoverUrl } from "@/lib/journal/mapper";
+import {
+  getSystemTemplate,
+  isJournalMigrationError,
+  JOURNAL_SYSTEM_TEMPLATES,
+} from "@/lib/journal/templates";
 
 const createSchema = z.object({
   title: z.string().optional(),
@@ -77,16 +82,30 @@ export async function GET(req: Request) {
     .or(`is_system.eq.true,user_id.eq.${auth.userId}`)
     .order("name");
 
+  const dbTemplates = (templates ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    category: t.category,
+    description: t.description,
+    blocks: t.blocks,
+    isSystem: t.is_system,
+  }));
+
+  const mergedTemplates =
+    dbTemplates.length > 0
+      ? dbTemplates
+      : JOURNAL_SYSTEM_TEMPLATES.map((t) => ({
+          id: t.id,
+          name: t.name,
+          category: t.category,
+          description: t.description,
+          blocks: t.blocks,
+          isSystem: t.isSystem,
+        }));
+
   return NextResponse.json({
     entries,
-    templates: (templates ?? []).map((t) => ({
-      id: t.id,
-      name: t.name,
-      category: t.category,
-      description: t.description,
-      blocks: t.blocks,
-      isSystem: t.is_system,
-    })),
+    templates: mergedTemplates,
   });
 }
 
@@ -94,58 +113,72 @@ export async function POST(req: Request) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
 
-  const body = createSchema.parse(await req.json());
-  const id = uid();
-  const date = body.journalDate ?? (body.isDaily ? today() : undefined);
+  try {
+    const body = createSchema.parse(await req.json());
+    const id = uid();
+    const date = body.journalDate ?? (body.isDaily ? today() : undefined);
 
-  if (body.isDaily && date) {
-    const { data: existing } = await auth.supabase
-      .from("journal_entries")
-      .select("id")
-      .eq("user_id", auth.userId)
-      .eq("is_daily", true)
-      .eq("journal_date", date)
-      .maybeSingle();
-    if (existing) {
-      return NextResponse.json({ ok: true, id: existing.id, existing: true });
+    if (body.isDaily && date) {
+      const { data: existing } = await auth.supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", auth.userId)
+        .eq("is_daily", true)
+        .eq("journal_date", date)
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json({ ok: true, id: existing.id, existing: true });
+      }
     }
-  }
 
-  let blocks = defaultBlocks();
-  if (body.blocks?.length) {
-    blocks = blocksFromTemplate(body.blocks as Parameters<typeof blocksFromTemplate>[0]);
-  } else if (body.templateId) {
-    const { data: tpl } = await auth.supabase
-      .from("journal_templates")
-      .select("blocks")
-      .eq("id", body.templateId)
-      .maybeSingle();
-    if (tpl?.blocks) {
-      blocks = blocksFromTemplate(tpl.blocks as Parameters<typeof blocksFromTemplate>[0]);
+    let blocks = defaultBlocks();
+    if (body.blocks?.length) {
+      blocks = blocksFromTemplate(body.blocks as Parameters<typeof blocksFromTemplate>[0]);
+    } else if (body.templateId) {
+      const { data: tpl } = await auth.supabase
+        .from("journal_templates")
+        .select("blocks")
+        .eq("id", body.templateId)
+        .maybeSingle();
+      if (tpl?.blocks) {
+        blocks = blocksFromTemplate(tpl.blocks as Parameters<typeof blocksFromTemplate>[0]);
+      } else {
+        const fallback = getSystemTemplate(body.templateId);
+        if (fallback?.blocks) {
+          blocks = blocksFromTemplate(fallback.blocks);
+        }
+      }
     }
+
+    const title =
+      body.title ??
+      (body.isDaily && date ? date : "مذكرة جديدة");
+
+    const { data: profile } = await auth.supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", auth.userId)
+      .maybeSingle();
+
+    await saveJournalEntry(auth.supabase, auth.userId, {
+      id,
+      title,
+      subtitle: body.subtitle,
+      author: profile?.display_name ?? null,
+      category: body.category,
+      isDaily: body.isDaily ?? false,
+      journalDate: date ?? null,
+      status: "draft",
+      blocks,
+    });
+
+    return NextResponse.json({ ok: true, id });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "فشل إنشاء المذكرة";
+    const migrationRequired = isJournalMigrationError(message);
+    return NextResponse.json(
+      { error: message, migrationRequired },
+      { status: migrationRequired ? 400 : 500 }
+    );
   }
-
-  const title =
-    body.title ??
-    (body.isDaily && date ? date : "مذكرة جديدة");
-
-  const { data: profile } = await auth.supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", auth.userId)
-    .maybeSingle();
-
-  await saveJournalEntry(auth.supabase, auth.userId, {
-    id,
-    title,
-    subtitle: body.subtitle,
-    author: profile?.display_name ?? null,
-    category: body.category,
-    isDaily: body.isDaily ?? false,
-    journalDate: date ?? null,
-    status: "draft",
-    blocks,
-  });
-
-  return NextResponse.json({ ok: true, id });
 }
