@@ -61,8 +61,17 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
   });
 
   useEffect(() => {
+    if (pendingIds.size > 0) return;
     setTasks(yearData.tasks ?? []);
-  }, [yearData.tasks]);
+  }, [yearData.tasks, pendingIds]);
+
+  function mergeTaskFromServer(task: LifeTask) {
+    setTasks((prev) => {
+      const next = prev.map((t) => (t.id === task.id ? task : t));
+      patchYearData((y) => ({ ...y, tasks: next }));
+      return next;
+    });
+  }
 
   function applyTasks(next: LifeTask[]) {
     setTasks(next);
@@ -197,8 +206,16 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: nextStatus }),
       });
-      if (!res.ok) throw new Error("failed");
-      void refreshSilent();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "failed");
+
+      if (json.task) {
+        mergeTaskFromServer(json.task as LifeTask);
+      } else {
+        await refreshTasks();
+      }
+
+      await refreshSilent();
     } catch {
       applyTasks(snapshot);
       toast("تعذّر تحديث المهمة", "error");
@@ -215,7 +232,12 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
     const found = tasks.find((x) => x.id === id);
     if (!found || found.status === status) return;
     const snapshot = tasks;
-    applyTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
+    const nextCompleted = status === "done" ? today() : undefined;
+    applyTasks(
+      tasks.map((t) =>
+        t.id === id ? { ...t, status, completedDate: nextCompleted } : t
+      )
+    );
     setPendingIds((s) => new Set(s).add(id));
     try {
       const res = await fetch("/api/tasks", {
@@ -223,8 +245,16 @@ export function TasksView({ yearData, onRefresh }: TasksViewProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
-      if (!res.ok) throw new Error("failed");
-      void refreshSilent();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "failed");
+
+      if (json.task) {
+        mergeTaskFromServer(json.task as LifeTask);
+      } else {
+        await refreshTasks();
+      }
+
+      await refreshSilent();
     } catch {
       applyTasks(snapshot);
       toast("تعذّر تحديث المهمة", "error");

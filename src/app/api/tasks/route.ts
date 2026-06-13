@@ -3,6 +3,21 @@ import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { uid } from "@/lib/utils";
 import { recalculateGoalProgressFromTasks } from "@/lib/goals/auto-progress";
+import { invalidateUserContext } from "@/lib/year-data";
+
+function mapTaskRow(t: Record<string, unknown>) {
+  return {
+    id: t.id as string,
+    title: t.title as string,
+    status: t.status as "inbox" | "active" | "done" | "archive",
+    priority: (t.priority as "p1" | "p2" | "p3" | "p4") ?? "p3",
+    dueDate: (t.due_date as string | null) ?? undefined,
+    estimatedTime: (t.estimated_time as number | null) ?? undefined,
+    goalId: (t.goal_id as string | null) ?? undefined,
+    completedDate: (t.completed_date as string | null) ?? undefined,
+    note: (t.notes as string | null) ?? undefined,
+  };
+}
 
 const taskSchema = z.object({
   id: z.string().optional(),
@@ -46,17 +61,7 @@ export async function GET(req: Request) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const tasks = (data ?? []).map((t) => ({
-    id: t.id as string,
-    title: t.title as string,
-    status: t.status as "inbox" | "active" | "done" | "archive",
-    priority: (t.priority as "p1" | "p2" | "p3" | "p4") ?? "p3",
-    dueDate: (t.due_date as string | null) ?? undefined,
-    estimatedTime: (t.estimated_time as number | null) ?? undefined,
-    goalId: (t.goal_id as string | null) ?? undefined,
-    completedDate: (t.completed_date as string | null) ?? undefined,
-    note: (t.notes as string | null) ?? undefined,
-  }));
+  const tasks = (data ?? []).map((t) => mapTaskRow(t as Record<string, unknown>));
 
   return NextResponse.json({ tasks });
 }
@@ -86,6 +91,8 @@ export async function POST(req: Request) {
   if (body.goalId) {
     await recalculateGoalProgressFromTasks(authResult.supabase, authResult.userId, body.goalId);
   }
+
+  invalidateUserContext(authResult.userId);
 
   return NextResponse.json({ ok: true, id });
 }
@@ -123,6 +130,15 @@ export async function PATCH(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const { data: updated, error: readErr } = await authResult.supabase
+    .from("life_tasks")
+    .select("*")
+    .eq("id", body.id)
+    .eq("user_id", authResult.userId)
+    .maybeSingle();
+
+  if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 });
+
   const touchedGoalIds = new Set<string>();
   if (before?.goal_id) touchedGoalIds.add(before.goal_id as string);
   if (body.goalId) touchedGoalIds.add(body.goalId);
@@ -130,7 +146,12 @@ export async function PATCH(req: Request) {
     await recalculateGoalProgressFromTasks(authResult.supabase, authResult.userId, goalId);
   }
 
-  return NextResponse.json({ ok: true });
+  invalidateUserContext(authResult.userId);
+
+  return NextResponse.json({
+    ok: true,
+    task: updated ? mapTaskRow(updated as Record<string, unknown>) : null,
+  });
 }
 
 export async function DELETE(req: Request) {
@@ -161,6 +182,8 @@ export async function DELETE(req: Request) {
       before.goal_id as string
     );
   }
+
+  invalidateUserContext(authResult.userId);
 
   return NextResponse.json({ ok: true });
 }
