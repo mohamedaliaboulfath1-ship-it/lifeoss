@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NAV_PAGES } from "@/lib/constants";
+import { getNavPagesForProfile } from "@/lib/navigation/filter-nav";
+import { useLifeOSData } from "@/contexts/lifeos-context";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +25,7 @@ type PaletteItem = {
 
 export function CommandPalette() {
   const router = useRouter();
+  const { data } = useLifeOSData();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [entityResults, setEntityResults] = useState<PaletteItem[]>([]);
@@ -33,7 +35,7 @@ export function CommandPalette() {
 
   const staticResults = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pages = NAV_PAGES.map((p) => ({
+    const pages = getNavPagesForProfile(data?.profile).map((p) => ({
       id: p.id,
       title: p.title,
       sub: p.sub,
@@ -67,7 +69,7 @@ export function CommandPalette() {
         [p.title, p.sub, p.id].join(" ").toLowerCase().includes(q)
       )
       .slice(0, 8);
-  }, [query]);
+  }, [query, data?.profile]);
 
   const results = useMemo(() => {
     const merged = [...entityResults, ...staticResults];

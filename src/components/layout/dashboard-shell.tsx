@@ -24,6 +24,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
           userName={data.profile.displayName}
           avatarUrl={data.profile.avatarUrl}
           isAdmin={isAdminRole(data.profile.role)}
+          userEmail={data.profile.email}
+          userRole={data.profile.role}
+          onboarded={data.profile.onboarded}
+          onboardingCompleted={data.profile.saas?.onboardingCompleted}
           currentYear={data.currentYear}
           years={data.years}
           habitCount={data.yearData.habits?.length ?? 0}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { NAV_PAGES } from "@/lib/constants";
+import { getNavPagesForProfile } from "@/lib/navigation/filter-nav";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getFavorites } from "@/lib/navigation-store";
@@ -20,6 +20,10 @@ interface SidebarProps {
   userName: string;
   avatarUrl?: string | null;
   isAdmin?: boolean;
+  userEmail?: string;
+  userRole?: string;
+  onboarded?: boolean;
+  onboardingCompleted?: boolean;
   currentYear: string;
   years: string[];
   habitCount?: number;
@@ -56,6 +60,10 @@ export function Sidebar({
   userName,
   avatarUrl,
   isAdmin = false,
+  userEmail,
+  userRole,
+  onboarded,
+  onboardingCompleted,
   currentYear,
   years,
   habitCount = 0,
@@ -80,7 +88,25 @@ export function Sidebar({
     router.refresh();
   }
 
-  const sections = [...new Set(NAV_PAGES.map((p) => p.section).filter(Boolean))];
+  const sections = [
+    ...new Set(
+      getNavPagesForProfile({
+        email: userEmail,
+        role: userRole,
+        onboarded,
+        saas: { onboardingCompleted },
+      })
+        .map((p) => p.section)
+        .filter(Boolean)
+    ),
+  ];
+
+  const navPages = getNavPagesForProfile({
+    email: userEmail,
+    role: userRole,
+    onboarded,
+    saas: { onboardingCompleted },
+  });
 
   const dateStr = new Date().toLocaleDateString("ar-SA", {
     weekday: "long",
@@ -179,7 +205,7 @@ export function Sidebar({
             <div className="text-[9px] font-bold text-text3 tracking-[2px] uppercase px-[18px] pb-1.5">
               {section}
             </div>
-            {NAV_PAGES.filter((p) => p.section === section).map((page) => {
+            {navPages.filter((p) => p.section === section).map((page) => {
               const active = pathname.startsWith(page.href);
               return (
                 <Link

@@ -1,17 +1,34 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass";
 import { Button } from "@/components/ui/button";
 import { WelcomeChecklistPanel } from "@/components/onboarding/welcome-checklist";
 import { useLifeOSData } from "@/contexts/lifeos-context";
+import { shouldShowWelcomeCenter } from "@/lib/tenant/super-admin";
 import { startTour, TOUR_IDS } from "@/lib/tours/driver-tours";
 import { Play, BookOpen, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function WelcomePage() {
+  const router = useRouter();
   const { data } = useLifeOSData();
-  const name = data?.profile.displayName ?? "مستخدم";
+  const profile = data?.profile;
+  const name = profile?.displayName ?? "مستخدم";
+
+  const canAccess = profile
+    ? shouldShowWelcomeCenter(profile.email, profile.role, profile)
+    : false;
+
+  useEffect(() => {
+    if (profile && !canAccess) {
+      router.replace("/dashboard");
+    }
+  }, [profile, canAccess, router]);
+
+  if (!profile || !canAccess) return null;
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8" data-tour="main-content">
