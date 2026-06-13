@@ -29,7 +29,7 @@ const DOCS = [
 const MODULES = [
   { name: "Life Map", href: "/life-map", status: "V2" },
   { name: "Areas Command", href: "/areas", status: "V2" },
-  { name: "PARA Resources", href: "/resources", status: "V2" },
+  { name: "Journal OS", href: "/journal", status: "V1" },
   { name: "Time Planner", href: "/planner", status: "V1.1" },
   { name: "Wealth", href: "/finance", status: "V1.1" },
   { name: "Career OS", href: "/career", status: "V2" },
